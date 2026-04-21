@@ -1888,7 +1888,7 @@ Add the Controls section: a Reset button, a latency slider (0–3000ms), and a t
 Replace `/Users/atulnayyar/Projects/Chatbot UI/src/engine/useBot.js` contents with:
 
 ```js
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import { respond } from './mockBot.js'
 
@@ -1901,6 +1901,16 @@ export function useBot() {
   const latencyRef = useRef(latencyMs)
   latencyRef.current = latencyMs
 
+  const timersRef = useRef(new Set())
+
+  useEffect(() => {
+    const timers = timersRef.current
+    return () => {
+      timers.forEach((id) => clearTimeout(id))
+      timers.clear()
+    }
+  }, [])
+
   const append = useCallback((role, widget) => {
     const message = { id: uuid(), role, timestamp: Date.now(), widget }
     setMessages((prev) => [...prev, message])
@@ -1911,11 +1921,13 @@ export function useBot() {
     (widget) => {
       const userMessage = append('user', widget)
       setEngineTyping(true)
-      setTimeout(() => {
+      const timerId = setTimeout(() => {
+        timersRef.current.delete(timerId)
         const botWidget = respond(userMessage)
         if (botWidget) append('bot', botWidget)
         setEngineTyping(false)
       }, latencyRef.current)
+      timersRef.current.add(timerId)
     },
     [append],
   )
@@ -1923,6 +1935,8 @@ export function useBot() {
   const injectBotMessage = useCallback((widget) => { append('bot', widget) }, [append])
   const injectUserWidgetResponse = useCallback((widget) => { append('user', widget) }, [append])
   const reset = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id))
+    timersRef.current.clear()
     setMessages([])
     setEngineTyping(false)
   }, [])
