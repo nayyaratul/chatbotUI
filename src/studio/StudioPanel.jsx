@@ -1,7 +1,8 @@
 import styles from './studioPanel.module.scss'
 import { ViewportToggle } from './ViewportToggle.jsx'
 
-export function StudioPanel() {
+// eslint-disable-next-line no-unused-vars
+export function StudioPanel({ bot }) {
   return (
     <aside className={styles.panel}>
       <section className={styles.section}>
