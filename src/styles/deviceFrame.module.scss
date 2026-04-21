@@ -1,0 +1,24 @@
+.frame {
+  background: var(--white);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile {
+  width: 390px;
+  height: 844px;
+  border-radius: 40px;
+  box-shadow:
+    0 0 0 12px var(--grey-90),
+    0 20px 40px rgba(0, 0, 0, 0.18);
+}
+
+.desktop {
+  width: 100%;
+  max-width: 1000px;
+  height: 800px;
+  border-radius: 12px;
+  border: 1px solid var(--grey-10);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
