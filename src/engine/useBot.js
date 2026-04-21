@@ -2,9 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import { respond } from './mockBot.js'
 
-export function useBot({ latencyMs = 700 } = {}) {
+export function useBot() {
   const [messages, setMessages] = useState([])
-  const [isBotTyping, setIsBotTyping] = useState(false)
+  const [engineTyping, setEngineTyping] = useState(false)
+  const [typingOverride, setTypingOverride] = useState('auto') // 'auto' | 'on' | 'off'
+  const [latencyMs, setLatencyMs] = useState(700)
+
+  const latencyRef = useRef(latencyMs)
+  latencyRef.current = latencyMs
 
   const timersRef = useRef(new Set())
 
@@ -17,12 +22,7 @@ export function useBot({ latencyMs = 700 } = {}) {
   }, [])
 
   const append = useCallback((role, widget) => {
-    const message = {
-      id: uuid(),
-      role,
-      timestamp: Date.now(),
-      widget,
-    }
+    const message = { id: uuid(), role, timestamp: Date.now(), widget }
     setMessages((prev) => [...prev, message])
     return message
   }, [])
@@ -30,39 +30,40 @@ export function useBot({ latencyMs = 700 } = {}) {
   const sendUserMessage = useCallback(
     (widget) => {
       const userMessage = append('user', widget)
-      setIsBotTyping(true)
+      setEngineTyping(true)
       const timerId = setTimeout(() => {
         timersRef.current.delete(timerId)
         const botWidget = respond(userMessage)
         if (botWidget) append('bot', botWidget)
-        setIsBotTyping(false)
-      }, latencyMs)
+        setEngineTyping(false)
+      }, latencyRef.current)
       timersRef.current.add(timerId)
     },
-    [append, latencyMs],
-  )
-
-  const injectBotMessage = useCallback(
-    (widget) => { append('bot', widget) },
     [append],
   )
 
-  const injectUserWidgetResponse = useCallback(
-    (widget) => { append('user', widget) },
-    [append],
-  )
-
+  const injectBotMessage = useCallback((widget) => { append('bot', widget) }, [append])
+  const injectUserWidgetResponse = useCallback((widget) => { append('user', widget) }, [append])
   const reset = useCallback(() => {
     timersRef.current.forEach((id) => clearTimeout(id))
     timersRef.current.clear()
     setMessages([])
-    setIsBotTyping(false)
+    setEngineTyping(false)
   }, [])
+
+  const isBotTyping = typingOverride === 'on'
+    ? true
+    : typingOverride === 'off'
+      ? false
+      : engineTyping
 
   return {
     messages,
     isBotTyping,
-    setIsBotTyping,
+    typingOverride,
+    setTypingOverride,
+    latencyMs,
+    setLatencyMs,
     sendUserMessage,
     injectBotMessage,
     injectUserWidgetResponse,
