@@ -1,0 +1,25 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--grey-10);
+  background: var(--white);
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--grey-90);
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--grey-50);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
