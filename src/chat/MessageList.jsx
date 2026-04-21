@@ -1,23 +1,41 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { MessageRenderer } from './MessageRenderer.jsx'
+import { DateDivider } from './DateDivider.jsx'
+import { TypingIndicator } from './TypingIndicator.jsx'
 import styles from './messageList.module.scss'
 
-export function MessageList({ messages }) {
+function toYmd(ts) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function MessageList({ messages, isBotTyping }) {
   const endRef = useRef(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages.length])
+  }, [messages.length, isBotTyping])
 
-  if (messages.length === 0) {
+  if (messages.length === 0 && !isBotTyping) {
     return <div className={styles.empty}>Say something to start…</div>
   }
 
+  let lastYmd = null
+
   return (
     <div className={styles.list}>
-      {messages.map((m) => (
-        <MessageRenderer key={m.id} message={m} />
-      ))}
+      {messages.map((m) => {
+        const ymd = toYmd(m.timestamp)
+        const needsDivider = ymd !== lastYmd
+        lastYmd = ymd
+        return (
+          <Fragment key={m.id}>
+            {needsDivider && <DateDivider date={m.timestamp} />}
+            <MessageRenderer message={m} />
+          </Fragment>
+        )
+      })}
+      {isBotTyping && <TypingIndicator />}
       <div ref={endRef} />
     </div>
   )

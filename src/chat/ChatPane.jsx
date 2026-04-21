@@ -8,7 +8,7 @@ export function ChatPane({ bot }) {
     <div className={styles.pane}>
       <ChatHeader />
       <div className={styles.body}>
-        <MessageList messages={bot.messages} />
+        <MessageList messages={bot.messages} isBotTyping={bot.isBotTyping} />
       </div>
       <MessageInput
         onSend={bot.sendUserMessage}
