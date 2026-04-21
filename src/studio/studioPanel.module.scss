@@ -1,51 +1,124 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 20px 20px 40px;
   height: 100%;
+  background: var(--grey-0);
   overflow-y: auto;
 }
 
 .panel.collapsed {
-  padding: 8px;
-  gap: 0;
   overflow: hidden;
 }
 
-.panel.collapsed .section {
+.panel.collapsed .section,
+.panel.collapsed .headerTitle {
   display: none;
 }
 
-.section {
+.header {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--grey-10);
+  background: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-.sectionTitle {
-  font-size: 11px;
+.headerTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--grey-90);
+  letter-spacing: -0.01em;
+}
+
+.headerBadge {
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--grey-50);
-  margin: 0;
+}
+
+.panel.collapsed .header {
+  padding: 10px 8px;
+  justify-content: center;
 }
 
 .collapseButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--grey-0);
+  width: 26px;
+  height: 26px;
+  background: transparent;
   border: 1px solid var(--grey-10);
   border-radius: 6px;
   cursor: pointer;
   color: var(--grey-60);
-  align-self: flex-end;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 
   &:hover {
     background: var(--grey-10);
+    color: var(--grey-90);
+    border-color: var(--grey-20);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--grey-90);
+    outline-offset: 1px;
+  }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 32px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--grey-10);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--grey-70);
+}
+
+.sectionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--white);
+  border: 1px solid var(--grey-10);
+  color: var(--grey-60);
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--grey-80);
+  margin: 0;
 }

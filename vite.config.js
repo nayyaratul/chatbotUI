@@ -13,6 +13,7 @@ export default defineConfig({
       '@nexus/atoms': path.resolve(nexusRoot, 'atoms/index.js'),
       '@nexus/molecules': path.resolve(nexusRoot, 'molecules/index.js'),
       '@nexus/tokens': path.resolve(nexusRoot, 'styles/tokens.scss'),
+      '@nexus/base': path.resolve(nexusRoot, 'styles/base.css'),
     },
   },
 })
