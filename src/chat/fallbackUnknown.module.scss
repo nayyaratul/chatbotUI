@@ -1,0 +1,24 @@
+.box {
+  display: block;
+  padding: 10px 12px;
+  border: 1px dashed var(--yellow-60, #b88a00);
+  border-radius: 8px;
+  background: var(--yellow-10, #fff6d5);
+  color: var(--grey-90);
+  font-size: 12px;
+  max-width: 100%;
+}
+
+.title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.json {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

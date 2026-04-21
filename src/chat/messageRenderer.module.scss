@@ -1,0 +1,13 @@
+.row {
+  display: flex;
+  width: 100%;
+  padding: 3px 12px;
+}
+
+.bot {
+  justify-content: flex-start;
+}
+
+.user {
+  justify-content: flex-end;
+}
