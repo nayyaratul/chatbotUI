@@ -1,6 +1,6 @@
 .input {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   padding: 10px 12px;
   border-top: 1px solid var(--grey-10);
@@ -9,6 +9,16 @@
 
 .textarea {
   flex: 1;
-  min-height: 36px;
+  height: 40px;
+  min-height: 40px;
   max-height: 120px;
+  padding: 10px 12px;
+  line-height: 1.2;
+}
+
+.sendButton {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex-shrink: 0;
 }

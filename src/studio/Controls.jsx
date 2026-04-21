@@ -1,4 +1,4 @@
-import { Button, Select, SelectTrigger, SelectContent, SelectItem, Slider } from '@nexus/atoms'
+import { Select, SelectTrigger, SelectContent, SelectItem, Slider } from '@nexus/atoms'
 import styles from './controls.module.scss'
 
 export function Controls({ bot }) {
@@ -27,12 +27,6 @@ export function Controls({ bot }) {
           max={3000}
           step={100}
         />
-      </div>
-
-      <div className={styles.row}>
-        <Button variant="secondary" size="sm" onClick={bot.reset}>
-          Reset conversation
-        </Button>
       </div>
     </div>
   )

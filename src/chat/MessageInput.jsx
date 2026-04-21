@@ -36,6 +36,7 @@ export function MessageInput({ onSend, disabled = false }) {
         variant="primary"
         size="md"
         iconOnly
+        className={styles.sendButton}
         disabled={disabled || !text.trim()}
         onClick={submit}
         aria-label="Send"

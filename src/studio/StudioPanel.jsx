@@ -6,6 +6,7 @@ import {
   Zap,
   Braces,
   SlidersHorizontal,
+  RotateCcw,
 } from 'lucide-react'
 import styles from './studioPanel.module.scss'
 import { ViewportToggle } from './ViewportToggle.jsx'
@@ -28,6 +29,18 @@ export function StudioPanel({ bot, collapsed, onToggleCollapsed }) {
           aria-label={collapsed ? 'Expand Studio' : 'Collapse Studio'}
         >
           {collapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+      </div>
+
+      <div className={styles.utilityStrip}>
+        <button
+          type="button"
+          className={styles.resetButton}
+          onClick={bot.reset}
+          aria-label="Reset conversation"
+        >
+          <RotateCcw size={12} />
+          Reset conversation
         </button>
       </div>
 
