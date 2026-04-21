@@ -1,11 +1,12 @@
 import styles from './studioPanel.module.scss'
+import { ViewportToggle } from './ViewportToggle.jsx'
 
 export function StudioPanel() {
   return (
     <aside className={styles.panel}>
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Viewport</h2>
-        <p style={{ color: 'var(--grey-50)', fontSize: 13 }}>— placeholder —</p>
+        <ViewportToggle />
       </section>
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Injector</h2>
