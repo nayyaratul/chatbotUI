@@ -1,10 +1,15 @@
-import { Button } from '@nexus/atoms'
+import styles from './app.module.scss'
+import { StudioPanel } from './studio/StudioPanel.jsx'
 
 export function App() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Chatbot UI</h1>
-      <Button variant="primary">Nexus Button smoke test</Button>
+    <div className={styles.app}>
+      <main className={styles.chatSurface}>
+        <div style={{ color: 'var(--grey-50)' }}>— chat pane placeholder —</div>
+      </main>
+      <div className={styles.studioColumn}>
+        <StudioPanel />
+      </div>
     </div>
   )
 }
