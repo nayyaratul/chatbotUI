@@ -2,8 +2,19 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 20px;
+  padding: 20px 20px 40px;
   height: 100%;
+  overflow-y: auto;
+}
+
+.panel.collapsed {
+  padding: 8px;
+  gap: 0;
+  overflow: hidden;
+}
+
+.panel.collapsed .section {
+  display: none;
 }
 
 .section {
@@ -19,4 +30,22 @@
   text-transform: uppercase;
   color: var(--grey-50);
   margin: 0;
+}
+
+.collapseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--grey-0);
+  border: 1px solid var(--grey-10);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--grey-60);
+  align-self: flex-end;
+
+  &:hover {
+    background: var(--grey-10);
+  }
 }
