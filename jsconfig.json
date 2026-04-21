@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@nexus/atoms": ["../nexus-design-system/src/atoms/index.js"],
+      "@nexus/molecules": ["../nexus-design-system/src/molecules/index.js"],
+      "@nexus/tokens": ["../nexus-design-system/src/styles/tokens.scss"]
+    }
+  },
+  "include": ["src/**/*"]
+}
