@@ -1,7 +1,7 @@
 import styles from './studioPanel.module.scss'
 import { ViewportToggle } from './ViewportToggle.jsx'
+import { JsonInspector } from './JsonInspector.jsx'
 
-// eslint-disable-next-line no-unused-vars
 export function StudioPanel({ bot }) {
   return (
     <aside className={styles.panel}>
@@ -15,7 +15,7 @@ export function StudioPanel({ bot }) {
       </section>
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Inspector</h2>
-        <p style={{ color: 'var(--grey-50)', fontSize: 13 }}>— placeholder —</p>
+        <JsonInspector messages={bot.messages} />
       </section>
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Controls</h2>

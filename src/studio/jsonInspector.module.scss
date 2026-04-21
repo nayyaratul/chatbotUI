@@ -1,0 +1,17 @@
+.inspector {
+  background: var(--grey-90);
+  color: var(--grey-0);
+  border-radius: 6px;
+  padding: 10px 12px;
+  max-height: 280px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre;
+}
+
+.empty {
+  font-style: italic;
+  color: var(--grey-40);
+}
