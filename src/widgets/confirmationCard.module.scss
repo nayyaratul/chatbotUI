@@ -92,8 +92,8 @@
 
 .title {
   margin: 0;
-  font-family: var(--serif);
-  font-weight: var(--font-weight-medium);
+  font-family: var(--sans);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-500);
   line-height: var(--line-height-400);
   letter-spacing: var(--letter-spacing-tight);
@@ -245,9 +245,9 @@
   border-radius: var(--radius-100);
   color: var(--stamp-color);
 
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-500);
+  font-size: var(--font-size-400);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
 
