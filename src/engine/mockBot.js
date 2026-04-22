@@ -1,7 +1,21 @@
-export function respond(userMessage) {
+import { v4 as uuid } from 'uuid'
+
+/**
+ * Rule-based mock bot. Each rule is { match: RegExp, build: (userMessage) => botWidget | null }.
+ * The first matching rule wins. Unmatched text messages and all widget_response messages fall through
+ * to the default echo.
+ *
+ * Each widget task APPENDS one entry to this list.
+ */
+const rules = []
+
+export function registerRule(rule) {
+  rules.push(rule)
+}
+
+function defaultEcho(userMessage) {
   const payload = userMessage?.widget?.payload ?? {}
   let incoming = ''
-
   if (userMessage?.widget?.type === 'text') {
     incoming = payload.text ?? ''
   } else if (userMessage?.widget?.type === 'widget_response') {
@@ -9,9 +23,23 @@ export function respond(userMessage) {
   } else {
     incoming = `(${userMessage?.widget?.type ?? 'unknown'})`
   }
+  return { type: 'text', payload: { text: `You said: ${incoming}` } }
+}
 
-  return {
-    type: 'text',
-    payload: { text: `You said: ${incoming}` },
+export function respond(userMessage) {
+  if (userMessage?.widget?.type === 'text') {
+    const text = userMessage.widget.payload?.text?.toLowerCase().trim() ?? ''
+    for (const rule of rules) {
+      if (rule.match.test(text)) {
+        const built = rule.build(userMessage)
+        if (built) return built
+      }
+    }
   }
+  return defaultEcho(userMessage)
+}
+
+// Helper used by widget rule factories to stamp fresh ids on each build.
+export function makeId(prefix = 'w') {
+  return `${prefix}-${uuid().slice(0, 8)}`
 }

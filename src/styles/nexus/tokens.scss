@@ -1,0 +1,367 @@
+/* ─── NEXUS SEMANTIC TOKENS ───────────────────────────────────
+   Bridge between foundation primitives and component atoms.
+   Mirror principle: Step N (light) ↔ Step (100−N) (dark).
+
+   Atoms consume these semantic variables — NEVER raw hex values.
+   ─────────────────────────────────────────────────────────── */
+
+/* ─── Colour Primitives (from colours.json) ─────────────────── */
+:root {
+  /* Neutral Grey */
+  --grey-0:   #FAFAFA;
+  --grey-10:  #DEDEDE;
+  --grey-20:  #C3C3C3;
+  --grey-30:  #A8A8A8;
+  --grey-40:  #8E8E8E;
+  --grey-50:  #757575;
+  --grey-60:  #5E5F5F;
+  --grey-70:  #4B4B4A;
+  --grey-80:  #373737;
+  --grey-90:  #242424;
+  --grey-100: #080808;
+
+  /* Absolute extremes — pure white / pure black (backgrounds, sparing use) */
+  --white: #FFFFFF;
+  --black: #000000;
+
+  /* Cool Grey */
+  --cool-0:   #F8FAFD;
+  --cool-10:  #DCDEE1;
+  --cool-20:  #BFC3CA;
+  --cool-30:  #A2A9B4;
+  --cool-40:  #868F9F;
+  --cool-50:  #6C7688;
+  --cool-60:  #565F6F;
+  --cool-70:  #444B57;
+  --cool-80:  #32373E;
+  --cool-90:  #212427;
+  --cool-100: #070809;
+
+  /* Warm Grey */
+  --warm-0:   #FBFAF9;
+  --warm-10:  #DFDEDD;
+  --warm-20:  #C5C2C1;
+  --warm-30:  #ACA8A5;
+  --warm-40:  #938D8A;
+  --warm-50:  #7B7470;
+  --warm-60:  #635D5A;
+  --warm-70:  #4E4A47;
+  --warm-80:  #393634;
+  --warm-90:  #252322;
+  --warm-100: #080807;
+
+  /* Red */
+  --red-0:   #FFF9F8;
+  --red-10:  #FBD6D3;
+  --red-20:  #F8B1AB;
+  --red-30:  #F68D85;
+  --red-40:  #FC5C59;
+  --red-50:  #E32631;
+  --red-60:  #BC1624;
+  --red-70:  #971A1F;
+  --red-80:  #700F14;
+  --red-90:  #490D0E;
+  --red-100: #140706;
+
+  /* Green */
+  --green-0:   #F4FEF6;
+  --green-10:  #C8E6CE;
+  --green-20:  #97D0A5;
+  --green-30:  #4EBF75;
+  --green-40:  #24A95B;
+  --green-50:  #198647;
+  --green-60:  #136D39;
+  --green-70:  #0B582C;
+  --green-80:  #02401E;
+  --green-90:  #002A10;
+  --green-100: #030D05;
+
+  /* Yellow */
+  --yellow-0:   #FFFCF4;
+  --yellow-10:  #F5DCAA;
+  --yellow-20:  #EEBD4B;
+  --yellow-30:  #D3A330;
+  --yellow-40:  #B78D27;
+  --yellow-50:  #93711D;
+  --yellow-60:  #775A14;
+  --yellow-70:  #62490D;
+  --yellow-80:  #483403;
+  --yellow-90:  #312200;
+  --yellow-100: #0F0901;
+
+  /* Blue */
+  --blue-0:   #FAFCFF;
+  --blue-10:  #D1E0F6;
+  --blue-20:  #ABC4EE;
+  --blue-30:  #82ABF0;
+  --blue-40:  #5692F6;
+  --blue-50:  #1C6EF1;
+  --blue-60:  #1459C7;
+  --blue-70:  #0C47A4;
+  --blue-80:  #03337D;
+  --blue-90:  #001F5C;
+  --blue-100: #050B15;
+
+  /* Brand colour scale — default: Ocean Blue (matches --blue-* above) */
+  /* Override per client via setBrandColour() or CSS file swap */
+  --brand-0:   #FAFCFF;
+  --brand-10:  #D1E0F6;
+  --brand-20:  #ABC4EE;
+  --brand-30:  #82ABF0;
+  --brand-40:  #5692F6;
+  --brand-50:  #1C6EF1;
+  --brand-60:  #1459C7;
+  --brand-70:  #0C47A4;
+  --brand-80:  #03337D;
+  --brand-90:  #001F5C;
+  --brand-100: #050B15;
+
+  /* Brand alpha tints — derived from brand-50 */
+  --brand-a50:  color-mix(in srgb, var(--brand-50) 9%, transparent);
+  --brand-a100: color-mix(in srgb, var(--brand-50) 18%, transparent);
+  --brand-a150: color-mix(in srgb, var(--brand-50) 24%, transparent);
+  --brand-a200: color-mix(in srgb, var(--brand-50) 32%, transparent);
+}
+
+
+/* ─── LIGHT THEME (default) ──────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  /* Text */
+  --color-text-primary:     var(--grey-90);
+  --color-text-secondary:   var(--grey-60);
+  --color-text-tertiary:    var(--grey-50);
+  --color-text-disabled:    var(--grey-30);
+  --color-text-inverse:     var(--grey-0);
+  --color-text-on-action:   var(--grey-0);
+  --color-text-success:     var(--green-60);
+  --color-text-error:       var(--red-50);
+  --color-text-warning:     var(--yellow-60);
+  --color-text-info:        var(--blue-50);
+  --color-text-link:        var(--brand-50);
+
+  /* Absolute extremes — theme mirror (white ↔ black in dark) */
+  --color-white: var(--white);
+  --color-black: var(--black);
+
+  /* Backgrounds */
+  --color-bg-primary:       var(--grey-0);
+  --color-bg-secondary:     var(--warm-0);
+  --color-bg-tertiary:      var(--grey-10);
+  --color-bg-elevated:      var(--white);
+  --color-bg-sunken:        var(--cool-0);
+  --color-bg-disabled:      var(--grey-10);
+  --color-bg-overlay:       color-mix(in srgb, var(--grey-100) calc(var(--opacity-048) * 100%), transparent);
+
+  /* Background — status */
+  --color-bg-success:       var(--green-0);
+  --color-bg-error:         var(--red-0);
+  --color-bg-warning:       var(--yellow-0);
+  --color-bg-info:          var(--blue-0);
+
+  /* Background — subtle status (for badges, tags) */
+  --color-bg-success-subtle: var(--green-10);
+  --color-bg-error-subtle:   var(--red-10);
+  --color-bg-warning-subtle: var(--yellow-10);
+  --color-bg-info-subtle:    var(--blue-10);
+
+  /* Borders */
+  --color-border-default:   var(--grey-20);
+  --color-border-strong:    var(--grey-40);
+  --color-border-subtle:    var(--grey-10);
+  --color-border-disabled:  var(--grey-20);
+  --color-border-error:     var(--red-50);
+  --color-border-success:   var(--green-50);
+  --color-border-focus:     var(--brand-50);
+  --color-border-dialog:    var(--grey-10);
+
+  /* Actions */
+  --color-action-primary:       var(--brand-50);
+  --color-action-primary-hover: var(--brand-60);
+  --color-action-primary-active:var(--brand-70);
+  --color-action-secondary:       var(--grey-10);
+  --color-action-secondary-hover: var(--grey-20);
+  --color-action-secondary-active:var(--grey-30);
+  --color-action-destructive:       var(--red-50);
+  --color-action-destructive-hover: var(--red-60);
+  --color-action-destructive-active:var(--red-70);
+  --color-action-ghost-hover:  var(--grey-10);
+  --color-action-ghost-active: var(--grey-20);
+  --color-action-disabled:     var(--grey-30);
+
+  /* Interactive */
+  --color-interactive-hover:  var(--grey-10);
+  --color-interactive-active: var(--grey-20);
+
+  /* Tooltip */
+  --tooltip-bg:    var(--grey-90);
+  --tooltip-color: var(--grey-0);
+
+  /* Rating star — filled state uses yellow-20 (standard exception for brighter star) */
+  --color-rating-filled: var(--yellow-20);
+
+  /* Table — header background (semantic → primitive) */
+  --color-table-header-bg: var(--grey-10);
+
+  /* Theme comparison panel — pure white in light (not grey-0) */
+  --color-bg-theme-panel: var(--white);
+
+  /* Alert — 0↔100 mirror: light step 0 (bg), step 20 (border); dark uses 100 and 80 */
+  --color-alert-success-bg:   var(--green-0);
+  --color-alert-success-border: var(--green-20);
+  --color-alert-error-bg:     var(--red-0);
+  --color-alert-error-border:   var(--red-20);
+  --color-alert-warning-bg:   var(--yellow-0);
+  --color-alert-warning-border: var(--yellow-20);
+  --color-alert-info-bg:      var(--blue-0);
+  --color-alert-info-border:    var(--blue-20);
+
+  /* Tag — 0↔100 mirror: light step 0 (bg), step 20 (border); dark uses 100 and 80 */
+  --color-tag-default-bg:   var(--grey-0);
+  --color-tag-default-border: var(--grey-20);
+  --color-tag-success-bg:   var(--green-0);
+  --color-tag-success-border: var(--green-20);
+  --color-tag-error-bg:     var(--red-0);
+  --color-tag-error-border:   var(--red-20);
+  --color-tag-warning-bg:   var(--yellow-0);
+  --color-tag-warning-border: var(--yellow-20);
+  --color-tag-info-bg:      var(--blue-0);
+  --color-tag-info-border:    var(--blue-20);
+
+  /* Badge — step 0 (lightest) for light theme, bg only */
+  --color-badge-default-bg:   var(--grey-0);
+  --color-badge-success-bg:   var(--green-0);
+  --color-badge-error-bg:     var(--red-0);
+  --color-badge-warning-bg:   var(--yellow-0);
+  --color-badge-info-bg:      var(--blue-0);
+
+  /* Accordion divider — neutral: light grey-10 */
+  --color-accordion-divider:  var(--grey-10);
+
+  /* Elevation — surface roles */
+  --elevation-surface-raised-low:    var(--shadow-100);
+  --elevation-surface-raised-mid:    var(--shadow-200);
+  --elevation-surface-raised-high:   var(--shadow-300);
+  --elevation-surface-bottom-sheet:  var(--shadow-400);
+}
+
+
+/* ─── DARK THEME ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Absolute extremes — theme mirror (white ↔ black) */
+  --color-white: var(--black);
+  --color-black: var(--white);
+
+  /* Text — mirror: 90→10, 60→40, 50→50, 30→70, 0→100 */
+  --color-text-primary:     var(--grey-10);
+  --color-text-secondary:   var(--grey-40);
+  --color-text-tertiary:    var(--grey-50);
+  --color-text-disabled:    var(--grey-70);
+  --color-text-inverse:     var(--grey-100);
+  --color-text-on-action:   var(--grey-0);
+  --color-text-success:     var(--green-40);
+  --color-text-error:       var(--red-50);
+  --color-text-warning:     var(--yellow-40);
+  --color-text-info:        var(--blue-40);
+  --color-text-link:        var(--brand-50);
+
+  /* Backgrounds — mirror: 0→100 (N↔100−N), 10→90 */
+  --color-bg-primary:       var(--grey-100);
+  --color-bg-secondary:     var(--warm-100);
+  --color-bg-tertiary:      var(--grey-90);
+  --color-bg-elevated:      var(--grey-90);
+  --color-bg-sunken:        var(--cool-100);
+  --color-bg-disabled:      var(--grey-90);
+  --color-bg-overlay:       color-mix(in srgb, var(--grey-100) calc(var(--opacity-072) * 100%), transparent);
+
+  /* Background — status (mirror: 0→100, N↔100−N) */
+  --color-bg-success:       var(--green-100);
+  --color-bg-error:         var(--red-100);
+  --color-bg-warning:       var(--yellow-100);
+  --color-bg-info:          var(--blue-100);
+
+  /* Background — subtle status (mirror: 10→80) */
+  --color-bg-success-subtle: var(--green-80);
+  --color-bg-error-subtle:   var(--red-80);
+  --color-bg-warning-subtle: var(--yellow-80);
+  --color-bg-info-subtle:    var(--blue-80);
+
+  /* Borders — mirror: 20→80, 40→60, 10→90 */
+  --color-border-default:   var(--grey-80);
+  --color-border-strong:    var(--grey-60);
+  --color-border-subtle:    var(--grey-90);
+  --color-border-disabled:  var(--grey-80);
+  --color-border-error:     var(--red-50);
+  --color-border-success:   var(--green-50);
+  --color-border-focus:     var(--brand-40);
+  --color-border-dialog:    var(--grey-80);
+
+  /* Actions — pivots stay at 50; hover/active shift inward */
+  --color-action-primary:       var(--brand-50);
+  --color-action-primary-hover: var(--brand-40);
+  --color-action-primary-active:var(--brand-30);
+  --color-action-secondary:       var(--grey-80);
+  --color-action-secondary-hover: var(--grey-70);
+  --color-action-secondary-active:var(--grey-60);
+  --color-action-destructive:       var(--red-50);
+  --color-action-destructive-hover: var(--red-40);
+  --color-action-destructive-active:var(--red-30);
+  --color-action-ghost-hover:  var(--grey-80);
+  --color-action-ghost-active: var(--grey-70);
+  --color-action-disabled:     var(--grey-70);
+
+  /* Interactive */
+  --color-interactive-hover:  var(--grey-80);
+  --color-interactive-active: var(--grey-70);
+
+  /* Tooltip */
+  --tooltip-bg:    var(--grey-10);
+  --tooltip-color: var(--grey-100);
+
+  /* Rating star — filled state uses yellow-20 (standard exception for brighter star) */
+  --color-rating-filled: var(--yellow-20);
+
+  /* Table — header background (semantic → primitive) */
+  --color-table-header-bg: var(--grey-90);
+
+  /* Theme comparison panel — pure black in dark (not grey-100) */
+  --color-bg-theme-panel: var(--black);
+
+  /* Alert — 0↔100: dark step 100 (bg), step 80 (border) */
+  --color-alert-success-bg:   var(--green-100);
+  --color-alert-success-border: var(--green-80);
+  --color-alert-error-bg:     var(--red-100);
+  --color-alert-error-border:   var(--red-80);
+  --color-alert-warning-bg:   var(--yellow-100);
+  --color-alert-warning-border: var(--yellow-80);
+  --color-alert-info-bg:      var(--blue-100);
+  --color-alert-info-border:    var(--blue-80);
+
+  /* Tag — 0↔100: dark step 100 (bg), step 80 (border) */
+  --color-tag-default-bg:   var(--grey-100);
+  --color-tag-default-border: var(--grey-80);
+  --color-tag-success-bg:   var(--green-100);
+  --color-tag-success-border: var(--green-80);
+  --color-tag-error-bg:     var(--red-100);
+  --color-tag-error-border:   var(--red-80);
+  --color-tag-warning-bg:   var(--yellow-100);
+  --color-tag-warning-border: var(--yellow-80);
+  --color-tag-info-bg:      var(--blue-100);
+  --color-tag-info-border:    var(--blue-80);
+
+  /* Badge — step 100 (darkest) for dark theme, bg only */
+  --color-badge-default-bg:   var(--grey-100);
+  --color-badge-success-bg:   var(--green-100);
+  --color-badge-error-bg:     var(--red-100);
+  --color-badge-warning-bg:   var(--yellow-100);
+  --color-badge-info-bg:      var(--blue-100);
+
+  /* Accordion divider — neutral mirror: dark grey-90 (100−10) */
+  --color-accordion-divider:  var(--grey-90);
+
+  /* Elevation — surface roles */
+  --elevation-surface-raised-low:    var(--shadow-100);
+  --elevation-surface-raised-mid:    var(--shadow-200);
+  --elevation-surface-raised-high:   var(--shadow-300);
+  --elevation-surface-bottom-sheet:  var(--shadow-400);
+}

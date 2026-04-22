@@ -5,6 +5,7 @@ import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const nexusRoot = path.resolve(__dirname, '../nexus-design-system/src')
+const localNexus = path.resolve(__dirname, 'src/styles/nexus')
 
 export default defineConfig({
   plugins: [react()],
@@ -12,8 +13,8 @@ export default defineConfig({
     alias: {
       '@nexus/atoms': path.resolve(nexusRoot, 'atoms/index.js'),
       '@nexus/molecules': path.resolve(nexusRoot, 'molecules/index.js'),
-      '@nexus/tokens': path.resolve(nexusRoot, 'styles/tokens.scss'),
-      '@nexus/base': path.resolve(nexusRoot, 'styles/base.css'),
+      '@nexus/tokens': path.resolve(localNexus, 'tokens.scss'),
+      '@nexus/base': path.resolve(localNexus, 'base.css'),
     },
   },
 })

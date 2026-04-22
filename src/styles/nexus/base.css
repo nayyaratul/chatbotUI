@@ -1,0 +1,171 @@
+/* ─── RESET & BASE ─────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --page-bg:  #F5F4F1;
+  --ink:      #1A1816;
+  --ink-2:    #5C5954;
+  --ink-3:    #9A9590;
+  --rule:     #DDD9D3;
+  --card-bg:  var(--white);
+  --radius:   10px;
+  --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --sans:     'Inter', system-ui, -apple-system, sans-serif;
+  --serif:    'Fraunces', Georgia, serif;
+
+  /* typography — primitive: font sizes */
+  --font-size-100:  0.625rem;   /* 10px */
+  --font-size-200:  0.75rem;    /* 12px */
+  --font-size-300:  0.875rem;   /* 14px */
+  --font-size-400:  1rem;       /* 16px */
+  --font-size-500:  1.25rem;    /* 20px */
+  --font-size-600:  1.5rem;     /* 24px */
+  --font-size-700:  1.75rem;    /* 28px */
+  --font-size-800:  2rem;       /* 32px */
+  --font-size-900:  2.5rem;     /* 40px */
+  --font-size-1000: 3rem;       /* 48px */
+
+  /* typography — primitive: line heights */
+  --line-height-100:  0.75rem;    /* 12px */
+  --line-height-200:  1rem;       /* 16px */
+  --line-height-300:  1.25rem;    /* 20px */
+  --line-height-400:  1.5rem;     /* 24px */
+  --line-height-500:  1.75rem;    /* 28px */
+  --line-height-600:  2rem;       /* 32px */
+  --line-height-700:  2.25rem;    /* 36px */
+  --line-height-800:  2.5rem;     /* 40px */
+  --line-height-900:  3rem;       /* 48px */
+  --line-height-1000: 3.5rem;     /* 56px */
+
+  /* typography — primitive: font weights */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+
+  /* typography — primitive: letter spacing */
+  --letter-spacing-wide:    0.02em;
+  --letter-spacing-normal:  0;
+  --letter-spacing-tight:   -0.01em;
+  --letter-spacing-tighter: -0.02em;
+
+  /* spacing — primitive: space scale */
+  --space-000:  0;           /* 0px — reset */
+  --space-025:  0.125rem;   /* 2px — micro */
+  --space-050:  0.25rem;    /* 4px — tight */
+  --space-075:  0.375rem;   /* 6px — pragmatic */
+  --space-100:  0.5rem;     /* 8px — small */
+  --space-125:  0.625rem;   /* 10px — pragmatic */
+  --space-150:  0.75rem;    /* 12px — medium */
+  --space-200:  1rem;       /* 16px — base */
+  --space-250:  1.25rem;    /* 20px */
+  --space-300:  1.5rem;     /* 24px — large */
+  --space-400:  2rem;       /* 32px */
+  --space-500:  2.5rem;    /* 40px */
+  --space-600:  3rem;       /* 48px */
+  --space-700:  3.5rem;     /* 56px */
+  --space-800:  4rem;       /* 64px */
+  --space-900:  4.5rem;     /* 72px */
+  --space-1000: 5rem;       /* 80px */
+
+  /* size — primitive: global sizes (px) */
+  --size-00: 0px;
+  --size-01: 1px;
+  --size-02: 2px;
+  --size-04: 4px;
+  --size-06: 6px;
+  --size-08: 8px;
+  --size-12: 12px;
+  --size-16: 16px;
+  --size-20: 20px;
+  --size-24: 24px;
+  --size-28: 28px;
+  --size-32: 32px;
+  --size-36: 36px;
+  --size-40: 40px;
+  --size-44: 44px;
+  --size-48: 48px;
+  --size-52: 52px;
+  --size-56: 56px;
+  --size-60: 60px;
+  --size-64: 64px;
+  --size-68: 68px;
+  --size-72: 72px;
+  --size-76: 76px;
+  --size-80: 80px;
+  --size-84: 84px;
+  --size-88: 88px;
+  --size-92: 92px;
+  --size-96: 96px;
+  --size-100: 100px;
+  --size-104: 104px;
+  --size-108: 108px;
+  --size-112: 112px;
+  --size-116: 116px;
+  --size-120: 120px;
+  --size-124: 124px;
+  --size-128: 128px;
+  --size-132: 132px;
+  --size-136: 136px;
+  --size-176: 176px;
+  --size-1000: 1000px;
+
+  /* border-radius — primitive */
+  --radius-000:  0;
+  --radius-025:  0.0625rem;  /* 1px */
+  --radius-050:  0.125rem;   /* 2px */
+  --radius-100:  0.25rem;    /* 4px */
+  --radius-150:  0.5rem;     /* 8px */
+  --radius-200:  0.75rem;    /* 12px */
+  --radius-300:  1rem;       /* 16px */
+  --radius-400:  1.25rem;    /* 20px */
+  --radius-500:  1.5rem;     /* 24px */
+  --radius-full: 1000px;
+
+  /* border-width — primitive */
+  --border-width-000: 0;
+  --border-width-050: 0.5px;
+  --border-width-100: 1px;
+  --border-width-150: 1.5px;
+  --border-width-200: 2px;
+  --border-width-300: 3px;
+  --border-width-400: 4px;
+
+  /* opacity — primitive */
+  --opacity-000:  0;
+  --opacity-009:  0.09;
+  --opacity-012:  0.12;
+  --opacity-018:  0.18;
+  --opacity-024:  0.24;
+  --opacity-032:  0.32;
+  --opacity-048:  0.48;
+  --opacity-056:  0.56;
+  --opacity-064:  0.64;
+  --opacity-072:  0.72;
+  --opacity-080:  0.80;
+  --opacity-088:  0.88;
+  --opacity-100:  1;
+
+  /* shadow — primitive: elevation scale */
+  --shadow-100:  0 var(--size-02) var(--size-16) 0 color-mix(in srgb, var(--grey-100) calc(var(--opacity-012) * 100%), transparent);
+  --shadow-200:  0 var(--size-08) var(--size-24) 0 color-mix(in srgb, var(--grey-100) calc(var(--opacity-018) * 100%), transparent);
+  --shadow-300:  0 var(--size-16) var(--size-48) calc(-1 * var(--size-04)) color-mix(in srgb, var(--grey-100) calc(var(--opacity-024) * 100%), transparent);
+  --shadow-400:  0 calc(-1 * var(--size-16)) var(--size-48) calc(-1 * var(--size-04)) color-mix(in srgb, var(--grey-100) calc(var(--opacity-024) * 100%), transparent);
+
+  /* sidebar */
+  --sidebar-w:   260px;
+  --sidebar-bg:  var(--white);
+  --sidebar-rule: #EDE9E3;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  background: var(--page-bg);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: inherit; text-decoration: none; }
