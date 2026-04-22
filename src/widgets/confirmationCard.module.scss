@@ -52,42 +52,37 @@
   --tone-border:  var(--red-20);
 }
 
-/* ─── Header: seal + title ─────────────────────────────────── */
+/* ─── Header: status chip + title ──────────────────────────── */
 
 .header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-150);
+  gap: var(--space-100);
 }
 
-.seal {
-  flex-shrink: 0;
-  width: var(--size-32);
-  height: var(--size-32);
+.kicker {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-075);
+  padding: var(--space-050) var(--space-100);
   background: var(--tone-surface);
   color: var(--tone-accent);
   border-radius: var(--radius-full);
   border: var(--border-width-100) solid var(--tone-border);
-}
-
-.titleWrap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-025);
-  flex: 1;
-  padding-top: var(--space-025);
-}
-
-.kicker {
   font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wide);
-  color: var(--tone-accent);
+  line-height: 1;
   text-transform: uppercase;
+}
+
+.kickerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: calc(-1 * var(--space-025));
 }
 
 .title {

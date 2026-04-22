@@ -62,13 +62,13 @@ export function ConfirmationCard({ payload }) {
   return (
     <div className={cx(styles.card, styles[tone], decision && styles.decided)}>
       <header className={styles.header}>
-        <span className={styles.seal} aria-hidden="true">
-          <SealIcon size={15} strokeWidth={2} />
+        <span className={styles.kicker}>
+          <span className={styles.kickerIcon} aria-hidden="true">
+            <SealIcon size={11} strokeWidth={2.5} />
+          </span>
+          {meta.kicker}
         </span>
-        <div className={styles.titleWrap}>
-          <span className={styles.kicker}>{meta.kicker}</span>
-          {payload?.title && <h3 className={styles.title}>{payload.title}</h3>}
-        </div>
+        {payload?.title && <h3 className={styles.title}>{payload.title}</h3>}
       </header>
 
       {payload?.description && <p className={styles.description}>{payload.description}</p>}
