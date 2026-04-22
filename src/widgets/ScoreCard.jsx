@@ -37,10 +37,13 @@ function categoryVariant(score, maxScore) {
 /* ─── Component ─────────────────────────────────────────────── */
 
 export function ScoreCard({ payload }) {
-  const hasActions = payload?.actions?.length > 0
-  const { onReply } = hasActions ? useChatActions() : { onReply: null }
+  /* Always call hooks at the top level — Rules of Hooks. Guard the
+     callback usage at the site of invocation instead. */
+  const { onReply } = useChatActions()
   const { viewport } = useViewport()
   const [showReasoning, setShowReasoning] = useState(false)
+
+  const hasActions = payload?.actions?.length > 0
 
   const overall = payload?.overall ?? {}
   const tone    = resolveTone(overall)
@@ -50,8 +53,7 @@ export function ScoreCard({ payload }) {
   const orientation = viewport === 'mobile' ? 'vertical' : 'horizontal'
 
   const handleAction = (action) => {
-    if (!onReply) return
-    onReply({
+    onReply?.({
       type: 'widget_response',
       payload: {
         source_type: 'score_card',
