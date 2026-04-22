@@ -89,9 +89,7 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
     )
   }, [doneAction, onReply, containerWidgetId, jobId, title, isSilent])
 
-  const distanceText = location.distance_km != null
-    ? `${Number(location.distance_km).toFixed(1)} km`
-    : null
+  const isNearby = location.distance_km != null && location.distance_km < 5
 
   return (
     <div
@@ -148,14 +146,11 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
                 <MapPin size={13} strokeWidth={2} aria-hidden="true" />
               </span>
               {location.name}
-              {distanceText && (
+              {isNearby && (
                 <>
                   <span className={styles.metaSep}>·</span>
-                  <span className={styles.metaDistance}>{distanceText}</span>
+                  <span className={styles.nearBadge}>Near you</span>
                 </>
-              )}
-              {location.distance_km != null && location.distance_km < 5 && (
-                <span className={styles.nearBadge}>Near you</span>
               )}
             </span>
           )}
@@ -191,7 +186,7 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
             variant="primary"
             size="md"
             disabled={!!doneAction}
-            className={styles.applyBtn}
+            className={styles.actionBtn}
             onClick={() => handleAction('apply')}
           >
             <span className={styles.btnInner}>
@@ -206,7 +201,7 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
             variant="secondary"
             size="md"
             disabled={!!doneAction}
-            className={styles.secondaryBtn}
+            className={styles.actionBtn}
             onClick={() => handleAction('save')}
           >
             <span className={styles.btnInner}>
@@ -221,12 +216,12 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
             variant="secondary"
             size="md"
             disabled={!!doneAction}
-            className={styles.secondaryBtn}
+            className={styles.actionBtn}
             onClick={() => handleAction('dismiss')}
           >
             <span className={styles.btnInner}>
               <X size={14} strokeWidth={2} aria-hidden="true" />
-              Not interested
+              Dismiss
             </span>
           </Button>
         )}
@@ -236,7 +231,7 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
             variant="secondary"
             size="md"
             disabled={!!doneAction}
-            className={styles.secondaryBtn}
+            className={styles.actionBtn}
             onClick={() => handleAction('view_details')}
           >
             <span className={styles.btnInner}>
