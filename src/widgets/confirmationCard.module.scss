@@ -1,24 +1,22 @@
 /* ─── Confirmation Card — "Considered Document" ─────────────────
-   Tone-driven palette bound to CSS variables scoped to the card root.
-   Each tone mode sets --tone-accent / --tone-surface / --tone-stripe.
+   Tokens only: font families, sizes, weights, radii, borders, spacing,
+   shadows, opacities, and colours all come from Nexus via local copies
+   of tokens.scss + base.css. No raw hex or magic numbers.
    ───────────────────────────────────────────────────────────── */
 
 .card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 18px 16px 22px;
+  gap: var(--space-150);
+  padding: var(--space-200) var(--space-200) var(--space-150) var(--space-250);
 
-  background: var(--tone-surface, var(--white));
-  border: 1px solid var(--tone-border, var(--grey-10));
-  border-radius: 14px;
+  background: var(--tone-surface);
+  border: var(--border-width-100) solid var(--tone-border);
+  border-radius: var(--radius-200);
   max-width: 94%;
 
-  box-shadow:
-    0 1px 2px rgba(23, 30, 42, 0.04),
-    0 6px 24px -10px rgba(23, 30, 42, 0.08);
-
+  box-shadow: var(--shadow-100);
   overflow: hidden;
   transition: opacity 240ms ease;
 }
@@ -30,31 +28,28 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 4px;
-  background: var(--tone-accent, var(--grey-40));
+  width: var(--size-04);
+  background: var(--tone-accent);
 }
 
-/* ─── Tone modes ───────────────────────────────────────────── */
+/* ─── Tone modes — all values resolve to Nexus tokens ───────── */
 
 .info {
-  --tone-accent: var(--blue-60, #2f6fed);
-  --tone-surface: #f6f8ff;
-  --tone-border: #e0e8fa;
-  --tone-soft: var(--blue-10, #ecf2ff);
+  --tone-surface: var(--color-bg-info-subtle);
+  --tone-accent:  var(--color-text-info);
+  --tone-border:  var(--blue-20);
 }
 
 .caution {
-  --tone-accent: var(--yellow-60, #b88a00);
-  --tone-surface: #fffaee;
-  --tone-border: #f4e5b9;
-  --tone-soft: var(--yellow-10, #fff6d5);
+  --tone-surface: var(--color-bg-warning-subtle);
+  --tone-accent:  var(--color-text-warning);
+  --tone-border:  var(--yellow-20);
 }
 
 .danger {
-  --tone-accent: var(--red-60, #d04a3a);
-  --tone-surface: #fff6f4;
-  --tone-border: #f6cec8;
-  --tone-soft: var(--red-10, #fdecea);
+  --tone-surface: var(--color-bg-error-subtle);
+  --tone-accent:  var(--color-text-error);
+  --tone-border:  var(--red-20);
 }
 
 /* ─── Header: seal + title ─────────────────────────────────── */
@@ -62,79 +57,83 @@
 .header {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--space-150);
 }
 
 .seal {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: var(--size-32);
+  height: var(--size-32);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--tone-soft);
+  background: var(--white);
   color: var(--tone-accent);
-  border-radius: 50%;
-  border: 1px solid var(--tone-border);
+  border-radius: var(--radius-full);
+  border: var(--border-width-100) solid var(--tone-border);
 }
 
 .titleWrap {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-025);
   flex: 1;
-  padding-top: 2px;
+  padding-top: var(--space-025);
 }
 
 .kicker {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
   color: var(--tone-accent);
+  text-transform: uppercase;
 }
 
 .title {
   margin: 0;
-  font-family: 'Fraunces', 'Iowan Old Style', 'Palatino', Georgia, serif;
-  font-weight: 500;
-  font-size: 19px;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-family: var(--serif);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-500);
+  line-height: var(--line-height-400);
+  letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
 }
 
 .description {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
   color: var(--grey-70);
 }
 
 /* ─── Details: hairline rows, no inner box ─────────────────── */
 
 .details {
-  margin: 2px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--tone-border);
+  border-top: var(--border-width-100) solid var(--tone-border);
 }
 
 .detailRow {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 16px;
-  padding: 9px 0;
-  font-size: 12.5px;
-  border-bottom: 1px solid var(--tone-border);
+  gap: var(--space-200);
+  padding: var(--space-125) 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
+  border-bottom: var(--border-width-100) solid var(--tone-border);
 }
 
 .detailLabel {
   margin: 0;
   color: var(--grey-60);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   flex-shrink: 0;
 }
 
@@ -142,7 +141,7 @@
   margin: 0;
   color: var(--grey-90);
   text-align: right;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
 }
 
@@ -151,28 +150,30 @@
 .checkboxRow {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--tone-soft);
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-150);
+  border-radius: var(--radius-150);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--tone-border);
   cursor: pointer;
   user-select: none;
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-300);
   color: var(--grey-80);
-  transition: background 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .checkboxRow:hover {
-  background: color-mix(in srgb, var(--tone-soft) 80%, var(--tone-accent) 8%);
+  border-color: var(--tone-accent);
 }
 
 /* ─── Actions ──────────────────────────────────────────────── */
 
 .actions {
   display: flex;
-  gap: 10px;
-  margin-top: 2px;
+  gap: var(--space-125);
+  margin-top: var(--space-025);
 }
 
 .actions.vertical {
@@ -186,9 +187,10 @@
 
 .goBack,
 .confirm {
-  min-height: 44px;
-  font-size: 13.5px;
-  letter-spacing: 0.005em;
+  min-height: var(--size-44);
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
 }
 
 .actions.vertical .goBack,
@@ -196,8 +198,7 @@
   width: 100%;
 }
 
-/* Ghost style for Go Back — we override the Nexus secondary look
-   to pull the visual weight off the cancel path. */
+/* Ghost style for Go Back — pulls weight off the cancel path. */
 .goBack {
   background: transparent !important;
   border-color: transparent !important;
@@ -205,7 +206,7 @@
 }
 
 .goBack:hover {
-  background: var(--grey-10, #eee) !important;
+  background: var(--grey-10) !important;
   color: var(--grey-90) !important;
 }
 
@@ -220,34 +221,34 @@
 }
 
 .confirm:disabled {
-  opacity: 0.45;
+  opacity: var(--opacity-048);
 }
 
 .confirmInner {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-075);
 }
 
 /* ─── Decision state — rubber stamp ────────────────────────── */
 
 .decided {
-  opacity: 0.88;
+  opacity: var(--opacity-088);
 }
 
 .stamp {
   position: relative;
   align-self: center;
   display: inline-flex;
-  padding: 8px 22px;
-  border: 2px solid var(--stamp-color);
-  border-radius: 4px;
+  padding: var(--space-100) var(--space-250);
+  border: var(--border-width-200) solid var(--stamp-color);
+  border-radius: var(--radius-100);
   color: var(--stamp-color);
 
-  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: 0.18em;
+  font-family: var(--serif);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-500);
+  letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
 
   transform: rotate(-3.5deg);
@@ -266,22 +267,23 @@
 .stamp::after {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 1px var(--stamp-color);
-  opacity: 0.35;
+  inset: calc(-1 * var(--border-width-200));
+  border-radius: var(--radius-100);
+  box-shadow: inset 0 0 0 var(--border-width-100) var(--stamp-color);
+  opacity: var(--opacity-032);
 }
 
 .stampMeta {
   align-self: center;
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: var(--space-050);
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
   color: var(--grey-60);
   font-variant-numeric: tabular-nums;
 }
 
 @keyframes stampIn {
-  0%   { opacity: 0; transform: rotate(-12deg) scale(1.4); }
-  60%  { opacity: 1; transform: rotate(-2.5deg) scale(0.97); }
-  100% { opacity: 1; transform: rotate(-3.5deg) scale(1); }
+  0%   { opacity: 0;                   transform: rotate(-12deg) scale(1.4); }
+  60%  { opacity: var(--opacity-100);  transform: rotate(-2.5deg) scale(0.97); }
+  100% { opacity: var(--opacity-100);  transform: rotate(-3.5deg) scale(1); }
 }
