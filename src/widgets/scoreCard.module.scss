@@ -1,7 +1,8 @@
 /* ─── Score / Result Card ─────────────────────────────────────────
-   Tokens only: no raw hex, no literal pixel values.
-   Card body stays white. Tone colours live on the chip, the top
-   stripe, and the ProgressBar fill — never as a card background.
+   "Data-forward readout": the score is the headliner; tone is a
+   structural accent (left-edge stripe + chip); category bars carry
+   threshold ticks; the card arrives in a staggered choreography.
+   Nexus tokens only. Inter only. Card body stays white.
    ─────────────────────────────────────────────────────────────── */
 
 /* ─── Tone custom properties ────────────────────────────────── */
@@ -9,19 +10,19 @@
 .pass {
   --tone-accent:  var(--color-text-success);
   --tone-surface: var(--color-bg-success-subtle);
-  --tone-border:  var(--green-10);
+  --tone-border:  var(--color-bg-success-subtle);
 }
 
 .borderline {
   --tone-accent:  var(--color-text-warning);
   --tone-surface: var(--color-bg-warning-subtle);
-  --tone-border:  var(--yellow-10);
+  --tone-border:  var(--color-bg-warning-subtle);
 }
 
 .fail {
   --tone-accent:  var(--color-text-error);
   --tone-surface: var(--color-bg-error-subtle);
-  --tone-border:  var(--red-10);
+  --tone-border:  var(--color-bg-error-subtle);
 }
 
 /* ─── Card shell ─────────────────────────────────────────────── */
@@ -31,7 +32,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-200);
-  padding: var(--space-200) var(--space-200) var(--space-150) var(--space-250);
+  padding: var(--space-250) var(--space-200) var(--space-200) var(--space-250);
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -42,21 +43,39 @@
   overflow: hidden;
 }
 
-/* 4px tone stripe along the top edge */
+/* 4px tone stripe on the LEFT edge — matches Confirmation Card
+   pattern so both "moment" widgets share one accent language. */
 .card::before {
   content: '';
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
-  right: 0;
-  height: var(--size-04);
+  width: var(--size-04);
   background: var(--tone-accent, var(--grey-20));
 }
 
-/* ─── Chip / status badge ────────────────────────────────────── */
+/* ─── Header: chip + score side-by-side ─────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-200);
+
+  animation: riseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  flex: 1;
+  min-width: 0;
+}
 
 .chip {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: var(--space-075);
   padding: var(--space-050) var(--space-100);
@@ -72,37 +91,66 @@
   text-transform: uppercase;
 }
 
-/* ─── Big score display ──────────────────────────────────────── */
-
-.scoreBlock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-050);
-  padding-top: var(--space-100);
-  text-align: center;
+.scoreLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+  font-weight: var(--font-weight-medium);
 }
 
-.scoreRow {
-  display: flex;
+/* ─── Big score display — headliner typography ───────────────── */
+
+.scoreBlock {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: baseline;
-  gap: var(--space-075);
+  gap: var(--space-050);
+  padding: 0 var(--space-100);
+}
+
+/* Celebrate-pass glow: a soft radial tone halo behind the number,
+   rendered via a pseudo-element that sits behind the content. */
+.scoreBlock::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-100));
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--tone-accent) 16%, transparent) 0%,
+    transparent 72%
+  );
+  opacity: var(--opacity-000);
+  pointer-events: none;
+  transition: opacity 420ms ease;
+  z-index: 0;
+}
+
+.pass .scoreBlock::before {
+  opacity: var(--opacity-088);
+}
+
+.scoreBlock > * {
+  position: relative;
+  z-index: 1;
 }
 
 .scorePrimary {
   font-family: var(--sans);
-  font-size: var(--font-size-800);
+  font-size: var(--font-size-1000);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-800);
+  line-height: 1;
   letter-spacing: var(--letter-spacing-tighter);
   color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
 }
 
 .scoreSecondary {
   font-family: var(--sans);
-  font-size: var(--font-size-400);
+  font-size: var(--font-size-500);
   font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-400);
+  line-height: 1;
   color: var(--grey-50);
   font-variant-numeric: tabular-nums;
 }
@@ -111,18 +159,10 @@
   font-family: var(--sans);
   font-size: var(--font-size-800);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-800);
+  line-height: 1;
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--tone-accent, var(--grey-90));
-}
-
-.scoreLabel {
-  font-family: var(--sans);
-  font-size: var(--font-size-200);
-  line-height: var(--line-height-200);
-  color: var(--grey-70);
-  font-weight: var(--font-weight-regular);
 }
 
 /* ─── Recommendation ─────────────────────────────────────────── */
@@ -134,7 +174,9 @@
   font-family: var(--sans);
   font-size: var(--font-size-200);
   line-height: var(--line-height-300);
-  color: var(--grey-60);
+  color: var(--grey-70);
+
+  animation: riseUp 380ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 80ms backwards;
 }
 
 /* ─── Category bars ──────────────────────────────────────────── */
@@ -151,7 +193,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-075);
+
+  animation: riseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
 }
+
+.categoryRow:nth-child(1) { animation-delay: 140ms; }
+.categoryRow:nth-child(2) { animation-delay: 200ms; }
+.categoryRow:nth-child(3) { animation-delay: 260ms; }
+.categoryRow:nth-child(4) { animation-delay: 320ms; }
+.categoryRow:nth-child(5) { animation-delay: 380ms; }
+.categoryRow:nth-child(6) { animation-delay: 440ms; }
 
 .categoryMeta {
   display: flex;
@@ -178,11 +229,35 @@
   white-space: nowrap;
 }
 
+/* Threshold tick overlay — subtle marks at 50% and 75% so the bar
+   reads quantitatively. The bar container holds the Nexus
+   ProgressBar behind the ticks. */
+.barWrap {
+  position: relative;
+}
+
+.barWrap::before,
+.barWrap::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - var(--space-075));
+  width: var(--border-width-100);
+  height: var(--space-150);
+  background: var(--grey-20);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.barWrap::before { left: 50%; }
+.barWrap::after  { left: 75%; }
+
 /* ─── Reasoning / expandable section ────────────────────────── */
 
 .reasoningSection {
   border-top: var(--border-width-100) solid var(--grey-10);
   padding-top: var(--space-125);
+
+  animation: riseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 500ms backwards;
 }
 
 .reasoningToggle {
@@ -246,6 +321,8 @@
   display: flex;
   gap: var(--space-125);
   margin-top: var(--space-025);
+
+  animation: riseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 560ms backwards;
 }
 
 .actions.vertical {
@@ -261,9 +338,21 @@
   font-family: var(--sans);
   font-size: var(--font-size-300);
   font-weight: var(--font-weight-medium);
-  min-height: var(--size-44);
 }
 
 .actions.vertical .actionBtn {
   width: 100%;
+}
+
+/* ─── Shared arrival keyframe ────────────────────────────────── */
+
+@keyframes riseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
 import { CheckCircle2, AlertTriangle, XCircle, ChevronDown } from 'lucide-react'
 import { Button, ProgressBar } from '@nexus/atoms'
@@ -9,7 +9,7 @@ import styles from './scoreCard.module.scss'
 /* ─── Tone resolution ───────────────────────────────────────── */
 
 function resolveTone(overall) {
-  if (overall?.pass_fail) return overall.pass_fail  // 'pass' | 'borderline' | 'fail'
+  if (overall?.pass_fail) return overall.pass_fail
   if (overall?.score != null && overall?.max_score != null) {
     const ratio = overall.score / overall.max_score
     if (ratio >= 0.75) return 'pass'
@@ -20,12 +20,10 @@ function resolveTone(overall) {
 }
 
 const TONE_META = {
-  pass:       { icon: CheckCircle2,   chipLabel: 'Passed' },
-  borderline: { icon: AlertTriangle,  chipLabel: 'Borderline' },
-  fail:       { icon: XCircle,        chipLabel: 'Failed' },
+  pass:       { icon: CheckCircle2,  chipLabel: 'Passed' },
+  borderline: { icon: AlertTriangle, chipLabel: 'Borderline' },
+  fail:       { icon: XCircle,       chipLabel: 'Failed' },
 }
-
-/* ─── Category bar variant ──────────────────────────────────── */
 
 function categoryVariant(score, maxScore) {
   const ratio = score / maxScore
@@ -34,16 +32,45 @@ function categoryVariant(score, maxScore) {
   return 'error'
 }
 
+/* ─── Count-up hook — eases a number from 0 to target over ms. */
+
+function useCountUp(target, duration = 700) {
+  const [value, setValue] = useState(0)
+  const rafRef = useRef(null)
+  const startRef = useRef(null)
+
+  useEffect(() => {
+    if (target == null) { setValue(null); return }
+    setValue(0)
+    startRef.current = null
+
+    const tick = (ts) => {
+      if (startRef.current == null) startRef.current = ts
+      const elapsed = ts - startRef.current
+      const progress = Math.min(1, elapsed / duration)
+      // easeOutQuart — snappy start, gentle landing
+      const eased = 1 - Math.pow(1 - progress, 4)
+      setValue(Math.round(target * eased))
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick)
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [target, duration])
+
+  return value
+}
+
 /* ─── Component ─────────────────────────────────────────────── */
 
 export function ScoreCard({ payload }) {
-  /* Always call hooks at the top level — Rules of Hooks. Guard the
-     callback usage at the site of invocation instead. */
   const { onReply } = useChatActions()
   const { viewport } = useViewport()
   const [showReasoning, setShowReasoning] = useState(false)
-
-  const hasActions = payload?.actions?.length > 0
 
   const overall = payload?.overall ?? {}
   const tone    = resolveTone(overall)
@@ -51,6 +78,11 @@ export function ScoreCard({ payload }) {
   const ChipIcon = meta?.icon
 
   const orientation = viewport === 'mobile' ? 'vertical' : 'horizontal'
+  const hasActions = payload?.actions?.length > 0
+
+  const numericTarget = overall.score != null ? overall.score : null
+  const animatedScore = useCountUp(numericTarget, 700)
+  const displayScore  = animatedScore ?? overall.score ?? 0
 
   const handleAction = (action) => {
     onReply?.({
@@ -70,39 +102,39 @@ export function ScoreCard({ payload }) {
   return (
     <div className={cx(styles.card, tone && styles[tone])}>
 
-      {/* ── Tone chip ── */}
-      {meta && (
-        <span className={cx(styles.chip, styles[tone])}>
-          <ChipIcon size={11} strokeWidth={2.5} />
-          {meta.chipLabel}
-        </span>
-      )}
+      {/* ── Header: chip + label on the left, big score on the right ── */}
+      <header className={styles.header}>
+        <div className={styles.headerText}>
+          {meta && (
+            <span className={styles.chip}>
+              <ChipIcon size={11} strokeWidth={2.5} />
+              {meta.chipLabel}
+            </span>
+          )}
+          {overall.label && (
+            <span className={styles.scoreLabel}>{overall.label}</span>
+          )}
+        </div>
 
-      {/* ── Big score display ── */}
-      <div className={styles.scoreBlock}>
-        {overall.score != null && overall.max_score != null ? (
-          <div className={styles.scoreRow}>
-            <span className={styles.scorePrimary}>{overall.score}</span>
-            <span className={styles.scoreSecondary}>/ {overall.max_score}</span>
-          </div>
-        ) : overall.score != null ? (
-          <div className={styles.scoreRow}>
-            <span className={styles.scorePrimary}>{overall.score}</span>
-          </div>
-        ) : overall.pass_fail ? (
-          <span className={cx(styles.scorePassFail, tone && styles[tone])}>
-            {overall.pass_fail === 'pass'
-              ? 'Passed'
-              : overall.pass_fail === 'fail'
-              ? 'Failed'
-              : 'Borderline'}
-          </span>
-        ) : null}
-
-        {overall.label && (
-          <span className={styles.scoreLabel}>{overall.label}</span>
-        )}
-      </div>
+        <div className={styles.scoreBlock}>
+          {overall.score != null && overall.max_score != null ? (
+            <>
+              <span className={styles.scorePrimary}>{displayScore}</span>
+              <span className={styles.scoreSecondary}>/ {overall.max_score}</span>
+            </>
+          ) : overall.score != null ? (
+            <span className={styles.scorePrimary}>{displayScore}</span>
+          ) : overall.pass_fail ? (
+            <span className={styles.scorePassFail}>
+              {overall.pass_fail === 'pass'
+                ? 'Passed'
+                : overall.pass_fail === 'fail'
+                ? 'Failed'
+                : 'Borderline'}
+            </span>
+          ) : null}
+        </div>
+      </header>
 
       {/* ── Recommendation ── */}
       {payload?.recommendation && (
@@ -123,7 +155,9 @@ export function ScoreCard({ payload }) {
                     {cat.score} / {cat.max_score}
                   </span>
                 </div>
-                <ProgressBar value={pct} max={100} size="sm" variant={variant} />
+                <div className={styles.barWrap}>
+                  <ProgressBar value={pct} max={100} size="sm" variant={variant} />
+                </div>
               </div>
             )
           })}
@@ -134,11 +168,12 @@ export function ScoreCard({ payload }) {
       {payload?.reasoning && (
         <div className={styles.reasoningSection}>
           <button
+            type="button"
             className={styles.reasoningToggle}
             onClick={() => setShowReasoning((v) => !v)}
             aria-expanded={showReasoning}
           >
-            See detailed feedback
+            {showReasoning ? 'Hide detailed feedback' : 'See detailed feedback'}
             <span className={cx(styles.reasoningChevron, showReasoning && styles.open)} aria-hidden="true">
               <ChevronDown size={13} strokeWidth={2.25} />
             </span>
