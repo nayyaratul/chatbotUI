@@ -120,7 +120,7 @@ export function ScoreCard({ payload }) {
                 <div className={styles.categoryMeta}>
                   <span className={styles.categoryName}>{cat.name}</span>
                   <span className={styles.categoryScore}>
-                    {cat.score}&thinsp;/&thinsp;{cat.max_score}
+                    {cat.score} / {cat.max_score}
                   </span>
                 </div>
                 <ProgressBar value={pct} max={100} size="sm" variant={variant} />
