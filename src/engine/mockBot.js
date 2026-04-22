@@ -130,3 +130,20 @@ registerRule({
     },
   }),
 })
+
+registerRule({
+  match: /^(show )?progress/i,
+  build: () => ({
+    type: 'progress',
+    payload: {
+      widget_id: makeId('progress'),
+      orientation: 'auto',
+      steps: [
+        { id: 'a', label: 'Started',   status: 'completed', summary: 'Kicked off on Apr 15.' },
+        { id: 'b', label: 'In review', status: 'current' },
+        { id: 'c', label: 'Decision',  status: 'pending' },
+        { id: 'd', label: 'Done',      status: 'pending' },
+      ],
+    },
+  }),
+})

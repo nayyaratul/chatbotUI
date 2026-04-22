@@ -29,6 +29,20 @@ export const widgetSchemas = {
       allow_multiple: false,
     },
   },
+  progress: {
+    label: 'Progress Tracker',
+    examplePayload: {
+      widget_id: 'progress-example-1',
+      orientation: 'auto',
+      steps: [
+        { id: '1', label: 'Apply',     status: 'completed', summary: 'Application received on Apr 10.' },
+        { id: '2', label: 'Screen',    status: 'completed', summary: 'Cleared phone screening.' },
+        { id: '3', label: 'Interview', status: 'current' },
+        { id: '4', label: 'Offer',     status: 'pending' },
+        { id: '5', label: 'Onboard',   status: 'pending' },
+      ],
+    },
+  },
   confirmation: {
     label: 'Confirmation Card',
     examplePayload: {
