@@ -1,13 +1,14 @@
 /* ─── Top Progress Bar ───────────────────────────────────────
-   32px persistent chrome that sits between ChatHeader and the
-   message body. Reads the most recent bot-sent progress payload
-   and renders one flex-1 bar per step.
+   32px persistent chrome below ChatHeader. Reads the latest
+   bot-sent progress payload and renders one flex-1 segment per
+   step. Aesthetic: "quiet momentum" — the track lays itself down
+   on arrival, the current step breathes softly, state changes
+   resolve on a gentle cubic-bezier.
    ────────────────────────────────────────────────────────── */
 
 .bar {
-  /* Scoped colour vars — overridable at a theme / app level for
-     white-labelling without touching Nexus's global semantic
-     tokens. Defaults resolve to Nexus primitives/semantics. */
+  /* Scoped colour vars — overridable per-theme for whitelabelling
+     without touching Nexus's global semantic tokens. */
   --tpb-complete-color: var(--brand-60);
   --tpb-current-color:  var(--grey-90);
   --tpb-pending-color:  var(--grey-10);
@@ -22,22 +23,78 @@
   border-bottom: var(--border-width-100) solid var(--grey-10);
 }
 
+/* ─── Segment base ─────────────────────────────────────────── */
+
 .segment {
   flex: 1;
-  /* 2px for done / pending / failed — slim baseline. The current
-     step overrides this to 4px below so it reads as the active
-     anchor in the bar. */
   height: var(--size-02);
   border-radius: var(--radius-full);
   background: var(--tpb-pending-color);
-  transition: background 240ms ease, height 240ms ease;
+  transform-origin: left center;
+  transition:
+    background 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    height 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 280ms ease;
+
+  /* Arrival: segments slide in from the left in sequence. */
+  animation:
+    segmentEnter 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04)
+    var(--seg-delay, 0ms) backwards;
 }
+
+/* Staggered arrival — the track lays itself down left-to-right.
+   CSS custom property lets us keep the `animation` shorthand
+   while injecting a per-index delay. */
+.segment:nth-child(1) { --seg-delay: 0ms; }
+.segment:nth-child(2) { --seg-delay: 60ms; }
+.segment:nth-child(3) { --seg-delay: 120ms; }
+.segment:nth-child(4) { --seg-delay: 180ms; }
+.segment:nth-child(5) { --seg-delay: 240ms; }
+.segment:nth-child(6) { --seg-delay: 300ms; }
+.segment:nth-child(7) { --seg-delay: 360ms; }
+.segment:nth-child(8) { --seg-delay: 420ms; }
+
+/* ─── State variants ───────────────────────────────────────── */
 
 .segment.completed { background: var(--tpb-complete-color); }
 .segment.pending   { background: var(--tpb-pending-color); }
 .segment.failed    { background: var(--tpb-failed-color); }
 
+/* Current step:
+   - 4px tall (was 2px) — only state with extra height.
+   - Soft tone-coloured glow for focal emphasis.
+   - Breathes infinitely to signal "you are here, alive." */
 .segment.current {
   height: var(--size-04);
   background: var(--tpb-current-color);
+  box-shadow: 0 0 var(--space-100) color-mix(in srgb, var(--tpb-current-color) 32%, transparent);
+  animation:
+    segmentEnter 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04)
+      var(--seg-delay, 0ms) backwards,
+    currentBreath 2400ms ease-in-out 800ms infinite alternate;
+}
+
+/* Failed step: subtle attention signal — same 2px height, but a
+   soft red glow so the failure is legible at a glance. No
+   animation, so it reads as a steady warning rather than alive. */
+.segment.failed {
+  box-shadow: 0 0 var(--space-075) color-mix(in srgb, var(--tpb-failed-color) 24%, transparent);
+}
+
+/* ─── Keyframes ────────────────────────────────────────────── */
+
+@keyframes segmentEnter {
+  from {
+    opacity: var(--opacity-000);
+    transform: scaleX(0.2);
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: scaleX(1);
+  }
+}
+
+@keyframes currentBreath {
+  from { opacity: var(--opacity-064); }
+  to   { opacity: var(--opacity-100); }
 }
