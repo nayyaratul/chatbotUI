@@ -86,7 +86,12 @@ export function QuickReply({ payload }) {
         })}
       </div>
       {allowMultiple && !submitted && selectedValues.size > 0 && (
-        <Button variant="primary" size="sm" onClick={submitMulti}>
+        <Button
+          className={styles.submit}
+          variant="primary"
+          size="sm"
+          onClick={submitMulti}
+        >
           Submit ({selectedValues.size})
         </Button>
       )}

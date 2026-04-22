@@ -1,27 +1,36 @@
+/* ─── Quick Reply Buttons ────────────────────────────────────
+   Pill-shaped option buttons, tone-neutral. All values from
+   Nexus tokens (tokens.scss + base.css).
+   ───────────────────────────────────────────────────────── */
+
 .container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-125);
   max-width: 90%;
 }
 
 .prompt {
-  font-size: 14px;
-  line-height: 1.4;
-  color: var(--grey-90);
-  padding: 9px 13px;
-  background: var(--white);
-  border: 1px solid var(--grey-10);
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
-  white-space: pre-wrap;
   display: inline-block;
   align-self: flex-start;
+  padding: var(--space-125) var(--space-150);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-300);
+  border-bottom-left-radius: var(--radius-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+
+  white-space: pre-wrap;
+  max-width: 100%;
 }
 
 .options {
   display: flex;
-  gap: 8px;
+  gap: var(--space-100);
 }
 
 .options.horizontal {
@@ -33,8 +42,14 @@
   flex-direction: column;
 }
 
+/* Pill-shaped buttons — override Nexus Button's default --radius-100
+   and give them more horizontal breathing room so labels don't crash
+   into the capsule curve. */
 .option {
-  min-height: 44px;
+  min-height: var(--size-44);
+  border-radius: var(--radius-full) !important;
+  padding-left: var(--space-200) !important;
+  padding-right: var(--space-200) !important;
 }
 
 .options.horizontal .option {
@@ -46,6 +61,15 @@
 }
 
 .emoji {
-  font-size: 15px;
-  margin-right: 4px;
+  display: inline-flex;
+  font-size: var(--font-size-400);
+  margin-right: var(--space-050);
+  line-height: 1;
+}
+
+.submit {
+  align-self: flex-start;
+  border-radius: var(--radius-full) !important;
+  padding-left: var(--space-200) !important;
+  padding-right: var(--space-200) !important;
 }
