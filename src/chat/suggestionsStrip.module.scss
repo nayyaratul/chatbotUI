@@ -1,21 +1,59 @@
 /* ─── Suggestions Strip ──────────────────────────────────────
-   Vertical stack of right-aligned, outlined prompt bubbles that
-   rise from the bottom of the chat surface. Only rendered on a
-   fresh conversation.
+   Bot-voice intro on the left + user-voice prompt bubbles on the
+   right, rising from the bottom of the chat surface. Only rendered
+   on a fresh conversation.
    ────────────────────────────────────────────────────────── */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto; /* anchor the whole block to the bottom of the chat body */
+}
+
+/* ─── Intro block (bot-voice) ──────────────────────────────── */
+
+.introBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  padding: var(--space-250) var(--space-200) var(--space-100);
+  animation: riseUp 380ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
+}
+
+.introTitle {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-400);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.introSubtitle {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+}
+
+/* ─── Bubble strip (user-voice) ────────────────────────────── */
 
 .strip {
   display: flex;
   flex-direction: column-reverse;
   align-items: flex-end;
   gap: var(--space-100);
-  padding: var(--space-200);
-  margin-top: auto; /* anchor the stack to the bottom of the chat body */
+  padding: var(--space-150) var(--space-200) var(--space-200);
   background: transparent;
 }
 
 .bubble {
-  display: inline-block;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-100);
   max-width: 85%;
   padding: var(--space-125) var(--space-150);
 
@@ -23,6 +61,7 @@
   border: var(--border-width-100) solid var(--blue-60);
   border-radius: var(--radius-300);
   border-bottom-right-radius: var(--radius-100);
+  box-shadow: var(--shadow-100);
 
   color: var(--blue-60);
   font-family: var(--sans);
@@ -34,15 +73,40 @@
   cursor: pointer;
   white-space: normal;
   word-wrap: break-word;
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1.2);
 
   animation: riseUp 380ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
+}
+
+.bubbleLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.bubbleArrow {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: var(--space-025);
+  opacity: var(--opacity-064);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1.2),
+    opacity 180ms ease;
 }
 
 .bubble:hover {
   background: var(--blue-60);
   color: var(--white);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-200);
+  transform: translateY(-2px);
+}
+
+.bubble:hover .bubbleArrow {
+  opacity: var(--opacity-100);
+  transform: translate(var(--space-050), calc(-1 * var(--space-050)));
 }
 
 .bubble:focus-visible {
@@ -50,18 +114,17 @@
   outline-offset: 2px;
 }
 
-/* Mount stagger */
-.bubble:nth-child(1) { animation-delay: 0ms; }
-.bubble:nth-child(2) { animation-delay: 70ms; }
-.bubble:nth-child(3) { animation-delay: 140ms; }
-.bubble:nth-child(4) { animation-delay: 210ms; }
-.bubble:nth-child(5) { animation-delay: 280ms; }
+/* Staggered mount — intro block lands first, then bubbles follow. */
+.bubble:nth-child(1) { animation-delay: 180ms; }
+.bubble:nth-child(2) { animation-delay: 240ms; }
+.bubble:nth-child(3) { animation-delay: 300ms; }
+.bubble:nth-child(4) { animation-delay: 360ms; }
+.bubble:nth-child(5) { animation-delay: 420ms; }
 
 /* ─── Flying state — "tap to drop" ──────────────────────────
-   When a bubble is tapped, it flies toward the textarea using
-   precomputed --fly-x / --fly-y deltas set on the element's
-   style attribute. forwards keeps the bubble invisible at the
-   end until the parent unmounts it.
+   Fly toward the textarea using precomputed --fly-x / --fly-y
+   deltas set on the element's inline style. `forwards` keeps the
+   bubble invisible at the end until the parent unmounts it.
    ───────────────────────────────────────────────────────── */
 
 .bubble.flying {
@@ -76,6 +139,7 @@
   0% {
     transform: translate(0, 0) scale(1);
     opacity: 1;
+    box-shadow: var(--shadow-200);
   }
   60% {
     opacity: 0.8;
@@ -83,6 +147,7 @@
   100% {
     transform: translate(var(--fly-x, 0), var(--fly-y, 0)) scale(0.25);
     opacity: 0;
+    box-shadow: var(--shadow-100);
   }
 }
 

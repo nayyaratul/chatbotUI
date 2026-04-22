@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
 import cx from 'classnames'
+import { ArrowUpRight } from 'lucide-react'
 import styles from './suggestionsStrip.module.scss'
 
 /**
- * Right-aligned stack of outlined bubble prompts rising from the
- * bottom of the chat surface. Tapping a bubble does NOT send — it
- * calls `onSelect(text)` to prefill the input, then plays a fly
- * animation from the bubble's position toward the target (the
- * textarea) whose rect is supplied by `getTargetRect`.
+ * Fresh-chat invitation: a bot-voice intro block on the left paired
+ * with user-voice prompt bubbles rising from the bottom-right.
+ * Tapping a bubble prefills the input via `onSelect(text)` and plays
+ * a fly animation from the bubble's position toward the target
+ * (the textarea) whose rect is supplied by `getTargetRect`.
  *
  * Each suggestion: { label, text?, ... }. `text` falls back to
  * `label` when omitted.
@@ -29,7 +30,6 @@ export function SuggestionsStrip({ suggestions, onSelect, getTargetRect }) {
     onSelect(s.text ?? s.label)
 
     if (!bubbleEl || !targetRect) {
-      // Can't measure — skip the animation, just mark used.
       setUsed((prev) => new Set(prev).add(i))
       return
     }
@@ -58,32 +58,45 @@ export function SuggestionsStrip({ suggestions, onSelect, getTargetRect }) {
   }
 
   return (
-    <div className={styles.strip} role="list" aria-label="Conversation starters">
-      {suggestions.map((s, i) => {
-        // After flight: unmount. During flight: keep rendered so the
-        // animation can play out.
-        if (used.has(i) && flying?.index !== i) return null
+    <div className={styles.wrapper}>
+      <header className={styles.introBlock}>
+        <h2 className={styles.introTitle}>What can I help you with?</h2>
+        <p className={styles.introSubtitle}>
+          Try one of these, or type your own.
+        </p>
+      </header>
 
-        const isFlying = flying?.index === i
-        const style = isFlying
-          ? { '--fly-x': `${flying.dx}px`, '--fly-y': `${flying.dy}px` }
-          : undefined
+      <div className={styles.strip} role="list" aria-label="Conversation starters">
+        {suggestions.map((s, i) => {
+          if (used.has(i) && flying?.index !== i) return null
 
-        return (
-          <button
-            key={s.text ?? s.label ?? i}
-            type="button"
-            role="listitem"
-            ref={(el) => { bubbleRefs.current[i] = el }}
-            className={cx(styles.bubble, isFlying && styles.flying)}
-            style={style}
-            onClick={() => handleClick(i, s)}
-            onAnimationEnd={(e) => handleAnimationEnd(i, e)}
-          >
-            {s.label}
-          </button>
-        )
-      })}
+          const isFlying = flying?.index === i
+          const style = isFlying
+            ? { '--fly-x': `${flying.dx}px`, '--fly-y': `${flying.dy}px` }
+            : undefined
+
+          return (
+            <button
+              key={s.text ?? s.label ?? i}
+              type="button"
+              role="listitem"
+              ref={(el) => { bubbleRefs.current[i] = el }}
+              className={cx(styles.bubble, isFlying && styles.flying)}
+              style={style}
+              onClick={() => handleClick(i, s)}
+              onAnimationEnd={(e) => handleAnimationEnd(i, e)}
+            >
+              <span className={styles.bubbleLabel}>{s.label}</span>
+              <ArrowUpRight
+                size={14}
+                strokeWidth={2.25}
+                className={styles.bubbleArrow}
+                aria-hidden="true"
+              />
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
