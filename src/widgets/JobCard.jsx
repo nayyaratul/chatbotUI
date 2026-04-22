@@ -9,9 +9,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
-import { Tag } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
-import { useViewport } from '../viewport/ViewportContext.jsx'
 import styles from './jobCard.module.scss'
 
 /* ─── Job Card Widget ─────────────────────────────────────────────────
@@ -257,9 +255,7 @@ function CarouselDots({ count, activeIndex, onDotClick }) {
 /* ─── Root export ─────────────────────────────────────────────────── */
 
 export function JobCard({ payload }) {
-  // Rules of Hooks: always call unconditionally at top.
   const { onReply } = useChatActions()
-  const { viewport } = useViewport()
 
   const [activeIndex, setActiveIndex] = useState(0)
   const trackRef = useRef(null)
