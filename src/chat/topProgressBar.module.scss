@@ -1,0 +1,36 @@
+/* ─── Top Progress Bar ───────────────────────────────────────
+   32px persistent chrome that sits between ChatHeader and the
+   message body. Reads the most recent bot-sent progress payload
+   and renders one flex-1 bar per step.
+   ────────────────────────────────────────────────────────── */
+
+.bar {
+  /* Scoped colour vars — overridable at a theme / app level for
+     white-labelling without touching Nexus's global semantic
+     tokens. Defaults resolve to Nexus primitives/semantics. */
+  --tpb-complete-color: var(--color-text-success);
+  --tpb-current-color:  var(--grey-90);
+  --tpb-pending-color:  var(--grey-10);
+  --tpb-failed-color:   var(--color-text-error);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-050);
+  height: var(--size-32);
+  padding: 0 var(--space-200);
+  background: var(--white);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+}
+
+.segment {
+  flex: 1;
+  height: var(--size-06);
+  border-radius: var(--radius-full);
+  background: var(--tpb-pending-color);
+  transition: background 240ms ease;
+}
+
+.segment.completed { background: var(--tpb-complete-color); }
+.segment.current   { background: var(--tpb-current-color); }
+.segment.pending   { background: var(--tpb-pending-color); }
+.segment.failed    { background: var(--tpb-failed-color); }

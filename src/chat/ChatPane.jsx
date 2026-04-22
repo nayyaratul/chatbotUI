@@ -3,6 +3,7 @@ import { ChatHeader } from './ChatHeader.jsx'
 import { MessageList } from './MessageList.jsx'
 import { MessageInput } from './MessageInput.jsx'
 import { SuggestionsStrip } from './SuggestionsStrip.jsx'
+import { TopProgressBar } from './TopProgressBar.jsx'
 import { ChatActionsProvider } from './ChatActionsContext.jsx'
 import { STARTER_PROMPTS } from './starterPrompts.js'
 import styles from './chatPane.module.scss'
@@ -16,7 +17,6 @@ export function ChatPane({ bot }) {
 
   const handleSuggestionSelect = (text) => {
     setInputText(text)
-    // Commit the state then focus with caret at end.
     requestAnimationFrame(() => {
       const el = textareaRef.current
       if (el) {
@@ -26,9 +26,6 @@ export function ChatPane({ bot }) {
     })
   }
 
-  // Passed into SuggestionsStrip so it can measure the textarea for
-  // the fly-to-input animation. Returns the live viewport rect every
-  // call — no stale values after scroll/resize.
   const getTargetRect = useCallback(() => {
     return textareaRef.current?.getBoundingClientRect() ?? null
   }, [])
@@ -37,6 +34,7 @@ export function ChatPane({ bot }) {
     <ChatActionsProvider onReply={bot.sendUserMessage}>
       <div className={styles.pane}>
         <ChatHeader />
+        <TopProgressBar messages={bot.messages} />
         <div className={styles.body}>
           <MessageList
             messages={bot.messages}

@@ -4,6 +4,14 @@
   padding: 3px 12px;
 }
 
+/* Silent widgets (like `progress`) render null inside the row,
+   leaving it empty. Collapse the empty row so no vertical gap
+   appears in the message stream. */
+.row:empty {
+  display: none;
+  padding: 0;
+}
+
 .bot {
   justify-content: flex-start;
 }
