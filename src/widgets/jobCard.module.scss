@@ -1,0 +1,327 @@
+/* ─── Job Card Widget ─────────────────────────────────────────────────
+   Single-card + carousel variant. Nexus tokens only. Inter only.
+   Card body stays white. Brand-aware primary button. Peek carousel.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Single card shell ───────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding: var(--space-200);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  box-shadow: var(--shadow-100);
+  overflow: hidden;
+
+  animation: jcRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* ─── Head row: logo + title + company ───────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-150);
+}
+
+.logo {
+  flex-shrink: 0;
+  width: var(--size-40);
+  height: var(--size-40);
+  border-radius: var(--radius-100);
+  border: var(--border-width-100) solid var(--grey-10);
+  object-fit: contain;
+  background: var(--white);
+}
+
+/* Fallback: company initials chip when no logo_url */
+.logoFallback {
+  flex-shrink: 0;
+  width: var(--size-40);
+  height: var(--size-40);
+  border-radius: var(--radius-100);
+  border: var(--border-width-100) solid var(--grey-10);
+  background: var(--grey-05);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-60);
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.jobTitle {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.companyName {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Pay chip ────────────────────────────────────────────────────── */
+
+.payRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-050);
+}
+
+.payAmount {
+  font-family: var(--sans);
+  font-size: var(--font-size-600);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--brand-60);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.payPeriod {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+}
+
+/* ─── Meta row: location + timing ────────────────────────────────── */
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-100) var(--space-150);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+}
+
+.metaIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--grey-50);
+}
+
+/* ─── Requirements list ───────────────────────────────────────────── */
+
+.requirementsList {
+  margin: 0;
+  padding: 0 0 0 var(--space-175);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  list-style: disc;
+  list-style-position: outside;
+}
+
+.requirementItem {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+/* ─── Actions row ─────────────────────────────────────────────────── */
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-100);
+  padding-top: var(--space-050);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+/* Apply button takes major space */
+.applyBtn {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Secondary action buttons — compact icon+label */
+.secondaryBtn {
+  flex-shrink: 0;
+}
+
+/* ─── Done overlay chip (applied/saved/dismissed) ────────────────── */
+
+.doneChip {
+  position: absolute;
+  top: var(--space-150);
+  right: var(--space-150);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+
+  pointer-events: none;
+  animation: jcRiseUp 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.doneChip.applied {
+  background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 28%, transparent);
+  color: var(--brand-60);
+}
+
+.doneChip.saved {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--color-text-success);
+}
+
+.doneChip.dismissed {
+  background: color-mix(in srgb, var(--grey-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--grey-60) 20%, transparent);
+  color: var(--grey-60);
+}
+
+.doneChip.view_details {
+  background: color-mix(in srgb, var(--color-text-info, var(--brand-60)) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-info, var(--brand-60)) 20%, transparent);
+  color: var(--color-text-info, var(--brand-60));
+}
+
+/* ─── Carousel container ──────────────────────────────────────────── */
+
+.carousel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  width: 100%;
+}
+
+.carouselTrack {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-150);
+
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  /* hide scrollbar */
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* allow cards to peek out of the container edges */
+  padding-bottom: var(--space-050); /* space for shadow */
+}
+
+/* Each card in carousel */
+.carouselCard {
+  flex: 0 0 86%;
+  scroll-snap-align: start;
+  max-width: 86%;
+}
+
+/* Desktop: show more of each card */
+@media (min-width: 640px) {
+  .carouselCard {
+    flex: 0 0 60%;
+    max-width: 60%;
+  }
+}
+
+/* ─── Scroll indicator dots ──────────────────────────────────────── */
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+}
+
+.dot {
+  width: var(--space-075);
+  height: var(--space-075);
+  border-radius: var(--radius-full);
+  background: var(--grey-20);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 200ms ease, transform 200ms ease;
+  flex-shrink: 0;
+}
+
+.dot.activeDot {
+  background: var(--brand-60);
+  transform: scale(1.25);
+}
+
+/* ─── Button label inner layout (icon + text) ─────────────────────── */
+
+.btnInner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes jcRiseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}

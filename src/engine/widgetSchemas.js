@@ -149,6 +149,58 @@ export const widgetSchemas = {
       ],
     },
   },
+  job_card: {
+    label: 'Job Card (carousel)',
+    examplePayload: {
+      widget_id: 'jc-carousel-example-1',
+      silent: false,
+      items: [
+        {
+          job_id: 'job-delivery-associate-blr',
+          title: 'Delivery Associate',
+          company: { name: 'Delhivery', logo_url: '' },
+          location: { name: 'Koramangala, Bangalore', distance_km: 3.2 },
+          pay: { amount: '₹850', period: 'day' },
+          timing: '9am – 6pm',
+          requirements: [
+            'Valid 2-wheeler driving licence',
+            'Own bike in good condition',
+            'Smartphone with data plan',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+        {
+          job_id: 'job-warehouse-packer-mum',
+          title: 'Warehouse Packer',
+          company: { name: 'Amazon India', logo_url: '' },
+          location: { name: 'Vikhroli, Mumbai', distance_km: 7.8 },
+          pay: { amount: '₹700', period: 'day' },
+          timing: '7am – 4pm',
+          requirements: [
+            'Ability to lift up to 20 kg',
+            'Attention to detail for labelling',
+            'Willing to work weekend shifts',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+        {
+          job_id: 'job-rider-hyd',
+          title: 'Rider',
+          company: { name: 'Swiggy', logo_url: '' },
+          location: { name: 'Banjara Hills, Hyderabad', distance_km: 5.4 },
+          pay: { amount: '₹950', period: 'day' },
+          timing: '11am – 11pm (flexible)',
+          requirements: [
+            'Valid driving licence for 2-wheeler',
+            'Smartphone running Android 8+',
+            'Good knowledge of local roads',
+            'Ability to handle peak-hour orders',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+      ],
+    },
+  },
   confirmation: {
     label: 'Confirmation Card',
     examplePayload: {

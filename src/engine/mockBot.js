@@ -374,6 +374,89 @@ registerRule({
   }),
 })
 
+// ─── Job Card — single card ────────────────────────────────────────
+// Trigger: "job card", "show job card", "show job", "job"
+registerRule({
+  match: /^(show )?job(s)? ?card$|^(show )?job$/i,
+  build: () => ({
+    type: 'job_card',
+    payload: {
+      widget_id: makeId('jc'),
+      job_id: 'job-delivery-associate-blr',
+      title: 'Delivery Associate',
+      company: { name: 'Delhivery', logo_url: '' },
+      location: { name: 'Koramangala, Bangalore', distance_km: 3.2 },
+      pay: { amount: '₹850', period: 'day' },
+      timing: '9am – 6pm',
+      requirements: [
+        'Valid 2-wheeler driving licence',
+        'Own bike in good condition',
+        'Smartphone with data plan',
+      ],
+      actions: ['apply', 'save', 'dismiss'],
+      silent: false,
+    },
+  }),
+})
+
+// ─── Job Card — carousel ───────────────────────────────────────────
+// Trigger: "jobs", "show jobs", "show carousel", "job carousel", etc.
+registerRule({
+  match: /^(show )?(jobs?|carousel)/i,
+  build: () => ({
+    type: 'job_card',
+    payload: {
+      widget_id: makeId('jc'),
+      silent: false,
+      items: [
+        {
+          job_id: makeId('job'),
+          title: 'Delivery Associate',
+          company: { name: 'Delhivery', logo_url: '' },
+          location: { name: 'Koramangala, Bangalore', distance_km: 3.2 },
+          pay: { amount: '₹850', period: 'day' },
+          timing: '9am – 6pm',
+          requirements: [
+            'Valid 2-wheeler driving licence',
+            'Own bike in good condition',
+            'Smartphone with data plan',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+        {
+          job_id: makeId('job'),
+          title: 'Warehouse Packer',
+          company: { name: 'Amazon India', logo_url: '' },
+          location: { name: 'Vikhroli, Mumbai', distance_km: 7.8 },
+          pay: { amount: '₹700', period: 'day' },
+          timing: '7am – 4pm',
+          requirements: [
+            'Ability to lift up to 20 kg',
+            'Attention to detail for labelling',
+            'Willing to work weekend shifts',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+        {
+          job_id: makeId('job'),
+          title: 'Rider',
+          company: { name: 'Swiggy', logo_url: '' },
+          location: { name: 'Banjara Hills, Hyderabad', distance_km: 5.4 },
+          pay: { amount: '₹950', period: 'day' },
+          timing: '11am – 11pm (flexible)',
+          requirements: [
+            'Valid driving licence for 2-wheeler',
+            'Smartphone running Android 8+',
+            'Good knowledge of local roads',
+            'Ability to handle peak-hour orders',
+          ],
+          actions: ['apply', 'save', 'dismiss'],
+        },
+      ],
+    },
+  }),
+})
+
 registerRule({
   match: /^(show )?progress/i,
   build: () => ({

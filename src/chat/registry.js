@@ -6,6 +6,7 @@ import { ProgressTracker } from '../widgets/ProgressTracker.jsx'
 import { ScoreCard } from '../widgets/ScoreCard.jsx'
 import { McqQuiz } from '../widgets/McqQuiz.jsx'
 import { FormWidget } from '../widgets/FormWidget.jsx'
+import { JobCard } from '../widgets/JobCard.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -16,4 +17,5 @@ export const registry = {
   score_card: ScoreCard,
   mcq: McqQuiz,
   form: FormWidget,
+  job_card: JobCard,
 }
