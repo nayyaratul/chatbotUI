@@ -25,7 +25,7 @@ function toNexusStatus(schemaStatus) {
 }
 
 function resolveOrientation(requested, stepCount, viewport) {
-  if (requested && requested !== 'auto') return requested
+  if (requested === 'horizontal' || requested === 'vertical') return requested
   if (stepCount > 6) return 'vertical'
   if (viewport === 'mobile' && stepCount > 5) return 'vertical'
   return 'horizontal'
@@ -69,7 +69,11 @@ export function ProgressTracker({ payload }) {
                 ) : undefined}
                 /* onClick passes through via ...rest onto the outer <div role="listitem">. */
                 onClick={isClickable ? () => toggle(step) : undefined}
-                className={isClickable ? styles.stepClickable : undefined}
+                className={
+                  isClickable ? styles.stepClickable
+                  : isFailed ? styles.stepFailed
+                  : undefined
+                }
               />
             )
           })}

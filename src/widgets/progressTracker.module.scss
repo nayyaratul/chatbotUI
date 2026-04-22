@@ -19,9 +19,12 @@
   cursor: pointer;
 }
 
-/* Failed step marker override — use red accent border on the item. */
-.stepFailed {
-  /* Target the Nexus marker via a CSS custom property cascade. */
+/* Failed step — override the marker icon colour. The Nexus marker
+   sets `color: var(--color-text-tertiary)` on .marker--upcoming, which
+   propagates to the lucide SVG's currentColor. By re-setting colour on
+   the SVG inside a failed step, the AlertCircle renders red as intended. */
+.stepFailed svg {
+  color: var(--red-60);
 }
 
 .summary {
