@@ -22,9 +22,25 @@
   box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
 }
 
+/* Send CTA — fixed 40x40, icon centered in all axes. Primary variant
+   inherits --color-action-primary which follows the active brand. When
+   disabled (empty input or bot typing) we override Nexus's opacity-
+   reduced primary look with a clean neutral grey so the state reads
+   clearly as "not actionable" rather than "faded brand". */
 .sendButton {
   width: var(--size-40);
   height: var(--size-40);
   padding: 0;
   flex-shrink: 0;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.sendButton:disabled {
+  background: var(--grey-10) !important;
+  border-color: var(--grey-10) !important;
+  color: var(--grey-40) !important;
+  opacity: var(--opacity-100) !important;
+  cursor: not-allowed;
 }
