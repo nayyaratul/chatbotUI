@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+import cx from 'classnames'
+import { CheckCircle2, Check, ArrowRight } from 'lucide-react'
 import {
   Button,
   Input,
@@ -12,9 +13,11 @@ import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './formWidget.module.scss'
 
 /* ─── Form Widget ────────────────────────────────────────────────────
-   Compact multi-field form rendered as a single chat message.
-   Supports field types: text, number, date, email, phone, pincode, dropdown.
-   After submit: collapses to a clean summary card.
+   "Considered data capture" — optional title/description header,
+   live progress meter, per-field completion indicator, staggered
+   field arrival. Supports field types: text, number, date, email,
+   phone, pincode, dropdown. After submit: collapses to a clean
+   summary card with timestamp.
    ─────────────────────────────────────────────────────────────────── */
 
 /* ─── Validators ──────────────────────────────────────────────────── */
@@ -50,6 +53,14 @@ function validate(field, value) {
   }
 }
 
+/* A field is "complete" when it's non-empty AND passes its validator.
+   Drives the per-field green check and the progress meter. */
+function isFieldComplete(field, value) {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) return false
+  return validate(field, trimmed) === null
+}
+
 /* ─── Map payload type → HTML input type ─────────────────────────── */
 
 function resolveInputType(fieldType) {
@@ -61,11 +72,21 @@ function resolveInputType(fieldType) {
   }
 }
 
-/* ─── Map payload type → inputMode for numeric mobile keyboards ───── */
+/* ─── Map payload type → inputMode for numeric mobile keyboards ──── */
 
 function resolveInputMode(fieldType) {
   if (fieldType === 'phone' || fieldType === 'pincode') return 'numeric'
   return undefined
+}
+
+/* ─── HH:MM timestamp formatter for the summary chip ─────────────── */
+
+function formatTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
 }
 
 /* ─── Component ───────────────────────────────────────────────────── */
@@ -74,6 +95,8 @@ export function FormWidget({ payload }) {
   const { onReply } = useChatActions()
 
   const fields       = payload?.fields ?? []
+  const title        = payload?.title
+  const description  = payload?.description
   const submitLabel  = payload?.submit_label ?? 'Submit'
   const isSilent     = !!payload?.silent
 
@@ -89,6 +112,7 @@ export function FormWidget({ payload }) {
 
   const [submitted, setSubmitted]               = useState(false)
   const [submittedSnapshot, setSubmittedSnapshot] = useState(null)
+  const [submittedAt, setSubmittedAt]           = useState(null)
 
   /* ─── Helpers ───────────────────────────────────────────────────── */
 
@@ -116,7 +140,9 @@ export function FormWidget({ payload }) {
     if (hasErrors) return
 
     const snapshot = { ...values }
+    const now = Date.now()
     setSubmittedSnapshot(snapshot)
+    setSubmittedAt(now)
     setSubmitted(true)
 
     onReply?.(
@@ -129,7 +155,7 @@ export function FormWidget({ payload }) {
             label: `Submitted ${Object.keys(snapshot).length} fields`,
             form_id: payload?.form_id,
             fields: snapshot,
-            submitted_at: Date.now(),
+            submitted_at: now,
             validation_status: 'valid',
           },
         },
@@ -138,21 +164,29 @@ export function FormWidget({ payload }) {
     )
   }
 
-  /* ─── Full validity gate for submit button ──────────────────────────
-     Enables only when every field passes its format validator. Required
-     empty fields fail, required fields with invalid format (e.g. phone
-     "123", date "3rd May") also fail. Non-required empty fields pass. */
+  /* ─── Full validity gate for submit button ──────────────────────── */
 
   const isSubmittable = fields.every((f) => validate(f, values[f.name]) === null)
+
+  /* ─── Progress meter: count of complete fields (live) ─────────── */
+
+  const completedCount = fields.filter((f) => isFieldComplete(f, values[f.name])).length
+  const totalCount     = fields.length
+  const progressPct    = totalCount === 0 ? 0 : (completedCount / totalCount) * 100
 
   /* ─── Post-submit summary card ──────────────────────────────────── */
 
   if (submitted && submittedSnapshot) {
     return (
       <div className={styles.summaryCard} role="region" aria-label="Form submission summary">
-        <div className={styles.chip}>
-          <CheckCircle2 size={12} strokeWidth={2.5} aria-hidden="true" />
-          Submitted
+        <div className={styles.summaryHeader}>
+          <div className={styles.chip}>
+            <CheckCircle2 size={12} strokeWidth={2.5} aria-hidden="true" />
+            Submitted
+          </div>
+          {submittedAt && (
+            <span className={styles.timestamp}>{formatTime(submittedAt)}</span>
+          )}
         </div>
 
         <hr className={styles.summaryDivider} />
@@ -180,21 +214,52 @@ export function FormWidget({ payload }) {
 
   /* ─── Form card ─────────────────────────────────────────────────── */
 
+  const hasHeader = !!(title || description)
+
   return (
-    <div className={styles.card} role="form" aria-label="Form">
+    <div className={styles.card} role="form" aria-label={title || 'Form'}>
+      {hasHeader && (
+        <header className={styles.header}>
+          {title && <h3 className={styles.title}>{title}</h3>}
+          {description && <p className={styles.description}>{description}</p>}
+          {totalCount > 0 && (
+            <div className={styles.progress} aria-live="polite">
+              <span className={styles.progressText}>
+                {completedCount} of {totalCount} complete
+              </span>
+              <div className={styles.progressTrack}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </header>
+      )}
+
       <div className={styles.fields}>
         {fields.map((field) => {
-          const hasError = !!errors[field.name]
-          const fieldId = `form-field-${field.name}`
+          const hasError   = !!errors[field.name]
+          const complete   = isFieldComplete(field, values[field.name])
+          const fieldId    = `form-field-${field.name}`
 
           return (
             <div key={field.name} className={styles.field}>
-              <label htmlFor={fieldId} className={styles.label}>
-                {field.label}
-                {field.required && (
-                  <span className={styles.required} aria-hidden="true">*</span>
-                )}
-              </label>
+              <div className={styles.labelRow}>
+                <label htmlFor={fieldId} className={styles.label}>
+                  {field.label}
+                  {field.required && (
+                    <span className={styles.required} aria-hidden="true">*</span>
+                  )}
+                </label>
+                <span
+                  className={cx(styles.fieldCheck, complete && styles.visible)}
+                  aria-hidden="true"
+                >
+                  <Check size={14} strokeWidth={2.5} />
+                </span>
+              </div>
 
               {field.type === 'dropdown' ? (
                 <Select
@@ -257,7 +322,10 @@ export function FormWidget({ payload }) {
           onClick={handleSubmit}
           className={styles.submitBtn}
         >
-          {submitLabel}
+          <span className={styles.submitInner}>
+            {submitLabel}
+            <ArrowRight size={14} strokeWidth={2.25} />
+          </span>
         </Button>
       </div>
     </div>

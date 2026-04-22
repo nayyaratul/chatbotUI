@@ -1,6 +1,8 @@
 /* ─── Form Widget ───────────────────────────────────────────────────
-   Compact multi-field form rendered as a single chat message.
-   Nexus tokens only. Inter only. Card body white.
+   "Considered data capture" — optional title/description, live
+   progress meter, per-field completion indicator, staggered
+   field arrival, submit with a directional glyph. Nexus tokens
+   only. Inter only. Card body white.
    ─────────────────────────────────────────────────────────────────── */
 
 /* ─── Card shell ──────────────────────────────────────────────────── */
@@ -22,6 +24,71 @@
   animation: riseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
+/* ─── Header block (title + description + progress) ──────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding-bottom: var(--space-150);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+
+  animation: riseUp 340ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-400);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Progress meter (live) ──────────────────────────────────────── */
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  margin-top: var(--space-050);
+}
+
+.progressText {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.progressTrack {
+  width: 100%;
+  height: var(--size-02);
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--brand-60);
+  border-radius: var(--radius-full);
+  transition: width 360ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
 /* ─── Field list ──────────────────────────────────────────────────── */
 
 .fields {
@@ -30,15 +97,33 @@
   gap: var(--space-150);
 }
 
-/* ─── Single field wrapper ────────────────────────────────────────── */
+/* ─── Single field ────────────────────────────────────────────────── */
 
 .field {
   display: flex;
   flex-direction: column;
   gap: var(--space-050);
+
+  animation: riseUp 340ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--field-delay, 0ms) backwards;
 }
 
-/* ─── Field label ─────────────────────────────────────────────────── */
+.field:nth-child(1) { --field-delay: 60ms; }
+.field:nth-child(2) { --field-delay: 120ms; }
+.field:nth-child(3) { --field-delay: 180ms; }
+.field:nth-child(4) { --field-delay: 240ms; }
+.field:nth-child(5) { --field-delay: 300ms; }
+.field:nth-child(6) { --field-delay: 360ms; }
+.field:nth-child(7) { --field-delay: 420ms; }
+.field:nth-child(8) { --field-delay: 480ms; }
+
+/* ─── Label row (label + completion check) ───────────────────────── */
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-100);
+}
 
 .label {
   font-family: var(--sans);
@@ -48,11 +133,29 @@
   color: var(--grey-80);
 }
 
-/* ─── Required asterisk ───────────────────────────────────────────── */
-
 .required {
   color: var(--color-text-error);
   margin-left: var(--space-025);
+}
+
+.fieldCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-16);
+  height: var(--size-16);
+  color: var(--color-text-success);
+  opacity: var(--opacity-000);
+  transform: scale(0.6);
+  transition:
+    opacity 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    transform 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4);
+  pointer-events: none;
+}
+
+.fieldCheck.visible {
+  opacity: var(--opacity-100);
+  transform: scale(1);
 }
 
 /* ─── Inline error message ────────────────────────────────────────── */
@@ -83,6 +186,12 @@
   width: 100%;
 }
 
+.submitInner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
 /* ─── Submitted / summary card ────────────────────────────────────── */
 
 .summaryCard {
@@ -102,7 +211,14 @@
   animation: riseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
-/* ─── Submitted chip ──────────────────────────────────────────────── */
+/* ─── Summary header: chip + timestamp ───────────────────────────── */
+
+.summaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-100);
+}
 
 .chip {
   display: inline-flex;
@@ -122,6 +238,16 @@
   color: var(--color-text-success);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
+}
+
+.timestamp {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Summary divider ─────────────────────────────────────────────── */
@@ -145,7 +271,18 @@
   flex-direction: row;
   gap: var(--space-100);
   align-items: baseline;
+
+  animation: riseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--summary-delay, 0ms) backwards;
 }
+
+.summaryRow:nth-child(1) { --summary-delay: 80ms; }
+.summaryRow:nth-child(2) { --summary-delay: 130ms; }
+.summaryRow:nth-child(3) { --summary-delay: 180ms; }
+.summaryRow:nth-child(4) { --summary-delay: 230ms; }
+.summaryRow:nth-child(5) { --summary-delay: 280ms; }
+.summaryRow:nth-child(6) { --summary-delay: 330ms; }
+.summaryRow:nth-child(7) { --summary-delay: 380ms; }
+.summaryRow:nth-child(8) { --summary-delay: 430ms; }
 
 .summaryLabel {
   font-family: var(--sans);

@@ -237,6 +237,8 @@ registerRule({
     payload: {
       widget_id: makeId('form'),
       form_id: 'candidate-registration',
+      title: 'Tell us about yourself',
+      description: 'We’ll use this to match you with open roles in your area. Takes about a minute.',
       submit_label: 'Submit details',
       silent: false,
       fields: [
@@ -295,6 +297,8 @@ registerRule({
     payload: {
       widget_id: makeId('form'),
       form_id: 'kyc-onboarding',
+      title: 'KYC onboarding',
+      description: 'A few last details before we activate your profile. All fields are required for verification.',
       submit_label: 'Submit KYC',
       silent: false,
       fields: [

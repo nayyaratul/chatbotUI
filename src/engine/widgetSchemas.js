@@ -99,6 +99,8 @@ export const widgetSchemas = {
     examplePayload: {
       widget_id: 'form-example-1',
       form_id: 'candidate-registration',
+      title: 'Tell us about yourself',
+      description: 'We’ll use this to match you with open roles in your area. Takes about a minute.',
       submit_label: 'Submit details',
       silent: false,
       fields: [
