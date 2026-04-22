@@ -31,7 +31,10 @@ export function ChatPane({ bot }) {
   }, [])
 
   return (
-    <ChatActionsProvider onReply={bot.sendUserMessage}>
+    <ChatActionsProvider
+      sendUserMessage={bot.sendUserMessage}
+      silentlyReact={bot.silentlyReact}
+    >
       <div className={styles.pane}>
         <ChatHeader />
         <TopProgressBar messages={bot.messages} />

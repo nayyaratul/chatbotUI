@@ -159,6 +159,30 @@ registerRule({
   }),
 })
 
+// Silent / explicit-submit variant — selection is fed to the bot but
+// no user bubble is posted. User must tap Submit to commit.
+registerRule({
+  match: /^(show )?(silent|confidential)[- ]?(mcq|quiz|check)/i,
+  build: () => ({
+    type: 'mcq',
+    payload: {
+      widget_id: makeId('mcq'),
+      question_id: makeId('q'),
+      question: 'How confident are you with this topic so far?',
+      options: [
+        { label: 'Very confident — ready to move on',              value: 'high' },
+        { label: 'Somewhat confident — could use a refresher',     value: 'medium' },
+        { label: 'Not confident yet — I need to review',           value: 'low' },
+      ],
+      mode: 'single',
+      scored: false,
+      require_submit: true,
+      silent: true,
+      progress: { index: 5, total: 10 },
+    },
+  }),
+})
+
 registerRule({
   match: /^(show )?(mcq|quiz)/i,
   build: () => ({

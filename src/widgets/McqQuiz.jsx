@@ -8,8 +8,14 @@ import styles from './mcqQuiz.module.scss'
 /* ─── MCQ / Quiz Widget ──────────────────────────────────────────
    "Exam card" — lettered options (A, B, C, D, E). The letter badge
    is the indicator; post-submit scored cards swap the letter for
-   a Check (correct) or X (incorrect selected) icon. Non-scored
-   submissions keep the letter throughout.
+   a Check (correct) or X (incorrect selected) icon.
+
+   Payload flags:
+     require_submit: boolean — when true, single-select does NOT
+       auto-submit on tap. User picks, then taps Submit.
+     silent: boolean — when true, the response is delivered to the
+       bot without posting a visible user message. The bot's reply
+       still appears normally.
    ─────────────────────────────────────────────────────────────── */
 
 function letterFor(index) {
@@ -23,11 +29,15 @@ export function McqQuiz({ payload }) {
   const [submitted, setSubmitted] = useState(false)
   const [startedAt] = useState(() => Date.now())
 
-  const options    = payload?.options ?? []
-  const mode       = payload?.mode === 'multi' ? 'multi' : 'single'
-  const scored     = !!payload?.scored
-  const correctSet = new Set(payload?.correct_answers ?? [])
-  const progress   = payload?.progress ?? null
+  const options       = payload?.options ?? []
+  const mode          = payload?.mode === 'multi' ? 'multi' : 'single'
+  const scored        = !!payload?.scored
+  const correctSet    = new Set(payload?.correct_answers ?? [])
+  const progress      = payload?.progress ?? null
+  const requireSubmit = !!payload?.require_submit
+  const isSilent      = !!payload?.silent
+
+  const explicitSubmit = mode === 'multi' || requireSubmit
 
   /* ─── Emit widget_response ───────────────────────────────────── */
 
@@ -53,14 +63,17 @@ export function McqQuiz({ payload }) {
       ...(scored && correctSet.size > 0 ? { is_correct, score } : {}),
     }
 
-    onReply?.({
-      type: 'widget_response',
-      payload: {
-        source_type: 'mcq',
-        source_widget_id: payload?.widget_id,
-        data,
+    onReply?.(
+      {
+        type: 'widget_response',
+        payload: {
+          source_type: 'mcq',
+          source_widget_id: payload?.widget_id,
+          data,
+        },
       },
-    })
+      { silent: isSilent },
+    )
   }
 
   /* ─── Tap handler ────────────────────────────────────────────── */
@@ -69,11 +82,16 @@ export function McqQuiz({ payload }) {
     if (submitted) return
 
     if (mode === 'single') {
+      // Single-select: one option at a time. With require_submit,
+      // tap merely sets the selection; user must click Submit.
       const next = new Set([optionValue])
       setSelected(next)
-      setSubmitted(true)
-      emit(next)
+      if (!requireSubmit) {
+        setSubmitted(true)
+        emit(next)
+      }
     } else {
+      // Multi-select: toggle membership. Always waits for Submit.
       const next = new Set(selected)
       if (next.has(optionValue)) next.delete(optionValue)
       else next.add(optionValue)
@@ -125,8 +143,6 @@ export function McqQuiz({ payload }) {
           const { isSelected, isCorrect, isIncorrect } = getOptionState(option.value)
           const isDisabled = submitted && !isSelected && !isCorrect
 
-          // Badge glyph: Check icon if this is a correct option post-submit,
-          // X icon if this is the user's wrong pick, otherwise the letter.
           const badge =
             submitted && isCorrect ? <Check size={16} strokeWidth={2.5} /> :
             submitted && isIncorrect ? <X size={16} strokeWidth={2.5} /> :
@@ -165,7 +181,7 @@ export function McqQuiz({ payload }) {
         })}
       </div>
 
-      {mode === 'multi' && !submitted && (
+      {explicitSubmit && !submitted && (
         <div className={styles.submitBar}>
           <Button
             variant="primary"
@@ -173,7 +189,9 @@ export function McqQuiz({ payload }) {
             disabled={selected.size === 0}
             onClick={handleSubmit}
           >
-            Submit ({selected.size})
+            {mode === 'multi' && selected.size > 0
+              ? `Submit (${selected.size})`
+              : 'Submit'}
           </Button>
         </div>
       )}

@@ -14,6 +14,13 @@ export const widgetSchemas = {
       scored: true,
       correct_answers: ['safe_handling'],
       progress: { index: 3, total: 10 },
+      // When true, selection does NOT auto-submit in single-select
+      // mode — user must tap the Submit button to commit.
+      require_submit: false,
+      // When true, the response is delivered to the bot without
+      // posting a user-visible message in the chat. The bot's reply
+      // still appears normally.
+      silent: false,
       options: [
         { label: 'Negotiating supplier contracts',   value: 'supplier_contracts' },
         { label: 'Safe handling and on-time delivery of packages', value: 'safe_handling' },

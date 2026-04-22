@@ -42,6 +42,33 @@ export function useBot() {
     [append],
   )
 
+  /**
+   * React to a user widget WITHOUT appending a visible user message.
+   * The bot still computes its reply (via respond()) and that reply
+   * posts as a normal bot message. Useful for widgets where the AI
+   * should take action on a selection but the selection itself is
+   * internal (e.g. confidence check, admin confirmation, telemetry).
+   */
+  const silentlyReact = useCallback(
+    (widget) => {
+      const stubUserMessage = {
+        id: uuid(),
+        role: 'user',
+        timestamp: Date.now(),
+        widget,
+      }
+      setEngineTyping(true)
+      const timerId = setTimeout(() => {
+        timersRef.current.delete(timerId)
+        const botWidget = respond(stubUserMessage)
+        if (botWidget) append('bot', botWidget)
+        setEngineTyping(false)
+      }, latencyRef.current)
+      timersRef.current.add(timerId)
+    },
+    [append],
+  )
+
   const injectBotMessage = useCallback((widget) => { append('bot', widget) }, [append])
   const injectUserWidgetResponse = useCallback((widget) => { append('user', widget) }, [append])
   const reset = useCallback(() => {
@@ -65,6 +92,7 @@ export function useBot() {
     latencyMs,
     setLatencyMs,
     sendUserMessage,
+    silentlyReact,
     injectBotMessage,
     injectUserWidgetResponse,
     reset,
