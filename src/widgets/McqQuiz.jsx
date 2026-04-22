@@ -3,7 +3,6 @@ import cx from 'classnames'
 import { Check, X } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
-import { useViewport } from '../viewport/ViewportContext.jsx'
 import styles from './mcqQuiz.module.scss'
 
 /* ─── MCQ / Quiz Widget ──────────────────────────────────────────
@@ -13,9 +12,6 @@ import styles from './mcqQuiz.module.scss'
 
 export function McqQuiz({ payload }) {
   const { onReply } = useChatActions()
-  // viewport available for future responsive layout decisions
-  // eslint-disable-next-line no-unused-vars
-  const { viewport } = useViewport()
 
   const [selected, setSelected] = useState(() => new Set())
   const [submitted, setSubmitted] = useState(false)
@@ -153,7 +149,6 @@ export function McqQuiz({ payload }) {
                 isSelected && !submitted && styles.selected,
                 submitted && isCorrect && styles.correct,
                 submitted && isIncorrect && styles.incorrect,
-                submitted && !isSelected && !isCorrect && styles.option,
               )}
               onClick={() => handleTap(option.value)}
             >
