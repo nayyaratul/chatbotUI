@@ -1,0 +1,269 @@
+/* ─── Score / Result Card ─────────────────────────────────────────
+   Tokens only: no raw hex, no literal pixel values.
+   Card body stays white. Tone colours live on the chip, the top
+   stripe, and the ProgressBar fill — never as a card background.
+   ─────────────────────────────────────────────────────────────── */
+
+/* ─── Tone custom properties ────────────────────────────────── */
+
+.pass {
+  --tone-accent:  var(--color-text-success);
+  --tone-surface: var(--color-bg-success-subtle);
+  --tone-border:  var(--green-10);
+}
+
+.borderline {
+  --tone-accent:  var(--color-text-warning);
+  --tone-surface: var(--color-bg-warning-subtle);
+  --tone-border:  var(--yellow-10);
+}
+
+.fail {
+  --tone-accent:  var(--color-text-error);
+  --tone-surface: var(--color-bg-error-subtle);
+  --tone-border:  var(--red-10);
+}
+
+/* ─── Card shell ─────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding: var(--space-200) var(--space-200) var(--space-150) var(--space-250);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  max-width: 94%;
+
+  box-shadow: var(--shadow-100);
+  overflow: hidden;
+}
+
+/* 4px tone stripe along the top edge */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--size-04);
+  background: var(--tone-accent, var(--grey-20));
+}
+
+/* ─── Chip / status badge ────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  padding: var(--space-050) var(--space-100);
+  background: var(--tone-surface);
+  color: var(--tone-accent);
+  border-radius: var(--radius-full);
+  border: var(--border-width-100) solid var(--tone-border);
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ─── Big score display ──────────────────────────────────────── */
+
+.scoreBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-050);
+  padding-top: var(--space-100);
+  text-align: center;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-075);
+}
+
+.scorePrimary {
+  font-family: var(--sans);
+  font-size: var(--font-size-800);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-800);
+  letter-spacing: var(--letter-spacing-tighter);
+  color: var(--grey-90);
+}
+
+.scoreSecondary {
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-400);
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+.scorePassFail {
+  font-family: var(--sans);
+  font-size: var(--font-size-800);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-800);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--tone-accent, var(--grey-90));
+}
+
+.scoreLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-weight: var(--font-weight-regular);
+}
+
+/* ─── Recommendation ─────────────────────────────────────────── */
+
+.recommendation {
+  margin: 0;
+  padding-top: var(--space-150);
+  border-top: var(--border-width-100) solid var(--grey-10);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Category bars ──────────────────────────────────────────── */
+
+.categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding-top: var(--space-150);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+.categoryRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.categoryMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-150);
+}
+
+.categoryName {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
+  color: var(--grey-80);
+  font-weight: var(--font-weight-regular);
+}
+
+.categoryScore {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─── Reasoning / expandable section ────────────────────────── */
+
+.reasoningSection {
+  border-top: var(--border-width-100) solid var(--grey-10);
+  padding-top: var(--space-125);
+}
+
+.reasoningToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  transition: color 140ms ease;
+}
+
+.reasoningToggle:hover {
+  color: var(--grey-90);
+}
+
+.reasoningChevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 240ms ease;
+}
+
+.reasoningChevron.open {
+  transform: rotate(180deg);
+}
+
+.reasoningPanel {
+  margin-top: var(--space-125);
+  padding: var(--space-150);
+  background: var(--grey-0);
+  border-radius: var(--radius-150);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-300);
+  color: var(--grey-70);
+
+  animation: revealPanel 220ms ease both;
+  transform-origin: top center;
+}
+
+@keyframes revealPanel {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(calc(-1 * var(--space-075)));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}
+
+/* ─── Actions ────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: var(--space-125);
+  margin-top: var(--space-025);
+}
+
+.actions.vertical {
+  flex-direction: column;
+}
+
+.actions.horizontal {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.actionBtn {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  min-height: var(--size-44);
+}
+
+.actions.vertical .actionBtn {
+  width: 100%;
+}

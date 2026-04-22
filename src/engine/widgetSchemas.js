@@ -44,6 +44,30 @@ export const widgetSchemas = {
       ],
     },
   },
+  score_card: {
+    label: 'Score / Result Card',
+    examplePayload: {
+      widget_id: 'score-example-1',
+      overall: {
+        score: 82,
+        max_score: 100,
+        pass_fail: 'pass',
+        label: 'Assessment passed',
+      },
+      categories: [
+        { name: 'Communication',      score: 88, max_score: 100 },
+        { name: 'Technical Skills',   score: 74, max_score: 100 },
+        { name: 'Problem Solving',    score: 90, max_score: 100 },
+        { name: 'Culture Fit',        score: 70, max_score: 100 },
+      ],
+      recommendation: 'Candidate has demonstrated strong communication and problem-solving skills. Recommended for the next interview round.',
+      reasoning: 'The candidate scored above threshold in 3 of 4 categories. Technical skills and culture fit were borderline but within acceptable range for the mid-level role. No red flags were identified during the evaluation.',
+      actions: [
+        { label: 'Continue to next step', value: 'continue', variant: 'primary' },
+        { label: 'View full report',       value: 'view_report', variant: 'secondary' },
+      ],
+    },
+  },
   confirmation: {
     label: 'Confirmation Card',
     examplePayload: {
