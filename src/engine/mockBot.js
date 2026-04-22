@@ -194,6 +194,7 @@ registerRule({
       mode: 'single',
       scored: true,
       correct_answers: ['safe_handling'],
+      require_submit: true,
       progress: { index: 3, total: 10 },
       options: [
         { label: 'Negotiating supplier contracts',                 value: 'supplier_contracts' },

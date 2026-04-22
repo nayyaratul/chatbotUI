@@ -16,7 +16,7 @@ export const widgetSchemas = {
       progress: { index: 3, total: 10 },
       // When true, selection does NOT auto-submit in single-select
       // mode — user must tap the Submit button to commit.
-      require_submit: false,
+      require_submit: true,
       // When true, the response is delivered to the bot without
       // posting a user-visible message in the chat. The bot's reply
       // still appears normally.
