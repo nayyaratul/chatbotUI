@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import cx from 'classnames'
-import { ArrowUpRight } from 'lucide-react'
 import styles from './suggestionsStrip.module.scss'
 
 /**
@@ -86,13 +85,7 @@ export function SuggestionsStrip({ suggestions, onSelect, getTargetRect }) {
               onClick={() => handleClick(i, s)}
               onAnimationEnd={(e) => handleAnimationEnd(i, e)}
             >
-              <span className={styles.bubbleLabel}>{s.label}</span>
-              <ArrowUpRight
-                size={14}
-                strokeWidth={2.25}
-                className={styles.bubbleArrow}
-                aria-hidden="true"
-              />
+              {s.label}
             </button>
           )
         })}
