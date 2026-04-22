@@ -98,53 +98,85 @@
   padding: 0 var(--space-100);
 }
 
-/* Celebrate-pass glow: a soft radial tone halo behind the number,
-   rendered via a pseudo-element that sits behind the content.
-   Starts hidden; pass-tone cards animate it in with a gentle pulse. */
-.scoreBlock::before {
+/* Celebrate-pass effects — three layers that ONLY fire on pass tone:
+   1. A soft radial halo (::before) that pulses in and settles
+   2. A one-shot ring ripple (::after) that expands and fades
+   3. A subtle scale bounce on the score number when count-up lands
+   All Nexus-token-driven. */
+
+.scoreBlock::before,
+.scoreBlock::after {
   content: '';
   position: absolute;
-  inset: calc(-1 * var(--space-100));
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, var(--tone-accent) 16%, transparent) 0%,
-    transparent 72%
-  );
-  opacity: var(--opacity-000);
   pointer-events: none;
-  transform-origin: center;
   z-index: 0;
 }
 
-/* Pass tone — the halo pulses in (scale 0.7 → 1.15 → 1) as a
-   subtle celebration, and the score number does a small bounce
-   delayed to coincide with the count-up landing at its target. */
+/* Halo — sits behind everything, static opacity 0 for non-pass. */
+.scoreBlock::before {
+  inset: calc(-1 * var(--space-250));
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--tone-accent) 36%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: var(--opacity-000);
+  transform-origin: center;
+  border-radius: var(--radius-full);
+}
+
+/* Ring ripple — collapses to nothing unless pass tone fires it. */
+.scoreBlock::after {
+  inset: calc(-1 * var(--space-150));
+  border: var(--border-width-200) solid transparent;
+  border-radius: var(--radius-full);
+  opacity: var(--opacity-000);
+  transform-origin: center;
+}
+
+/* Pass tone fires all three animations. */
 .pass .scoreBlock::before {
-  animation: passHalo 900ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation: passHalo 1000ms cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+
+.pass .scoreBlock::after {
+  border-color: color-mix(in srgb, var(--tone-accent) 64%, transparent);
+  animation: passRipple 1100ms cubic-bezier(0.25, 0.65, 0.4, 1) 120ms forwards;
 }
 
 .pass .scorePrimary {
-  animation: passBounce 420ms cubic-bezier(0.2, 0.8, 0.3, 1.4) 700ms both;
+  animation: passBounce 480ms cubic-bezier(0.2, 0.8, 0.3, 1.4) 700ms both;
 }
 
 @keyframes passHalo {
   0% {
     opacity: var(--opacity-000);
-    transform: scale(0.7);
+    transform: scale(0.6);
   }
-  55% {
-    opacity: var(--opacity-088);
-    transform: scale(1.15);
+  45% {
+    opacity: var(--opacity-100);
+    transform: scale(1.25);
   }
   100% {
-    opacity: var(--opacity-088);
+    opacity: var(--opacity-072);
     transform: scale(1);
+  }
+}
+
+@keyframes passRipple {
+  0% {
+    opacity: var(--opacity-088);
+    transform: scale(0.55);
+  }
+  100% {
+    opacity: var(--opacity-000);
+    transform: scale(2);
   }
 }
 
 @keyframes passBounce {
   0%   { transform: scale(1); }
-  50%  { transform: scale(1.04); }
+  50%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
