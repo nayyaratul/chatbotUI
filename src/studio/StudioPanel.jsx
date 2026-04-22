@@ -7,14 +7,22 @@ import {
   Braces,
   SlidersHorizontal,
   RotateCcw,
+  Palette,
 } from 'lucide-react'
 import styles from './studioPanel.module.scss'
 import { ViewportToggle } from './ViewportToggle.jsx'
 import { JsonInspector } from './JsonInspector.jsx'
 import { Controls } from './Controls.jsx'
 import { Injector } from './Injector.jsx'
+import { BrandPicker } from './BrandPicker.jsx'
 
-export function StudioPanel({ bot, collapsed, onToggleCollapsed }) {
+export function StudioPanel({
+  bot,
+  collapsed,
+  onToggleCollapsed,
+  brand,
+  onBrandChange,
+}) {
   return (
     <aside className={cx(styles.panel, collapsed && styles.collapsed)}>
       <div className={styles.header}>
@@ -51,6 +59,14 @@ export function StudioPanel({ bot, collapsed, onToggleCollapsed }) {
             <h2 className={styles.sectionTitle}>Viewport</h2>
           </header>
           <ViewportToggle />
+        </section>
+
+        <section className={styles.section}>
+          <header className={styles.sectionHeader}>
+            <span className={styles.sectionIcon}><Palette size={13} /></span>
+            <h2 className={styles.sectionTitle}>Brand</h2>
+          </header>
+          <BrandPicker active={brand} onSelect={onBrandChange} />
         </section>
 
         <section className={styles.section}>

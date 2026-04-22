@@ -8,7 +8,7 @@
   /* Scoped colour vars — overridable at a theme / app level for
      white-labelling without touching Nexus's global semantic
      tokens. Defaults resolve to Nexus primitives/semantics. */
-  --tpb-complete-color: var(--color-text-success);
+  --tpb-complete-color: var(--brand-60);
   --tpb-current-color:  var(--grey-90);
   --tpb-pending-color:  var(--grey-10);
   --tpb-failed-color:   var(--color-text-error);
