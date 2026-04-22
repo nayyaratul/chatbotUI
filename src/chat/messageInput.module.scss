@@ -1,24 +1,35 @@
 .input {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--grey-10);
+  gap: var(--space-100);
+  padding: var(--space-125) var(--space-150);
+  border-top: var(--border-width-100) solid var(--grey-10);
   background: var(--white);
+  transition: border-top-color 180ms ease;
+}
+
+.input.accented {
+  border-top-color: var(--blue-60);
 }
 
 .textarea {
   flex: 1;
-  height: 40px;
-  min-height: 40px;
-  max-height: 120px;
-  padding: 10px 12px;
+  height: var(--size-40);
+  min-height: var(--size-40);
+  max-height: var(--size-120, 120px);
+  padding: var(--space-125) var(--space-150);
   line-height: 1.2;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.textarea.accented {
+  border-color: var(--blue-60) !important;
+  box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--blue-60) 16%, transparent);
 }
 
 .sendButton {
-  width: 40px;
-  height: 40px;
+  width: var(--size-40);
+  height: var(--size-40);
   padding: 0;
   flex-shrink: 0;
 }

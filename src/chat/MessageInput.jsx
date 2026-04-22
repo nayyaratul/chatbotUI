@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import cx from 'classnames'
 import { Button, Textarea } from '@nexus/atoms'
 import { Send } from 'lucide-react'
 import styles from './messageInput.module.scss'
@@ -7,9 +8,12 @@ import styles from './messageInput.module.scss'
  * Controlled textarea + send button. Parent owns the `value` state so
  * the Suggestions Strip can prefill it. Ref forwards to the underlying
  * textarea for programmatic focus after a prefill.
+ *
+ * `accented={true}` turns the container border-top and textarea border
+ * blue-60, signalling a visual link with the starter-prompts strip.
  */
 export const MessageInput = forwardRef(function MessageInput(
-  { value, onChange, onSend, disabled = false },
+  { value, onChange, onSend, disabled = false, accented = false },
   textareaRef,
 ) {
   const submit = () => {
@@ -27,10 +31,10 @@ export const MessageInput = forwardRef(function MessageInput(
   }
 
   return (
-    <div className={styles.input}>
+    <div className={cx(styles.input, accented && styles.accented)}>
       <Textarea
         ref={textareaRef}
-        className={styles.textarea}
+        className={cx(styles.textarea, accented && styles.accented)}
         rows={1}
         resize="none"
         placeholder={disabled ? 'Bot is replying…' : 'Type a message'}

@@ -1,7 +1,7 @@
 /* ─── Suggestions Strip ──────────────────────────────────────
    Vertical stack of right-aligned, outlined prompt bubbles that
    rise from the bottom of the chat surface. Only rendered on a
-   fresh conversation to hint what the user can ask.
+   fresh conversation.
    ────────────────────────────────────────────────────────── */
 
 .strip {
@@ -50,13 +50,41 @@
   outline-offset: 2px;
 }
 
-/* Stagger the rise so the closest-to-input bubble lands first,
-   the next one a beat later, etc. */
+/* Mount stagger */
 .bubble:nth-child(1) { animation-delay: 0ms; }
 .bubble:nth-child(2) { animation-delay: 70ms; }
 .bubble:nth-child(3) { animation-delay: 140ms; }
 .bubble:nth-child(4) { animation-delay: 210ms; }
 .bubble:nth-child(5) { animation-delay: 280ms; }
+
+/* ─── Flying state — "tap to drop" ──────────────────────────
+   When a bubble is tapped, it flies toward the textarea using
+   precomputed --fly-x / --fly-y deltas set on the element's
+   style attribute. forwards keeps the bubble invisible at the
+   end until the parent unmounts it.
+   ───────────────────────────────────────────────────────── */
+
+.bubble.flying {
+  animation: fly 360ms cubic-bezier(0.45, 0, 0.65, 1) forwards;
+  pointer-events: none;
+  z-index: 2;
+  background: var(--blue-60);
+  color: var(--white);
+}
+
+@keyframes fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--fly-x, 0), var(--fly-y, 0)) scale(0.25);
+    opacity: 0;
+  }
+}
 
 @keyframes riseUp {
   from {
