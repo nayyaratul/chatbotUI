@@ -1,72 +1,178 @@
+/* ─── Confirmation Card — "Considered Document" ─────────────────
+   Tone-driven palette bound to CSS variables scoped to the card root.
+   Each tone mode sets --tone-accent / --tone-surface / --tone-stripe.
+   ───────────────────────────────────────────────────────────── */
+
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 16px;
-  border: 1px solid var(--yellow-60, #b88a00);
-  background: var(--yellow-10, #fff9e0);
-  border-radius: 12px;
-  max-width: 92%;
+  padding: 18px 18px 16px 22px;
+
+  background: var(--tone-surface, var(--white));
+  border: 1px solid var(--tone-border, var(--grey-10));
+  border-radius: 14px;
+  max-width: 94%;
+
+  box-shadow:
+    0 1px 2px rgba(23, 30, 42, 0.04),
+    0 6px 24px -10px rgba(23, 30, 42, 0.08);
+
+  overflow: hidden;
+  transition: opacity 240ms ease;
+}
+
+/* Accent stripe down the left edge — tone bookmark */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--tone-accent, var(--grey-40));
+}
+
+/* ─── Tone modes ───────────────────────────────────────────── */
+
+.info {
+  --tone-accent: var(--blue-60, #2f6fed);
+  --tone-surface: #f6f8ff;
+  --tone-border: #e0e8fa;
+  --tone-soft: var(--blue-10, #ecf2ff);
+}
+
+.caution {
+  --tone-accent: var(--yellow-60, #b88a00);
+  --tone-surface: #fffaee;
+  --tone-border: #f4e5b9;
+  --tone-soft: var(--yellow-10, #fff6d5);
+}
+
+.danger {
+  --tone-accent: var(--red-60, #d04a3a);
+  --tone-surface: #fff6f4;
+  --tone-border: #f6cec8;
+  --tone-soft: var(--red-10, #fdecea);
+}
+
+/* ─── Header: seal + title ─────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.seal {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tone-soft);
+  color: var(--tone-accent);
+  border-radius: 50%;
+  border: 1px solid var(--tone-border);
+}
+
+.titleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  padding-top: 2px;
+}
+
+.kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tone-accent);
 }
 
 .title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--grey-90);
   margin: 0;
+  font-family: 'Fraunces', 'Iowan Old Style', 'Palatino', Georgia, serif;
+  font-weight: 500;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--grey-90);
 }
 
 .description {
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--grey-80);
   margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--grey-70);
 }
 
+/* ─── Details: hairline rows, no inner box ─────────────────── */
+
 .details {
+  margin: 2px 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  background: var(--white);
-  border-radius: 8px;
-  border: 1px solid var(--grey-10);
-  margin: 0;
+  border-top: 1px solid var(--tone-border);
 }
 
 .detailRow {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--tone-border);
 }
 
 .detailLabel {
-  color: var(--grey-60);
-  flex-shrink: 0;
   margin: 0;
+  color: var(--grey-60);
+  font-weight: 400;
+  flex-shrink: 0;
 }
 
 .detailValue {
+  margin: 0;
   color: var(--grey-90);
   text-align: right;
   font-weight: 500;
-  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
+
+/* ─── Checkbox row ─────────────────────────────────────────── */
 
 .checkboxRow {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--grey-80);
-  line-height: 1.4;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--tone-soft);
   cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--grey-80);
+  transition: background 140ms ease;
 }
+
+.checkboxRow:hover {
+  background: color-mix(in srgb, var(--tone-soft) 80%, var(--tone-accent) 8%);
+}
+
+/* ─── Actions ──────────────────────────────────────────────── */
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .actions.vertical {
@@ -78,17 +184,104 @@
   justify-content: flex-end;
 }
 
-.actionButton {
+.goBack,
+.confirm {
   min-height: 44px;
+  font-size: 13.5px;
+  letter-spacing: 0.005em;
 }
 
-.actions.vertical .actionButton {
+.actions.vertical .goBack,
+.actions.vertical .confirm {
   width: 100%;
 }
 
-.submitted {
-  text-align: center;
-  font-size: 13px;
+/* Ghost style for Go Back — we override the Nexus secondary look
+   to pull the visual weight off the cancel path. */
+.goBack {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--grey-70) !important;
+}
+
+.goBack:hover {
+  background: var(--grey-10, #eee) !important;
+  color: var(--grey-90) !important;
+}
+
+.confirm {
+  background: var(--tone-accent) !important;
+  border-color: var(--tone-accent) !important;
+  color: var(--white) !important;
+}
+
+.confirm:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.confirm:disabled {
+  opacity: 0.45;
+}
+
+.confirmInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Decision state — rubber stamp ────────────────────────── */
+
+.decided {
+  opacity: 0.88;
+}
+
+.stamp {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  padding: 8px 22px;
+  border: 2px solid var(--stamp-color);
+  border-radius: 4px;
+  color: var(--stamp-color);
+
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  transform: rotate(-3.5deg);
+  animation: stampIn 360ms cubic-bezier(0.18, 0.9, 0.28, 1.24);
+  white-space: nowrap;
+}
+
+.stamp.confirmed {
+  --stamp-color: var(--tone-accent);
+}
+
+.stamp.cancelled {
+  --stamp-color: var(--grey-50);
+}
+
+.stamp::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--stamp-color);
+  opacity: 0.35;
+}
+
+.stampMeta {
+  align-self: center;
+  margin-top: 4px;
+  font-size: 11px;
   color: var(--grey-60);
-  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes stampIn {
+  0%   { opacity: 0; transform: rotate(-12deg) scale(1.4); }
+  60%  { opacity: 1; transform: rotate(-2.5deg) scale(0.97); }
+  100% { opacity: 1; transform: rotate(-3.5deg) scale(1); }
 }

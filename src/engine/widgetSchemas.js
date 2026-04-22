@@ -34,8 +34,9 @@ export const widgetSchemas = {
     examplePayload: {
       widget_id: 'confirm-example-1',
       action_id: 'apply-job-123',
+      tone: 'caution', // 'info' | 'caution' | 'danger'
       title: 'Confirm your application',
-      description: 'You are about to apply for this job. This action cannot be undone.',
+      description: 'Your profile will be shared with the employer and this action cannot be undone.',
       details: [
         { label: 'Role',       value: 'Delivery Associate' },
         { label: 'Location',   value: 'Koramangala, Bangalore' },

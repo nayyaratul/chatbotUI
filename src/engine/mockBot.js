@@ -60,6 +60,57 @@ registerRule({
   }),
 })
 
+// Confirmation Card — three tone variants reachable by typing.
+// "show confirmation" / "show confirm"              → info    (default tone)
+// "show caution confirmation" / "show commit"       → caution (high-stakes, e.g. job application)
+// "show danger confirmation" / "show delete"        → danger  (irreversible + checkbox)
+
+registerRule({
+  match: /^(show )?(caution confirm(ation)?|commit(ment)?)/i,
+  build: () => ({
+    type: 'confirmation',
+    payload: {
+      widget_id: makeId('confirm'),
+      action_id: makeId('action'),
+      tone: 'caution',
+      title: 'Confirm your application',
+      description: 'Your profile will be shared with the employer.',
+      details: [
+        { label: 'Role',       value: 'Delivery Associate' },
+        { label: 'Location',   value: 'Koramangala, Bangalore' },
+        { label: 'Pay',        value: '₹850/day' },
+        { label: 'Start date', value: '2026-05-01' },
+      ],
+      confirm_label: 'Submit application',
+      cancel_label: 'Go back',
+      require_checkbox: true,
+      checkbox_label: 'I understand this submission is final.',
+    },
+  }),
+})
+
+registerRule({
+  match: /^(show )?(danger confirm(ation)?|delete|destructive)/i,
+  build: () => ({
+    type: 'confirmation',
+    payload: {
+      widget_id: makeId('confirm'),
+      action_id: makeId('action'),
+      tone: 'danger',
+      title: 'Delete your account',
+      description: 'Your profile and all associated data will be permanently removed. This cannot be reversed.',
+      details: [
+        { label: 'Affects',   value: 'Your entire profile' },
+        { label: 'Recovery',  value: 'Not possible after 24h' },
+      ],
+      confirm_label: 'Delete permanently',
+      cancel_label: 'Keep my account',
+      require_checkbox: true,
+      checkbox_label: 'I understand this cannot be undone.',
+    },
+  }),
+})
+
 registerRule({
   match: /^(show )?confirm(ation)?/i,
   build: () => ({
@@ -67,8 +118,9 @@ registerRule({
     payload: {
       widget_id: makeId('confirm'),
       action_id: makeId('action'),
+      tone: 'info',
       title: 'Confirm your choice',
-      description: 'Are you sure you want to continue?',
+      description: 'Are you sure you want to continue with the demo?',
       details: [
         { label: 'Action', value: 'Demo confirmation' },
         { label: 'When',   value: 'Immediately' },
