@@ -24,13 +24,20 @@
 
 .segment {
   flex: 1;
-  height: var(--size-06);
+  /* 2px for done / pending / failed — slim baseline. The current
+     step overrides this to 4px below so it reads as the active
+     anchor in the bar. */
+  height: var(--size-02);
   border-radius: var(--radius-full);
   background: var(--tpb-pending-color);
-  transition: background 240ms ease;
+  transition: background 240ms ease, height 240ms ease;
 }
 
 .segment.completed { background: var(--tpb-complete-color); }
-.segment.current   { background: var(--tpb-current-color); }
 .segment.pending   { background: var(--tpb-pending-color); }
 .segment.failed    { background: var(--tpb-failed-color); }
+
+.segment.current {
+  height: var(--size-04);
+  background: var(--tpb-current-color);
+}
