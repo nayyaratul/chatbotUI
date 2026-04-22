@@ -4,6 +4,25 @@
  * The Injector UI uses this to prefill the JSON textarea for the selected type.
  */
 export const widgetSchemas = {
+  mcq: {
+    label: 'MCQ / Quiz',
+    examplePayload: {
+      widget_id: 'mcq-example-1',
+      question_id: 'q-screening-1',
+      question: 'Which of the following is a key responsibility of a Delivery Associate in a last-mile logistics role?',
+      mode: 'single',
+      scored: true,
+      correct_answers: ['safe_handling'],
+      progress: { index: 3, total: 10 },
+      options: [
+        { label: 'Negotiating supplier contracts',   value: 'supplier_contracts' },
+        { label: 'Safe handling and on-time delivery of packages', value: 'safe_handling' },
+        { label: 'Managing warehouse inventory systems', value: 'inventory_mgmt' },
+        { label: 'Scheduling inter-city freight shipments', value: 'freight_scheduling' },
+        { label: 'Operating heavy forklift machinery', value: 'forklift_ops' },
+      ],
+    },
+  },
   text: {
     label: 'Text message',
     examplePayload: { text: 'Hello from the injector.' },

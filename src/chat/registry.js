@@ -4,6 +4,7 @@ import { QuickReply } from '../widgets/QuickReply.jsx'
 import { ConfirmationCard } from '../widgets/ConfirmationCard.jsx'
 import { ProgressTracker } from '../widgets/ProgressTracker.jsx'
 import { ScoreCard } from '../widgets/ScoreCard.jsx'
+import { McqQuiz } from '../widgets/McqQuiz.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -12,4 +13,5 @@ export const registry = {
   confirmation: ConfirmationCard,
   progress: ProgressTracker,
   score_card: ScoreCard,
+  mcq: McqQuiz,
 }

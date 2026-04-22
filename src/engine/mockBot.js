@@ -160,6 +160,51 @@ registerRule({
 })
 
 registerRule({
+  match: /^(show )?(mcq|quiz)/i,
+  build: () => ({
+    type: 'mcq',
+    payload: {
+      widget_id: makeId('mcq'),
+      question_id: makeId('q'),
+      question: 'Which of the following is a key responsibility of a Delivery Associate in a last-mile logistics role?',
+      mode: 'single',
+      scored: true,
+      correct_answers: ['safe_handling'],
+      progress: { index: 3, total: 10 },
+      options: [
+        { label: 'Negotiating supplier contracts',                 value: 'supplier_contracts' },
+        { label: 'Safe handling and on-time delivery of packages', value: 'safe_handling' },
+        { label: 'Managing warehouse inventory systems',           value: 'inventory_mgmt' },
+        { label: 'Scheduling inter-city freight shipments',       value: 'freight_scheduling' },
+        { label: 'Operating heavy forklift machinery',             value: 'forklift_ops' },
+      ],
+    },
+  }),
+})
+
+registerRule({
+  match: /^(show )?multi[- ]?(select|choice|mcq)/i,
+  build: () => ({
+    type: 'mcq',
+    payload: {
+      widget_id: makeId('mcq'),
+      question_id: makeId('q'),
+      question: 'Select all documents you have ready to submit for onboarding. (Select all that apply)',
+      mode: 'multi',
+      scored: false,
+      progress: { index: 1, total: 4 },
+      options: [
+        { label: 'Aadhaar Card',         value: 'aadhaar' },
+        { label: 'PAN Card',             value: 'pan' },
+        { label: 'Bank Passbook / IFSC', value: 'bank' },
+        { label: 'Passport-size Photo',  value: 'photo' },
+        { label: 'Police Verification Certificate', value: 'pvc' },
+      ],
+    },
+  }),
+})
+
+registerRule({
   match: /^(show )?progress/i,
   build: () => ({
     type: 'progress',
