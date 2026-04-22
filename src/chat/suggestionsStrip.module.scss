@@ -1,0 +1,33 @@
+/* ─── Suggestions Strip ──────────────────────────────────────
+   Horizontally-scrollable pill row sitting above the message
+   input. Only rendered when a fresh conversation is offering
+   starter prompts.
+   ────────────────────────────────────────────────────────── */
+
+.strip {
+  display: flex;
+  gap: var(--space-100);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-100) var(--space-150);
+  background: var(--white);
+  border-top: var(--border-width-100) solid var(--grey-10);
+
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.pill {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  border-radius: var(--radius-full) !important;
+}
+
+.pillEmoji {
+  font-size: var(--font-size-300);
+  line-height: 1;
+  margin-right: var(--space-050);
+}

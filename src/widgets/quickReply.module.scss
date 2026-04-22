@@ -42,14 +42,11 @@
   flex-direction: column;
 }
 
-/* Pill-shaped buttons — override Nexus Button's default --radius-100
-   and give them more horizontal breathing room so labels don't crash
-   into the capsule curve. */
+/* Pill shape — override Nexus Button's default --radius-100. Height and
+   horizontal padding come from Nexus Button size="md" natively (40px,
+   var(--space-200)); no need to force them here. */
 .option {
-  min-height: var(--size-44);
   border-radius: var(--radius-full) !important;
-  padding-left: var(--space-200) !important;
-  padding-right: var(--space-200) !important;
 }
 
 .options.horizontal .option {
@@ -70,6 +67,4 @@
 .submit {
   align-self: flex-start;
   border-radius: var(--radius-full) !important;
-  padding-left: var(--space-200) !important;
-  padding-right: var(--space-200) !important;
 }

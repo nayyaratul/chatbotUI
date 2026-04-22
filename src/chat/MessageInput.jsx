@@ -1,16 +1,22 @@
-import { useState } from 'react'
+import { forwardRef } from 'react'
 import { Button, Textarea } from '@nexus/atoms'
 import { Send } from 'lucide-react'
 import styles from './messageInput.module.scss'
 
-export function MessageInput({ onSend, disabled = false }) {
-  const [text, setText] = useState('')
-
+/**
+ * Controlled textarea + send button. Parent owns the `value` state so
+ * the Suggestions Strip can prefill it. Ref forwards to the underlying
+ * textarea for programmatic focus after a prefill.
+ */
+export const MessageInput = forwardRef(function MessageInput(
+  { value, onChange, onSend, disabled = false },
+  textareaRef,
+) {
   const submit = () => {
-    const trimmed = text.trim()
+    const trimmed = (value ?? '').trim()
     if (!trimmed || disabled) return
     onSend({ type: 'text', payload: { text: trimmed } })
-    setText('')
+    onChange('')
   }
 
   const handleKeyDown = (e) => {
@@ -23,12 +29,13 @@ export function MessageInput({ onSend, disabled = false }) {
   return (
     <div className={styles.input}>
       <Textarea
+        ref={textareaRef}
         className={styles.textarea}
         rows={1}
         resize="none"
         placeholder={disabled ? 'Bot is replying…' : 'Type a message'}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
       />
@@ -37,7 +44,7 @@ export function MessageInput({ onSend, disabled = false }) {
         size="md"
         iconOnly
         className={styles.sendButton}
-        disabled={disabled || !text.trim()}
+        disabled={disabled || !(value ?? '').trim()}
         onClick={submit}
         aria-label="Send"
       >
@@ -45,4 +52,4 @@ export function MessageInput({ onSend, disabled = false }) {
       </Button>
     </div>
   )
-}
+})
