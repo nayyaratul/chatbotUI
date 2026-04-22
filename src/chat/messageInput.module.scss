@@ -5,11 +5,6 @@
   padding: var(--space-125) var(--space-150);
   border-top: var(--border-width-100) solid var(--grey-10);
   background: var(--white);
-  transition: border-top-color 180ms ease;
-}
-
-.input.accented {
-  border-top-color: var(--blue-60);
 }
 
 .textarea {

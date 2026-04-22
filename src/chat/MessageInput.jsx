@@ -31,7 +31,7 @@ export const MessageInput = forwardRef(function MessageInput(
   }
 
   return (
-    <div className={cx(styles.input, accented && styles.accented)}>
+    <div className={styles.input}>
       <Textarea
         ref={textareaRef}
         className={cx(styles.textarea, accented && styles.accented)}
