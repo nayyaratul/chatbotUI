@@ -6,9 +6,15 @@ import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './mcqQuiz.module.scss'
 
 /* ─── MCQ / Quiz Widget ──────────────────────────────────────────
-   Supports single-select (radio) and multi-select (checkbox) modes.
-   Scored mode shows correct/incorrect feedback after submission.
+   "Exam card" — lettered options (A, B, C, D, E). The letter badge
+   is the indicator; post-submit scored cards swap the letter for
+   a Check (correct) or X (incorrect selected) icon. Non-scored
+   submissions keep the letter throughout.
    ─────────────────────────────────────────────────────────────── */
+
+function letterFor(index) {
+  return String.fromCharCode(65 + index) // 'A', 'B', 'C', ...
+}
 
 export function McqQuiz({ payload }) {
   const { onReply } = useChatActions()
@@ -17,22 +23,19 @@ export function McqQuiz({ payload }) {
   const [submitted, setSubmitted] = useState(false)
   const [startedAt] = useState(() => Date.now())
 
-  const options       = payload?.options ?? []
-  const mode          = payload?.mode === 'multi' ? 'multi' : 'single'
-  const scored        = !!payload?.scored
-  const correctSet    = new Set(payload?.correct_answers ?? [])
-  const progress      = payload?.progress ?? null
+  const options    = payload?.options ?? []
+  const mode       = payload?.mode === 'multi' ? 'multi' : 'single'
+  const scored     = !!payload?.scored
+  const correctSet = new Set(payload?.correct_answers ?? [])
+  const progress   = payload?.progress ?? null
 
   /* ─── Emit widget_response ───────────────────────────────────── */
 
   const emit = (selectedValues) => {
     const time_taken_seconds = Math.round((Date.now() - startedAt) / 1000)
-
-    // Build human-readable label
     const selectedOptions = options.filter((o) => selectedValues.has(o.value))
     const label = selectedOptions.map((o) => o.label).join(', ')
 
-    // Scored logic
     let is_correct
     let score
     if (scored && correctSet.size > 0) {
@@ -71,18 +74,12 @@ export function McqQuiz({ payload }) {
       setSubmitted(true)
       emit(next)
     } else {
-      // multi: toggle membership
       const next = new Set(selected)
-      if (next.has(optionValue)) {
-        next.delete(optionValue)
-      } else {
-        next.add(optionValue)
-      }
+      if (next.has(optionValue)) next.delete(optionValue)
+      else next.add(optionValue)
       setSelected(next)
     }
   }
-
-  /* ─── Multi-mode submit ──────────────────────────────────────── */
 
   const handleSubmit = () => {
     if (submitted || selected.size === 0) return
@@ -94,8 +91,9 @@ export function McqQuiz({ payload }) {
 
   const getOptionState = (value) => {
     const isSelected = selected.has(value)
-    if (!submitted) return { isSelected, isCorrect: false, isIncorrect: false }
-    if (!scored || correctSet.size === 0) return { isSelected, isCorrect: false, isIncorrect: false }
+    if (!submitted || !scored || correctSet.size === 0) {
+      return { isSelected, isCorrect: false, isIncorrect: false }
+    }
     const isInCorrectSet = correctSet.has(value)
     return {
       isSelected,
@@ -109,33 +107,30 @@ export function McqQuiz({ payload }) {
   return (
     <div className={styles.card}>
 
-      {/* Progress indicator */}
       {progress && (
         <div className={styles.progress}>
           Question {progress.index} of {progress.total}
         </div>
       )}
 
-      {/* Question */}
       {payload?.question && (
         <p className={styles.question}>{payload.question}</p>
       )}
 
-      {/* Options */}
-      <div className={styles.options} role={mode === 'single' ? 'radiogroup' : 'group'}>
-        {options.map((option) => {
+      <div
+        className={styles.options}
+        role={mode === 'single' ? 'radiogroup' : 'group'}
+      >
+        {options.map((option, idx) => {
           const { isSelected, isCorrect, isIncorrect } = getOptionState(option.value)
-
-          // Disabled when submitted AND not involved in feedback display
           const isDisabled = submitted && !isSelected && !isCorrect
 
-          const indicatorClass = cx(
-            styles.indicator,
-            mode === 'single' ? styles.indicatorRadio : styles.indicatorCheckbox,
-            !submitted && isSelected && styles.indicatorActive,
-            submitted && isCorrect && styles.indicatorCorrect,
-            submitted && isIncorrect && styles.indicatorError,
-          )
+          // Badge glyph: Check icon if this is a correct option post-submit,
+          // X icon if this is the user's wrong pick, otherwise the letter.
+          const badge =
+            submitted && isCorrect ? <Check size={16} strokeWidth={2.5} /> :
+            submitted && isIncorrect ? <X size={16} strokeWidth={2.5} /> :
+            letterFor(idx)
 
           return (
             <button
@@ -152,10 +147,10 @@ export function McqQuiz({ payload }) {
               )}
               onClick={() => handleTap(option.value)}
             >
-              {/* Custom indicator */}
-              <span className={indicatorClass} aria-hidden="true" />
+              <span className={styles.letterBadge} aria-hidden="true">
+                {badge}
+              </span>
 
-              {/* Optional image */}
               {option.image_url && (
                 <img
                   src={option.image_url}
@@ -164,26 +159,12 @@ export function McqQuiz({ payload }) {
                 />
               )}
 
-              {/* Label */}
               <span className={styles.optionLabel}>{option.label}</span>
-
-              {/* Post-submit status icon (scored only) */}
-              {submitted && scored && isCorrect && (
-                <span className={cx(styles.statusIcon, styles.iconCorrect)} aria-label="Correct">
-                  <Check size={14} strokeWidth={2.5} />
-                </span>
-              )}
-              {submitted && scored && isIncorrect && (
-                <span className={cx(styles.statusIcon, styles.iconError)} aria-label="Incorrect">
-                  <X size={14} strokeWidth={2.5} />
-                </span>
-              )}
             </button>
           )
         })}
       </div>
 
-      {/* Submit bar — multi-mode only, pre-submit */}
       {mode === 'multi' && !submitted && (
         <div className={styles.submitBar}>
           <Button

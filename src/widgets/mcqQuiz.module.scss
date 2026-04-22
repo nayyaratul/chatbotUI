@@ -1,6 +1,8 @@
 /* ─── MCQ / Quiz Widget ────────────────────────────────────────────
-   Option-card layout with custom radio/checkbox indicators.
-   All values from Nexus tokens only. Inter only. Card body white.
+   "Exam card" aesthetic: formal, tabular, lettered options.
+   Letter badges (A/B/C/…) replace the radio/checkbox indicators.
+   Badges morph into Check/X icons post-submit when scored.
+   Nexus tokens only. Inter only. Card body white.
    ──────────────────────────────────────────────────────────────── */
 
 /* ─── Card shell ─────────────────────────────────────────────── */
@@ -9,7 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-200);
-  padding: var(--space-200);
+  padding: var(--space-250) var(--space-200) var(--space-200);
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -22,26 +24,27 @@
   animation: riseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
-/* ─── Progress label ─────────────────────────────────────────── */
+/* ─── Progress label — chapter-mark tracking ────────────────── */
 
 .progress {
   font-family: var(--sans);
   font-size: var(--font-size-100);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--grey-50);
 }
 
-/* ─── Question text ──────────────────────────────────────────── */
+/* ─── Question text — headliner ─────────────────────────────── */
 
 .question {
   margin: 0;
   font-family: var(--sans);
-  font-size: var(--font-size-400);
+  font-size: var(--font-size-500);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-400);
+  letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
 }
 
@@ -53,46 +56,63 @@
   gap: var(--space-100);
 }
 
-/* ─── Single option button / card ───────────────────────────── */
+/* ─── Single option card ─────────────────────────────────────── */
 
 .option {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-150);
   width: 100%;
-  padding: var(--space-150) var(--space-200);
+  padding: var(--space-125) var(--space-150);
   text-align: left;
 
-  background: var(--grey-0);
+  background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-150);
 
   font-family: var(--sans);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 220ms ease,
+    transform 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
 
   /* Reset button defaults */
   appearance: none;
   -webkit-appearance: none;
+
+  /* Staggered arrival cascade */
+  animation: optionEnter 380ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--option-delay, 0ms) backwards;
 }
 
+.option:nth-child(1) { --option-delay: 80ms; }
+.option:nth-child(2) { --option-delay: 140ms; }
+.option:nth-child(3) { --option-delay: 200ms; }
+.option:nth-child(4) { --option-delay: 260ms; }
+.option:nth-child(5) { --option-delay: 320ms; }
+.option:nth-child(6) { --option-delay: 380ms; }
+
 .option:hover:not(:disabled) {
-  background: var(--white);
   border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+  transform: translateY(calc(-1 * var(--border-width-100)));
 }
 
 .option.selected {
   background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
   border-color: var(--brand-60);
+  box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 24%, transparent);
 }
 
 .option.correct {
-  background: var(--color-bg-success);
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--white));
   border-color: var(--color-text-success);
 }
 
 .option.incorrect {
-  background: var(--color-bg-error);
+  background: color-mix(in srgb, var(--color-text-error) 8%, var(--white));
   border-color: var(--color-text-error);
 }
 
@@ -107,59 +127,48 @@
   opacity: var(--opacity-100);
 }
 
-/* ─── Custom indicator (radio circle / checkbox square) ──────── */
+/* ─── Letter badge — the signature element ─────────────────── */
 
-.indicator {
+.letterBadge {
   flex-shrink: 0;
-  width: var(--size-16);
-  height: var(--size-16);
-  border: var(--border-width-150) solid var(--grey-30);
-  background: var(--white);
-  display: flex;
+  width: var(--size-32);
+  height: var(--size-32);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 120ms ease, background 120ms ease;
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-150);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--grey-70);
+
+  transition:
+    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.indicatorRadio {
-  border-radius: var(--radius-full);
-}
-
-.indicatorCheckbox {
-  border-radius: var(--radius-050);
-}
-
-/* Dot for radio selected */
-.indicatorRadio.indicatorActive {
-  border-color: var(--brand-60);
+.option.selected .letterBadge {
   background: var(--brand-60);
-}
-
-.indicatorRadio.indicatorActive::after {
-  content: '';
-  display: block;
-  width: var(--size-06);
-  height: var(--size-06);
-  border-radius: var(--radius-full);
-  background: var(--white);
-}
-
-/* Checkmark for checkbox selected */
-.indicatorCheckbox.indicatorActive {
   border-color: var(--brand-60);
-  background: var(--brand-60);
+  color: var(--white);
 }
 
-/* Correct state indicator */
-.indicator.indicatorCorrect {
-  border-color: var(--color-text-success);
+.option.correct .letterBadge {
   background: var(--color-text-success);
+  border-color: var(--color-text-success);
+  color: var(--white);
 }
 
-/* Incorrect state indicator */
-.indicator.indicatorError {
-  border-color: var(--color-text-error);
+.option.incorrect .letterBadge {
   background: var(--color-text-error);
+  border-color: var(--color-text-error);
+  color: var(--white);
 }
 
 /* ─── Option image thumbnail ─────────────────────────────────── */
@@ -185,22 +194,6 @@
   min-width: 0;
 }
 
-/* ─── Right-side status icon (post-submit) ───────────────────── */
-
-.statusIcon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.statusIcon.iconCorrect {
-  color: var(--color-text-success);
-}
-
-.statusIcon.iconError {
-  color: var(--color-text-error);
-}
-
 /* ─── Submit bar (multi-mode) ────────────────────────────────── */
 
 .submitBar {
@@ -209,9 +202,20 @@
   justify-content: flex-end;
 }
 
-/* ─── Shared arrival keyframe ────────────────────────────────── */
+/* ─── Keyframes ──────────────────────────────────────────────── */
 
 @keyframes riseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}
+
+@keyframes optionEnter {
   from {
     opacity: var(--opacity-000);
     transform: translateY(var(--space-100));
