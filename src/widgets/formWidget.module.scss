@@ -100,11 +100,38 @@
 /* ─── Single field ────────────────────────────────────────────────── */
 
 .field {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-050);
+  gap: var(--space-075);
 
   animation: riseUp 340ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--field-delay, 0ms) backwards;
+}
+
+/* Active-field accent bar — sits in the left gutter outside the field
+   content, springs up on focus-within (any descendant focused), fades
+   out on blur. Pure CSS, no JS state, no layout shift. */
+.field::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-125));
+  top: var(--size-04);
+  bottom: var(--size-04);
+  width: var(--border-width-200);
+  background: var(--brand-60);
+  border-radius: var(--radius-full);
+  opacity: var(--opacity-000);
+  transform: scaleY(0.3);
+  transform-origin: center;
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1.4);
+  pointer-events: none;
+}
+
+.field:focus-within::before {
+  opacity: var(--opacity-088);
+  transform: scaleY(1);
 }
 
 .field:nth-child(1) { --field-delay: 60ms; }
@@ -161,12 +188,21 @@
 /* ─── Inline error message ────────────────────────────────────────── */
 
 .errorMsg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
   font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-100);
   color: var(--color-text-error);
   margin-top: var(--space-025);
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ─── Select trigger — full-width ─────────────────────────────────── */

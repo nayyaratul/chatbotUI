@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import cx from 'classnames'
-import { CheckCircle2, Check, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Check, ArrowRight, AlertCircle } from 'lucide-react'
 import {
   Button,
   Input,
@@ -137,7 +137,19 @@ export function FormWidget({ payload }) {
     setErrors(nextErrors)
 
     const hasErrors = Object.values(nextErrors).some(Boolean)
-    if (hasErrors) return
+    if (hasErrors) {
+      // Auto-focus first invalid field (accessibility + UX: user shouldn't
+      // have to hunt for the error on a long form). Wait a tick so React
+      // commits the error styles before focus moves.
+      const firstInvalid = fields.find((f) => !!nextErrors[f.name])
+      if (firstInvalid) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`form-field-${firstInvalid.name}`)
+          el?.focus?.()
+        })
+      }
+      return
+    }
 
     const snapshot = { ...values }
     const now = Date.now()
@@ -306,6 +318,9 @@ export function FormWidget({ payload }) {
                   role="alert"
                   aria-live="polite"
                 >
+                  <span className={styles.errorIcon} aria-hidden="true">
+                    <AlertCircle size={12} strokeWidth={2.5} />
+                  </span>
                   {errors[field.name]}
                 </span>
               )}
