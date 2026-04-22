@@ -99,7 +99,8 @@
 }
 
 /* Celebrate-pass glow: a soft radial tone halo behind the number,
-   rendered via a pseudo-element that sits behind the content. */
+   rendered via a pseudo-element that sits behind the content.
+   Starts hidden; pass-tone cards animate it in with a gentle pulse. */
 .scoreBlock::before {
   content: '';
   position: absolute;
@@ -111,12 +112,40 @@
   );
   opacity: var(--opacity-000);
   pointer-events: none;
-  transition: opacity 420ms ease;
+  transform-origin: center;
   z-index: 0;
 }
 
+/* Pass tone — the halo pulses in (scale 0.7 → 1.15 → 1) as a
+   subtle celebration, and the score number does a small bounce
+   delayed to coincide with the count-up landing at its target. */
 .pass .scoreBlock::before {
-  opacity: var(--opacity-088);
+  animation: passHalo 900ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+.pass .scorePrimary {
+  animation: passBounce 420ms cubic-bezier(0.2, 0.8, 0.3, 1.4) 700ms both;
+}
+
+@keyframes passHalo {
+  0% {
+    opacity: var(--opacity-000);
+    transform: scale(0.7);
+  }
+  55% {
+    opacity: var(--opacity-088);
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: var(--opacity-088);
+    transform: scale(1);
+  }
+}
+
+@keyframes passBounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
 }
 
 .scoreBlock > * {
