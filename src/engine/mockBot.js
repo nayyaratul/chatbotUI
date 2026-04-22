@@ -59,3 +59,22 @@ registerRule({
     },
   }),
 })
+
+registerRule({
+  match: /^(show )?confirm(ation)?/i,
+  build: () => ({
+    type: 'confirmation',
+    payload: {
+      widget_id: makeId('confirm'),
+      action_id: makeId('action'),
+      title: 'Confirm your choice',
+      description: 'Are you sure you want to continue?',
+      details: [
+        { label: 'Action', value: 'Demo confirmation' },
+        { label: 'When',   value: 'Immediately' },
+      ],
+      confirm_label: 'Yes, continue',
+      cancel_label: 'Go back',
+    },
+  }),
+})

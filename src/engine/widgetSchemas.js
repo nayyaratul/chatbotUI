@@ -29,4 +29,23 @@ export const widgetSchemas = {
       allow_multiple: false,
     },
   },
+  confirmation: {
+    label: 'Confirmation Card',
+    examplePayload: {
+      widget_id: 'confirm-example-1',
+      action_id: 'apply-job-123',
+      title: 'Confirm your application',
+      description: 'You are about to apply for this job. This action cannot be undone.',
+      details: [
+        { label: 'Role',       value: 'Delivery Associate' },
+        { label: 'Location',   value: 'Koramangala, Bangalore' },
+        { label: 'Pay',        value: '₹850/day' },
+        { label: 'Start date', value: '2026-05-01' },
+      ],
+      confirm_label: 'Submit application',
+      cancel_label: 'Go back',
+      require_checkbox: true,
+      checkbox_label: 'I understand this submission is final.',
+    },
+  },
 }
