@@ -7,6 +7,8 @@ import {
   X,
   ExternalLink,
   CheckCircle2,
+  Check,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
@@ -129,15 +131,15 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
         </div>
       </div>
 
-      {/* Pay */}
+      {/* Pay — tinted chip, headliner */}
       {(pay.amount || pay.period) && (
-        <div className={styles.payRow}>
+        <div className={styles.payChip}>
           {pay.amount && <span className={styles.payAmount}>{pay.amount}</span>}
           {pay.period && <span className={styles.payPeriod}>/ {pay.period}</span>}
         </div>
       )}
 
-      {/* Meta row: location + timing */}
+      {/* Meta row: location (with optional Near-you badge) + timing */}
       {(location.name || timing) && (
         <div className={styles.metaRow}>
           {location.name && (
@@ -147,7 +149,13 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
               </span>
               {location.name}
               {distanceText && (
-                <span>{'·'} {distanceText}</span>
+                <>
+                  <span className={styles.metaSep}>·</span>
+                  <span className={styles.metaDistance}>{distanceText}</span>
+                </>
+              )}
+              {location.distance_km != null && location.distance_km < 5 && (
+                <span className={styles.nearBadge}>Near you</span>
               )}
             </span>
           )}
@@ -162,11 +170,16 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
         </div>
       )}
 
-      {/* Requirements */}
+      {/* Requirements — checklist style */}
       {reqs.length > 0 && (
         <ul className={styles.requirementsList} aria-label="Key requirements">
           {reqs.map((req, i) => (
-            <li key={i} className={styles.requirementItem}>{req}</li>
+            <li key={i} className={styles.requirementItem}>
+              <span className={styles.requirementIcon} aria-hidden="true">
+                <Check size={12} strokeWidth={2.75} />
+              </span>
+              <span>{req}</span>
+            </li>
           ))}
         </ul>
       )}
@@ -181,7 +194,10 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
             className={styles.applyBtn}
             onClick={() => handleAction('apply')}
           >
-            Apply
+            <span className={styles.btnInner}>
+              Apply
+              <ArrowRight size={14} strokeWidth={2.25} aria-hidden="true" />
+            </span>
           </Button>
         )}
 

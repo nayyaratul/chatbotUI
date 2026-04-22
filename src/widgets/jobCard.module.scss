@@ -1,6 +1,9 @@
 /* ─── Job Card Widget ─────────────────────────────────────────────────
-   Single-card + carousel variant. Nexus tokens only. Inter only.
-   Card body stays white. Brand-aware primary button. Peek carousel.
+   "Recruiter's brief" — pay front and centre as a tinted chip, meta row
+   with a "Near you" proximity badge, requirements as a checklist
+   (Check glyphs instead of bullets), hover lift on the card, Apply
+   button with a trailing arrow. Single-card + carousel variants.
+   Nexus tokens only. Inter only. Card body stays white.
    ─────────────────────────────────────────────────────────────────── */
 
 /* ─── Single card shell ───────────────────────────────────────────── */
@@ -9,7 +12,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-200);
+  gap: var(--space-150);
   padding: var(--space-200);
 
   background: var(--white);
@@ -18,7 +21,16 @@
   box-shadow: var(--shadow-100);
   overflow: hidden;
 
-  animation: jcRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  transition:
+    transform 240ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 240ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: jcRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  transform: translateY(calc(-1 * var(--border-width-200)));
+  box-shadow: var(--shadow-200);
 }
 
 /* ─── Head row: logo + title + company ───────────────────────────── */
@@ -46,7 +58,7 @@
   height: var(--size-40);
   border-radius: var(--radius-100);
   border: var(--border-width-100) solid var(--grey-10);
-  background: var(--grey-05);
+  background: var(--grey-0);
 
   display: flex;
   align-items: center;
@@ -93,12 +105,18 @@
   text-overflow: ellipsis;
 }
 
-/* ─── Pay chip ────────────────────────────────────────────────────── */
+/* ─── Pay chip — the headliner ────────────────────────────────────── */
 
-.payRow {
-  display: flex;
+.payChip {
+  display: inline-flex;
   align-items: baseline;
   gap: var(--space-050);
+  align-self: flex-start;
+
+  padding: var(--space-075) var(--space-125);
+  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  border-radius: var(--radius-150);
 }
 
 .payAmount {
@@ -115,11 +133,11 @@
   font-family: var(--sans);
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-200);
+  line-height: 1;
   color: var(--grey-60);
 }
 
-/* ─── Meta row: location + timing ────────────────────────────────── */
+/* ─── Meta row: location (with optional Near-you badge) + timing ── */
 
 .metaRow {
   display: flex;
@@ -146,24 +164,62 @@
   color: var(--grey-50);
 }
 
-/* ─── Requirements list ───────────────────────────────────────────── */
+.metaSep {
+  color: var(--grey-30);
+  margin: 0 var(--space-025);
+}
+
+.metaDistance {
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.nearBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-075);
+  padding: var(--space-025) var(--space-075);
+  background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/* ─── Requirements as a checklist (Check glyphs, no bullets) ─────── */
 
 .requirementsList {
   margin: 0;
-  padding: 0 0 0 var(--space-175);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-050);
-  list-style: disc;
-  list-style-position: outside;
+  gap: var(--space-075);
+  list-style: none;
 }
 
 .requirementItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
   font-family: var(--sans);
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-80);
+}
+
+.requirementIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-025);
+  color: var(--color-text-success);
 }
 
 /* ─── Actions row ─────────────────────────────────────────────────── */
@@ -172,7 +228,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-100);
-  padding-top: var(--space-050);
+  padding-top: var(--space-100);
   border-top: var(--border-width-100) solid var(--grey-10);
 }
 
@@ -260,22 +316,28 @@
     display: none;
   }
 
-  /* allow cards to peek out of the container edges */
-  padding-bottom: var(--space-050); /* space for shadow */
+  /* allow shadow breathing room at the bottom */
+  padding-bottom: var(--space-050);
 }
 
-/* Each card in carousel */
+/* Each card in carousel: staggered arrival */
 .carouselCard {
   flex: 0 0 86%;
   scroll-snap-align: start;
-  max-width: 86%;
+  animation: jcRiseUp 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--jc-delay, 0ms) backwards;
 }
+
+.carouselCard:nth-child(1) { --jc-delay: 0ms; }
+.carouselCard:nth-child(2) { --jc-delay: 80ms; }
+.carouselCard:nth-child(3) { --jc-delay: 160ms; }
+.carouselCard:nth-child(4) { --jc-delay: 240ms; }
+.carouselCard:nth-child(5) { --jc-delay: 320ms; }
+.carouselCard:nth-child(6) { --jc-delay: 400ms; }
 
 /* Desktop: show more of each card */
 @media (min-width: 640px) {
   .carouselCard {
     flex: 0 0 60%;
-    max-width: 60%;
   }
 }
 
