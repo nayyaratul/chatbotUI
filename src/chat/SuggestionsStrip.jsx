@@ -1,13 +1,13 @@
-import { Button } from '@nexus/atoms'
 import styles from './suggestionsStrip.module.scss'
 
 /**
- * Horizontally-scrollable strip of suggestion pills above the chat input.
- * Tapping a pill does NOT send — it prefills `onSelect(text)` which the
- * parent routes into the input textarea. User can edit, then send.
+ * Right-aligned stack of outlined bubble prompts, rising from the
+ * bottom of the chat surface. Tapping a bubble does NOT send — it
+ * calls `onSelect(text)` which the parent routes into the input
+ * textarea. User edits, then sends.
  *
- * Each suggestion: { label, emoji?, text? }. If `text` is omitted, the
- * label is used as the prefill value.
+ * `suggestions` is an array of { label, text?, ... }. If `text` is
+ * omitted, the label is used as the prefill value.
  */
 export function SuggestionsStrip({ suggestions, onSelect }) {
   if (!suggestions || suggestions.length === 0) return null
@@ -15,16 +15,15 @@ export function SuggestionsStrip({ suggestions, onSelect }) {
   return (
     <div className={styles.strip} role="list" aria-label="Conversation starters">
       {suggestions.map((s, i) => (
-        <Button
+        <button
           key={s.text ?? s.label ?? i}
-          className={styles.pill}
-          variant="secondary"
-          size="md"
+          type="button"
+          role="listitem"
+          className={styles.bubble}
           onClick={() => onSelect(s.text ?? s.label)}
         >
-          {s.emoji && <span className={styles.pillEmoji}>{s.emoji}</span>}
           {s.label}
-        </Button>
+        </button>
       ))}
     </div>
   )

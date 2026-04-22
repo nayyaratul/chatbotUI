@@ -12,19 +12,18 @@ export function ChatPane({ bot }) {
   const textareaRef = useRef(null)
 
   // Starter prompts appear only on a fresh conversation. Any user message
-  // (or reset that re-populates) will hide them until the chat is empty again.
-  const showStarters = bot.messages.length === 0
+  // (or reset that re-empties the thread) re-offers them.
+  const showStarters = bot.messages.length === 0 && !bot.isBotTyping
   const activeSuggestions = showStarters ? STARTER_PROMPTS : []
 
   const handleSuggestionSelect = (text) => {
     setInputText(text)
-    // Focus on the next frame so React has committed the value update.
+    // Focus the next frame so React commits the value, then place caret
+    // at end so the user can type additions without moving the cursor.
     requestAnimationFrame(() => {
       const el = textareaRef.current
       if (el) {
         el.focus()
-        // Place the caret at the end so users can continue typing without
-        // having to tap to move it.
         el.setSelectionRange(text.length, text.length)
       }
     })
@@ -35,12 +34,18 @@ export function ChatPane({ bot }) {
       <div className={styles.pane}>
         <ChatHeader />
         <div className={styles.body}>
-          <MessageList messages={bot.messages} isBotTyping={bot.isBotTyping} />
+          <MessageList
+            messages={bot.messages}
+            isBotTyping={bot.isBotTyping}
+            hideEmptyState={showStarters}
+          />
+          {showStarters && (
+            <SuggestionsStrip
+              suggestions={activeSuggestions}
+              onSelect={handleSuggestionSelect}
+            />
+          )}
         </div>
-        <SuggestionsStrip
-          suggestions={activeSuggestions}
-          onSelect={handleSuggestionSelect}
-        />
         <MessageInput
           ref={textareaRef}
           value={inputText}

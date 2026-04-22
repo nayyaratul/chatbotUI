@@ -1,32 +1,70 @@
 /* ─── Suggestions Strip ──────────────────────────────────────
-   Horizontally-scrollable pill row sitting above the message
-   input. Only rendered when a fresh conversation is offering
-   starter prompts.
+   Vertical stack of right-aligned, outlined prompt bubbles that
+   rise from the bottom of the chat surface. Only rendered on a
+   fresh conversation to hint what the user can ask.
    ────────────────────────────────────────────────────────── */
 
 .strip {
   display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
   gap: var(--space-100);
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: var(--space-100) var(--space-150);
+  padding: var(--space-200);
+  margin-top: auto; /* anchor the stack to the bottom of the chat body */
   background: transparent;
-
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar { display: none; }
 }
 
-.pill {
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  border-radius: var(--radius-full) !important;
-}
+.bubble {
+  display: inline-block;
+  max-width: 85%;
+  padding: var(--space-125) var(--space-150);
 
-.pillEmoji {
+  background: var(--white);
+  border: var(--border-width-100) solid var(--blue-60);
+  border-radius: var(--radius-300);
+  border-bottom-right-radius: var(--radius-100);
+
+  color: var(--blue-60);
+  font-family: var(--sans);
   font-size: var(--font-size-300);
-  line-height: 1;
-  margin-right: var(--space-050);
+  line-height: var(--line-height-300);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+
+  cursor: pointer;
+  white-space: normal;
+  word-wrap: break-word;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+
+  animation: riseUp 380ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
+}
+
+.bubble:hover {
+  background: var(--blue-60);
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.bubble:focus-visible {
+  outline: var(--border-width-200) solid var(--blue-60);
+  outline-offset: 2px;
+}
+
+/* Stagger the rise so the closest-to-input bubble lands first,
+   the next one a beat later, etc. */
+.bubble:nth-child(1) { animation-delay: 0ms; }
+.bubble:nth-child(2) { animation-delay: 70ms; }
+.bubble:nth-child(3) { animation-delay: 140ms; }
+.bubble:nth-child(4) { animation-delay: 210ms; }
+.bubble:nth-child(5) { animation-delay: 280ms; }
+
+@keyframes riseUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-150));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

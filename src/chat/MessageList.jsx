@@ -9,7 +9,7 @@ function toYmd(ts) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function MessageList({ messages, isBotTyping }) {
+export function MessageList({ messages, isBotTyping, hideEmptyState = false }) {
   const endRef = useRef(null)
 
   useEffect(() => {
@@ -17,6 +17,7 @@ export function MessageList({ messages, isBotTyping }) {
   }, [messages.length, isBotTyping])
 
   if (messages.length === 0 && !isBotTyping) {
+    if (hideEmptyState) return null
     return <div className={styles.empty}>Say something to start…</div>
   }
 

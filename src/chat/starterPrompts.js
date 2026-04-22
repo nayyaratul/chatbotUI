@@ -1,18 +1,19 @@
 /**
- * Conversation starters — shown in a horizontally-scrollable strip above
- * the chat input whenever the chat is empty. Tapping a pill prefills the
- * input (does not send), so the user can edit before committing.
+ * Conversation starters — shown as right-aligned outlined bubbles
+ * stacked from the bottom of the chat area when a new conversation
+ * begins. Tapping a bubble prefills the input textarea (does not
+ * send), so the user can edit before committing.
  *
- * `label` is what shows on the pill. `text` is what gets prefilled into
- * the textarea (falls back to label). `emoji` is optional.
+ * Order matters: the FIRST entry renders closest to the input
+ * (bottom of the stack) because the container uses
+ * flex-direction: column-reverse.
  *
- * These labels intentionally match the mockBot rule triggers so tapping
- * + sending demonstrates the widget each starter hints at. Users can
- * edit freely before sending.
+ * `label` shows on the bubble. `text` is the prefill value (falls
+ * back to label if omitted).
  */
 export const STARTER_PROMPTS = [
-  { label: 'Quick reply',           emoji: '👆', text: 'show quick reply' },
-  { label: 'Confirmation',          emoji: '✅', text: 'show confirmation' },
-  { label: 'Job application',       emoji: '📝', text: 'show caution confirmation' },
-  { label: 'Account deletion',      emoji: '⚠️', text: 'show danger confirmation' },
+  { label: 'Tell me my payroll for this month.' },
+  { label: 'How much money did I lose because of absence this month?' },
+  { label: 'Teach me a sales course.' },
+  { label: 'Show me upcoming shifts.' },
 ]
