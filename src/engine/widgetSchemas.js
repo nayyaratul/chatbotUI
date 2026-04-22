@@ -94,6 +94,59 @@ export const widgetSchemas = {
       ],
     },
   },
+  form: {
+    label: 'Form (multi-field)',
+    examplePayload: {
+      widget_id: 'form-example-1',
+      form_id: 'candidate-registration',
+      submit_label: 'Submit details',
+      silent: false,
+      fields: [
+        {
+          name: 'full_name',
+          label: 'Full name',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Priya Sharma',
+        },
+        {
+          name: 'phone',
+          label: 'Phone number',
+          type: 'phone',
+          required: true,
+          placeholder: '10-digit mobile number',
+        },
+        {
+          name: 'dob',
+          label: 'Date of birth',
+          type: 'date',
+          required: true,
+        },
+        {
+          name: 'city',
+          label: 'City',
+          type: 'dropdown',
+          required: true,
+          placeholder: 'Select your city',
+          options: [
+            { label: 'Bangalore', value: 'bangalore' },
+            { label: 'Mumbai',    value: 'mumbai' },
+            { label: 'Delhi',     value: 'delhi' },
+            { label: 'Hyderabad', value: 'hyderabad' },
+            { label: 'Chennai',   value: 'chennai' },
+            { label: 'Pune',      value: 'pune' },
+          ],
+        },
+        {
+          name: 'email',
+          label: 'Email address',
+          type: 'email',
+          required: false,
+          placeholder: 'Optional — for updates',
+        },
+      ],
+    },
+  },
   confirmation: {
     label: 'Confirmation Card',
     examplePayload: {

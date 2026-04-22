@@ -1,0 +1,182 @@
+/* ─── Form Widget ───────────────────────────────────────────────────
+   Compact multi-field form rendered as a single chat message.
+   Nexus tokens only. Inter only. Card body white.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding: var(--space-250) var(--space-200) var(--space-200);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  max-width: 96%;
+
+  box-shadow: var(--shadow-100);
+  overflow: hidden;
+
+  animation: riseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* ─── Field list ──────────────────────────────────────────────────── */
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+}
+
+/* ─── Single field wrapper ────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+/* ─── Field label ─────────────────────────────────────────────────── */
+
+.label {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-80);
+}
+
+/* ─── Required asterisk ───────────────────────────────────────────── */
+
+.required {
+  color: var(--color-text-error);
+  margin-left: var(--space-025);
+}
+
+/* ─── Inline error message ────────────────────────────────────────── */
+
+.errorMsg {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-100);
+  color: var(--color-text-error);
+  margin-top: var(--space-025);
+}
+
+/* ─── Select trigger — full-width ─────────────────────────────────── */
+
+.selectTrigger {
+  width: 100%;
+}
+
+/* ─── Submit bar ──────────────────────────────────────────────────── */
+
+.submitBar {
+  display: flex;
+  flex-direction: column;
+}
+
+.submitBtn {
+  width: 100%;
+}
+
+/* ─── Submitted / summary card ────────────────────────────────────── */
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  max-width: 96%;
+
+  box-shadow: var(--shadow-100);
+  overflow: hidden;
+
+  animation: riseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* ─── Submitted chip ──────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/* ─── Summary divider ─────────────────────────────────────────────── */
+
+.summaryDivider {
+  border: none;
+  border-top: var(--border-width-100) solid var(--grey-10);
+  margin: 0;
+}
+
+/* ─── Summary rows ────────────────────────────────────────────────── */
+
+.summaryRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.summaryRow {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-100);
+  align-items: baseline;
+}
+
+.summaryLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.summaryValue {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes riseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}

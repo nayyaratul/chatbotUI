@@ -229,6 +229,147 @@ registerRule({
   }),
 })
 
+// Form widget — basic registration form (name, phone, DOB, city, email)
+registerRule({
+  match: /^(show )?form/i,
+  build: () => ({
+    type: 'form',
+    payload: {
+      widget_id: makeId('form'),
+      form_id: 'candidate-registration',
+      submit_label: 'Submit details',
+      silent: false,
+      fields: [
+        {
+          name: 'full_name',
+          label: 'Full name',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Priya Sharma',
+        },
+        {
+          name: 'phone',
+          label: 'Phone number',
+          type: 'phone',
+          required: true,
+          placeholder: '10-digit mobile number',
+        },
+        {
+          name: 'dob',
+          label: 'Date of birth',
+          type: 'date',
+          required: true,
+        },
+        {
+          name: 'city',
+          label: 'City',
+          type: 'dropdown',
+          required: true,
+          placeholder: 'Select your city',
+          options: [
+            { label: 'Bangalore', value: 'bangalore' },
+            { label: 'Mumbai',    value: 'mumbai' },
+            { label: 'Delhi',     value: 'delhi' },
+            { label: 'Hyderabad', value: 'hyderabad' },
+            { label: 'Chennai',   value: 'chennai' },
+            { label: 'Pune',      value: 'pune' },
+          ],
+        },
+        {
+          name: 'email',
+          label: 'Email address',
+          type: 'email',
+          required: false,
+          placeholder: 'Optional — for updates',
+        },
+      ],
+    },
+  }),
+})
+
+// Form widget — extended KYC / onboarding form
+registerRule({
+  match: /^(show )?(kyc|onboard(ing)?)/i,
+  build: () => ({
+    type: 'form',
+    payload: {
+      widget_id: makeId('form'),
+      form_id: 'kyc-onboarding',
+      submit_label: 'Submit KYC',
+      silent: false,
+      fields: [
+        {
+          name: 'full_name',
+          label: 'Full name',
+          type: 'text',
+          required: true,
+          placeholder: 'As per Aadhaar',
+        },
+        {
+          name: 'dob',
+          label: 'Date of birth',
+          type: 'date',
+          required: true,
+        },
+        {
+          name: 'phone',
+          label: 'Mobile number',
+          type: 'phone',
+          required: true,
+          placeholder: '10-digit number',
+        },
+        {
+          name: 'email',
+          label: 'Email address',
+          type: 'email',
+          required: false,
+          placeholder: 'Optional',
+        },
+        {
+          name: 'pincode',
+          label: 'Pincode',
+          type: 'pincode',
+          required: true,
+          placeholder: '6-digit pincode',
+        },
+        {
+          name: 'state',
+          label: 'State',
+          type: 'dropdown',
+          required: true,
+          placeholder: 'Select state',
+          options: [
+            { label: 'Andhra Pradesh',      value: 'ap' },
+            { label: 'Delhi',               value: 'dl' },
+            { label: 'Gujarat',             value: 'gj' },
+            { label: 'Karnataka',           value: 'ka' },
+            { label: 'Maharashtra',         value: 'mh' },
+            { label: 'Rajasthan',           value: 'rj' },
+            { label: 'Tamil Nadu',          value: 'tn' },
+            { label: 'Telangana',           value: 'ts' },
+            { label: 'Uttar Pradesh',       value: 'up' },
+            { label: 'West Bengal',         value: 'wb' },
+          ],
+        },
+        {
+          name: 'bank_account',
+          label: 'Bank account number',
+          type: 'number',
+          required: true,
+          placeholder: 'Account number',
+        },
+        {
+          name: 'ifsc',
+          label: 'IFSC code',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. SBIN0001234',
+        },
+      ],
+    },
+  }),
+})
+
 registerRule({
   match: /^(show )?progress/i,
   build: () => ({
