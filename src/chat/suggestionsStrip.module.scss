@@ -10,8 +10,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: var(--space-100) var(--space-150);
-  background: var(--white);
-  border-top: var(--border-width-100) solid var(--grey-10);
+  background: transparent;
 
   scroll-snap-type: x proximity;
   scrollbar-width: none;
