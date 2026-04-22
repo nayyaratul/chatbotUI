@@ -155,9 +155,7 @@ export function ScoreCard({ payload }) {
                     {cat.score} / {cat.max_score}
                   </span>
                 </div>
-                <div className={styles.barWrap}>
-                  <ProgressBar value={pct} max={100} size="sm" variant={variant} />
-                </div>
+                <ProgressBar value={pct} max={100} size="sm" variant={variant} />
               </div>
             )
           })}

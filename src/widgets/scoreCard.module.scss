@@ -217,28 +217,6 @@
   white-space: nowrap;
 }
 
-/* Threshold tick overlay — subtle marks at 50% and 75% so the bar
-   reads quantitatively. The bar container holds the Nexus
-   ProgressBar behind the ticks. */
-.barWrap {
-  position: relative;
-}
-
-.barWrap::before,
-.barWrap::after {
-  content: '';
-  position: absolute;
-  top: calc(50% - var(--space-075));
-  width: var(--border-width-100);
-  height: var(--space-150);
-  background: var(--grey-20);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.barWrap::before { left: 50%; }
-.barWrap::after  { left: 75%; }
-
 /* ─── Reasoning / expandable section ────────────────────────── */
 
 .reasoningSection {
