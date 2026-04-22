@@ -138,13 +138,12 @@ export function FormWidget({ payload }) {
     )
   }
 
-  /* ─── Required-fields gate for submit button ────────────────────── */
+  /* ─── Full validity gate for submit button ──────────────────────────
+     Enables only when every field passes its format validator. Required
+     empty fields fail, required fields with invalid format (e.g. phone
+     "123", date "3rd May") also fail. Non-required empty fields pass. */
 
-  const isSubmittable = fields.every((f) => {
-    if (!f.required) return true
-    const v = (values[f.name] ?? '').trim()
-    return v.length > 0
-  })
+  const isSubmittable = fields.every((f) => validate(f, values[f.name]) === null)
 
   /* ─── Post-submit summary card ──────────────────────────────────── */
 
