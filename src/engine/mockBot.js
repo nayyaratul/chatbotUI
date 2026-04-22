@@ -43,3 +43,19 @@ export function respond(userMessage) {
 export function makeId(prefix = 'w') {
   return `${prefix}-${uuid().slice(0, 8)}`
 }
+
+registerRule({
+  match: /^(show )?quick[- ]?reply/i,
+  build: () => ({
+    type: 'quick_reply',
+    payload: {
+      widget_id: makeId('qr'),
+      prompt: 'Pick one:',
+      options: [
+        { label: 'Yes', value: 'yes', emoji: '👍' },
+        { label: 'No', value: 'no', emoji: '👎' },
+        { label: 'Maybe', value: 'maybe' },
+      ],
+    },
+  }),
+})

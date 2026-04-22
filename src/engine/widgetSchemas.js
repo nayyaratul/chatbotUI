@@ -16,4 +16,17 @@ export const widgetSchemas = {
       data: { label: 'Yes, proceed', value: 'yes' },
     },
   },
+  quick_reply: {
+    label: 'Quick Reply Buttons',
+    examplePayload: {
+      widget_id: 'qr-example-1',
+      prompt: 'Are you interested in this opportunity?',
+      options: [
+        { label: 'Yes', value: 'yes', emoji: '👍' },
+        { label: 'No', value: 'no', emoji: '👎' },
+        { label: 'Maybe later', value: 'maybe' },
+      ],
+      allow_multiple: false,
+    },
+  },
 }

@@ -1,0 +1,51 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 90%;
+}
+
+.prompt {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--grey-90);
+  padding: 9px 13px;
+  background: var(--white);
+  border: 1px solid var(--grey-10);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  white-space: pre-wrap;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.options {
+  display: flex;
+  gap: 8px;
+}
+
+.options.horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.options.vertical {
+  flex-direction: column;
+}
+
+.option {
+  min-height: 44px;
+}
+
+.options.horizontal .option {
+  flex: 0 0 auto;
+}
+
+.options.vertical .option {
+  align-self: stretch;
+}
+
+.emoji {
+  font-size: 15px;
+  margin-right: 4px;
+}
