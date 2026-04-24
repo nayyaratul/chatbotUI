@@ -247,6 +247,14 @@ const TONE_CLASS = {
   error:   'card_error',
 }
 
+function formatClockTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
 export function Approval({ payload }) {
   const {
     variant = 'bgv',
@@ -259,12 +267,24 @@ export function Approval({ payload }) {
   } = payload ?? {}
   const Icon = VARIANT_ICONS[variant] ?? ShieldCheck
 
-  const toneClass = TONE_CLASS[recommendation?.tone] ?? null
-
   const [openPanelId, setOpenPanelId] = useState(null)
   const [pending, setPending] = useState(null)   // null | 'reject' | 'more_info' | 'escalate'
   const [notes, setNotes] = useState('')
   const [decision, setDecision] = useState(null) // null | { action, notes, at }
+
+  // §9 tone: post-commit tracks the decision; pre-commit tracks the recommendation.
+  const activeTone = decision
+    ? (decision.action === 'approve'    ? 'success'
+      : decision.action === 'reject'    ? 'error'
+      : decision.action === 'more_info' ? 'warning'
+      : 'success')  // 'escalate' falls back to brand via special-case below
+    : recommendation?.tone
+
+  // 'escalate' gets brand-60 via its own modifier so it doesn't turn success-green.
+  const toneClass =
+    decision?.action === 'escalate'
+      ? 'card_brand'
+      : (TONE_CLASS[activeTone] ?? null)
 
   const { onReply } = useChatActions()
 
@@ -338,6 +358,8 @@ export function Approval({ payload }) {
         <ConfidenceArc
           confidence={recommendation?.confidence}
           verdict={recommendation?.verdict}
+          committed={!!decision}
+          decisionKey={decision?.action}
         />
       </header>
       {reasoning && (
@@ -352,13 +374,13 @@ export function Approval({ payload }) {
               key={item.id}
               item={item}
               open={openPanelId === item.id}
-              committed={false}
+              committed={!!decision}
               onToggle={togglePanel}
             />
           ))}
         </ul>
       )}
-      {!decision && (
+      {!decision ? (
         <div className={styles.actionRegion}>
           {pending && (
             <div className={styles.pendingPrompt}>
@@ -412,6 +434,21 @@ export function Approval({ payload }) {
               )
             })}
           </div>
+        </div>
+      ) : (
+        <div className={styles.committed}>
+          <div className={styles.banner}>
+            <span className={cx(styles.bannerChip, styles[`bannerChip_${decision.action}`])}>
+              <CircleCheck size={14} strokeWidth={2} />
+              <span>{VERDICT_LABEL_DONE[decision.action]}</span>
+            </span>
+            <span className={styles.bannerMeta}>
+              Decided at {formatClockTime(decision.at)} · Confidence {Math.round((recommendation?.confidence ?? 0) * 100)}%
+            </span>
+          </div>
+          {decision.notes && (
+            <blockquote className={styles.notesEcho}>{decision.notes}</blockquote>
+          )}
         </div>
       )}
     </div>
