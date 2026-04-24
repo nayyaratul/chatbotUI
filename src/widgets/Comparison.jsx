@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import cx from 'classnames'
 import {
   GitCompare,
@@ -82,11 +82,21 @@ export function Comparison({ payload }) {
   const variant  = payload?.variant ?? 'candidate_match'
   const itemA    = payload?.item_a ?? { label: 'A' }
   const itemB    = payload?.item_b ?? { label: 'B' }
-  const criteria = useMemo(() => {
-    const raw = Array.isArray(payload?.criteria) ? payload.criteria : []
-    return raw.slice(0, MAX_CRITERIA)
-  }, [payload?.criteria])
+  const rawCriteria = useMemo(
+    () => (Array.isArray(payload?.criteria) ? payload.criteria : []),
+    [payload?.criteria],
+  )
+  const criteria = useMemo(() => rawCriteria.slice(0, MAX_CRITERIA), [rawCriteria])
   const action = payload?.action
+
+  useEffect(() => {
+    if (rawCriteria.length > MAX_CRITERIA) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[Comparison] Received ${rawCriteria.length} criteria; rendering first ${MAX_CRITERIA} (§11 stagger cap).`,
+      )
+    }
+  }, [rawCriteria.length])
 
   const [openIdx, setOpenIdx]   = useState(null)
   const [actedAt, setActedAt]   = useState(null)
@@ -99,6 +109,12 @@ export function Comparison({ payload }) {
   const tone  = overallTone(criteria)
   const ratio = metRatio(criteria)
   const pct   = Math.round(ratio * 100)
+
+  /* Summary pill starts filling 180ms after the last row's indicator chip
+     settles. chip settles at row_delay + 120ms (start) + 280ms (duration).
+     So summaryDelay = (lastRowIdx * 60ms) + 400ms + 180ms. */
+  const lastRowIdx = Math.max(0, Math.min(criteria.length - 1, MAX_CRITERIA - 1))
+  const summaryDelay = lastRowIdx * 60 + 580
 
   const toggleRow = useCallback((idx) => {
     setOpenIdx((prev) => (prev === idx ? null : idx))
@@ -159,8 +175,12 @@ export function Comparison({ payload }) {
         </div>
       </div>
 
-      {/* Criteria grid — the signature body */}
-      <div className={styles.criteriaGrid} role="list">
+      {/* Criteria grid — the signature body. No role="list" on the grid
+          because clickable rows render as <button> and mixing listitem
+          semantics with button semantics loses button announcement in
+          some screen readers. The grid is a visual scan target, not an
+          a11y list. */}
+      <div className={styles.criteriaGrid}>
         {criteria.map((c, idx) => {
           const Glyph = STATUS_GLYPH[c.status] ?? Minus
           const isOpen = openIdx === idx
@@ -174,13 +194,19 @@ export function Comparison({ payload }) {
               Glyph={Glyph}
               hasNote={hasNote}
               isOpen={isOpen}
+              isFirst={idx === 0}
+              isTinted={idx % 2 === 1}
               onToggle={() => toggleRow(idx)}
             />
           )
         })}
       </div>
 
-      {/* Summary pill — §6 linear fill, tone-tinted */}
+      {/* Summary pill — §6 linear fill, tone-tinted. --cmp-pct carries
+          the target width to the keyframe so the fill animates 0→target
+          rather than appearing at target on mount. --cmp-summary-delay
+          scales with actual row count so the fill lands right after the
+          last indicator settles. */}
       <div className={styles.summary}>
         <div className={styles.summaryEyebrow}>
           {matchCount(criteria)} of {criteria.length} criteria met
@@ -195,23 +221,24 @@ export function Comparison({ payload }) {
         >
           <div
             className={styles.summaryFill}
-            style={{ width: `${pct}%` }}
+            style={{
+              '--cmp-pct': `${pct}%`,
+              '--cmp-summary-delay': `${summaryDelay}ms`,
+            }}
           />
         </div>
       </div>
 
-      {/* Footer — optional CTA OR terminal success banner */}
+      {/* Footer — optional CTA OR §10 success banner (chip + one line). */}
       {actedAt ? (
         <div className={styles.successBanner}>
-          <span className={styles.successCheck} aria-hidden="true">
-            <CheckCircle2 size={18} strokeWidth={2.25} />
+          <span className={styles.successChip}>
+            <CheckCircle2 size={14} strokeWidth={2.5} aria-hidden="true" />
+            Submitted
           </span>
-          <div className={styles.successBody}>
-            <div className={styles.successTitle}>Submitted</div>
-            <div className={styles.successSub}>
-              {timeLabel(actedAt)} · {action?.label}
-            </div>
-          </div>
+          <span className={styles.successMeta}>
+            {action?.label} · {timeLabel(actedAt)}
+          </span>
         </div>
       ) : action ? (
         <Button
@@ -233,21 +260,28 @@ export function Comparison({ payload }) {
    directly in the outer criteria grid columns. When `hasNote`, the
    row renders as a <button>; otherwise as a plain <div> — no dead
    click affordance. ─── */
-function CriterionRow({ idx, criterion, Glyph, hasNote, isOpen, onToggle }) {
+function CriterionRow({
+  idx, criterion, Glyph, hasNote, isOpen, isFirst, isTinted, onToggle,
+}) {
   const rowClass = cx(
     styles.criterionRow,
+    isFirst && styles.criterionRow_first,
+    isTinted && styles.criterionRow_tinted,
     hasNote && styles.criterionRow_clickable,
     isOpen && styles.criterionRow_open,
   )
+  const rowId   = `cmp-row-${idx}`
+  const noteId  = `cmp-note-${idx}`
   const RowTag = hasNote ? 'button' : 'div'
   const rowProps = hasNote
     ? {
         type: 'button',
+        id: rowId,
         onClick: onToggle,
         'aria-expanded': isOpen,
-        'aria-controls': `cmp-note-${idx}`,
+        'aria-controls': noteId,
       }
-    : { role: 'listitem' }
+    : { id: rowId }
 
   return (
     <>
@@ -273,10 +307,11 @@ function CriterionRow({ idx, criterion, Glyph, hasNote, isOpen, onToggle }) {
       </RowTag>
       {hasNote && (
         <div
-          id={`cmp-note-${idx}`}
-          className={cx(styles.noteRow, isOpen && styles.noteRow_open)}
+          id={noteId}
+          className={cx(styles.noteRow, isOpen && styles.noteRow_open, isTinted && styles.noteRow_tinted)}
           data-status={criterion.status}
-          role="region"
+          role="group"
+          aria-labelledby={rowId}
           aria-hidden={!isOpen}
         >
           <div className={styles.noteInner}>{criterion.note}</div>
