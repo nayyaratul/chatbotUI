@@ -82,6 +82,7 @@ function formatPeriod(start, end) {
   const s = new Date(start)
   const e = new Date(end)
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return ''
+  if (s > e) return ''
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()
   const sOpts = { day: 'numeric', month: 'short' }
   const eOpts = sameMonth
@@ -190,9 +191,10 @@ export function Earnings({ payload }) {
   })
 
   const lastRowIdx = Math.max(0, Math.min(breakdown.length - 1, MAX_BREAKDOWN - 1))
-  /* CTA closes the composition — lands 280ms after the last row entry.
+  /* CTA closes the composition — lands 180ms after the last row settles.
      Row entries start at 300ms (delay 300 + idx*60), each rise is 320ms,
-     so last row lands at 300 + lastRowIdx*60 + 320 = 620 + lastRowIdx*60. */
+     so last row lands at 300 + lastRowIdx*60 + 320 = 620 + lastRowIdx*60.
+     Add 180ms beat gap before the CTA enters. */
   const ctaDelay = 620 + lastRowIdx * 60 + 180
 
   const handleAction = useCallback(() => {
