@@ -330,7 +330,7 @@
   line-height: var(--line-height-200);
   color: var(--red-60);
 
-  > svg { flex-shrink: 0; margin-top: 2px; }
+  > svg { flex-shrink: 0; margin-top: var(--size-02); }
 }
 
 /* ─── Per-item action buttons (Approve / Reject) ─────────────────── */
@@ -392,7 +392,7 @@
 
 .decisionBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 /* ─── Rejection note form (inline inside the item) ───────────────── */
@@ -500,8 +500,8 @@
   text-transform: uppercase;
   color: var(--grey-50);
   text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+  text-underline-offset: var(--border-width-300);
+  text-decoration-thickness: var(--border-width-100);
   transition: color 160ms ease;
 }
 .reopenBtn:hover { color: var(--grey-80); }
@@ -542,7 +542,7 @@
 }
 .bulkApproveBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 .submitBtn {
@@ -625,7 +625,7 @@
   color: var(--color-text-success);
 
   > svg {
-    padding: 2px;
+    padding: var(--space-025);
     border-radius: var(--radius-full);
     background: var(--color-text-success);
     color: var(--white);
@@ -636,7 +636,7 @@
   color: var(--red-60);
 
   > svg {
-    padding: 2px;
+    padding: var(--space-025);
     border-radius: var(--radius-full);
     background: var(--red-50);
     color: var(--white);

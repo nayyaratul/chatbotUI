@@ -363,7 +363,7 @@
 
 .cta:focus-visible {
   outline: var(--border-width-200) solid var(--cr-tone-color);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 /* ─── Dots indicator ─────────────────────────────────────────────── */

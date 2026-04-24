@@ -48,8 +48,8 @@
 
 .open .backdrop {
   opacity: 0.48;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--size-06));
+  -webkit-backdrop-filter: blur(var(--size-06));
 }
 
 /* ─── Sheet (the modal container) ────────────────────────────────── */
@@ -63,7 +63,7 @@
   overflow: hidden;
   border-top-left-radius: var(--radius-300);
   border-top-right-radius: var(--radius-300);
-  box-shadow: 0 -12px 32px color-mix(in srgb, var(--grey-100) 18%, transparent);
+  box-shadow: 0 calc(-1 * var(--size-12)) var(--size-32) color-mix(in srgb, var(--grey-100) 18%, transparent);
 
   /* Transforms animate FROM the card's origin rect TO inset:0.
      We use transform-origin top-left and translate+scale to morph
@@ -132,7 +132,7 @@
 
 .backBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 .headerTitle {
@@ -170,7 +170,7 @@
 
 .headerIconBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 .headerIconBtn:disabled {
@@ -422,7 +422,7 @@
 
 .factIcon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--size-02);
   color: var(--grey-60);
 }
 
@@ -509,7 +509,7 @@
 
 .infoIcon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--size-02);
   color: var(--grey-50);
 }
 
@@ -611,7 +611,7 @@
   justify-content: center;
   width: var(--size-20);
   height: var(--size-20);
-  margin-top: 1px;
+  margin-top: var(--size-01);
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--green-60) 12%, var(--white));
   color: var(--green-60);
@@ -687,7 +687,7 @@
 
   > svg {
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: var(--size-02);
     color: var(--brand-60);
   }
 
@@ -919,8 +919,8 @@
   line-height: 1;
   color: var(--grey-50);
   text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+  text-underline-offset: var(--border-width-300);
+  text-decoration-thickness: var(--border-width-100);
   transition: color 160ms ease;
 }
 
@@ -940,8 +940,8 @@
   background:
     linear-gradient(
       250deg,
-      color-mix(in srgb, #BAE9F9 35%, var(--white)) 0%,
-      color-mix(in srgb, #F5EAF2 40%, var(--white)) 60%,
+      color-mix(in srgb, var(--blue-10) 40%, var(--white)) 0%,
+      color-mix(in srgb, var(--brand-10) 30%, var(--white)) 60%,
       var(--white) 100%
     );
   border: var(--border-width-100) solid color-mix(in srgb, var(--grey-100) 6%, transparent);
@@ -980,7 +980,7 @@
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--grey-50);
-  margin-bottom: 2px;
+  margin-bottom: var(--size-02);
 }
 
 .recruiterName {
@@ -1006,7 +1006,7 @@
   flex-shrink: 0;
   background: var(--white);
   border-top: var(--border-width-100) solid var(--grey-10);
-  box-shadow: 0 -4px 16px color-mix(in srgb, var(--grey-100) 6%, transparent);
+  box-shadow: 0 calc(-1 * var(--size-04)) var(--size-16) color-mix(in srgb, var(--grey-100) 6%, transparent);
 }
 
 /* Both buttons share equal weight — the bar is a clear binary:

@@ -39,8 +39,8 @@
 
 .hiddenInput {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--size-01);
+  height: var(--size-01);
   opacity: 0;
   pointer-events: none;
   clip: rect(0 0 0 0);
@@ -139,7 +139,7 @@
 
 .dropzone:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 /* Drag-over highlight — stronger tint + solid border to read as
@@ -245,7 +245,7 @@
   line-height: var(--line-height-200);
   color: var(--red-60);
 
-  > svg { flex-shrink: 0; margin-top: 2px; }
+  > svg { flex-shrink: 0; margin-top: var(--size-02); }
 }
 
 /* ─── File list ──────────────────────────────────────────────────── */
@@ -394,7 +394,7 @@
 
 .fileRemove:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 /* ─── Actions row — Add more + Upload.

@@ -384,7 +384,7 @@
 
 .resendBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 /* ─── Bottom actions ─────────────────────────────────────────────── */
@@ -493,7 +493,7 @@
 @keyframes viErrorShake {
   0%, 100% { transform: translateX(0); }
   20%      { transform: translateX(-2px); }
-  40%      { transform: translateX(2px); }
+  40%      { transform: translateX(var(--size-02)); }
   60%      { transform: translateX(-2px); }
-  80%      { transform: translateX(1px); }
+  80%      { transform: translateX(var(--size-01)); }
 }

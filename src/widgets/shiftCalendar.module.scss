@@ -116,8 +116,8 @@
   background-image:
     repeating-linear-gradient(
       -45deg,
-      transparent 0 3px,
-      color-mix(in srgb, var(--white) 40%, transparent) 3px 4px
+      transparent 0 var(--border-width-300),
+      color-mix(in srgb, var(--white) 40%, transparent) var(--border-width-300) var(--size-04)
     );
 }
 
@@ -245,7 +245,7 @@
 
 .shiftBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 .shiftBtn:disabled { cursor: default; }
@@ -296,8 +296,8 @@
   background:
     repeating-linear-gradient(
       -45deg,
-      var(--grey-0) 0 6px,
-      color-mix(in srgb, var(--grey-10) 40%, var(--grey-0)) 6px 7px
+      var(--grey-0) 0 var(--size-06),
+      color-mix(in srgb, var(--grey-10) 40%, var(--grey-0)) var(--size-06) calc(var(--size-06) + var(--border-width-100))
     );
   border-color: var(--grey-10);
   color: var(--grey-50);

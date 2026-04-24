@@ -1,18 +1,18 @@
 .bubble {
   display: inline-block;
-  padding: 9px 13px;
-  border-radius: 16px;
-  border-bottom-right-radius: 4px;
-  background: var(--brand-60, #1459c7);
+  padding: var(--space-125) var(--space-150);
+  border-radius: var(--radius-300);
+  border-bottom-right-radius: var(--radius-100);
+  background: var(--brand-60);
   color: var(--white);
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
   max-width: 80%;
 }
 
 .caption {
   display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  opacity: 0.75;
+  margin-top: var(--space-050);
+  font-size: var(--font-size-200);
+  opacity: var(--opacity-072);
 }

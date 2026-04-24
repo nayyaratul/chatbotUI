@@ -9,19 +9,28 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-150);
-  padding: var(--space-200) var(--space-200) var(--space-150) var(--space-250);
+  padding: var(--space-200);
+  width: 100%;
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-200);
-  max-width: 94%;
 
-  box-shadow: var(--shadow-100);
   overflow: hidden;
-  transition: opacity 240ms ease;
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 240ms ease;
 }
 
-/* Accent stripe down the left edge — tone bookmark */
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* Accent stripe down the left edge — tone bookmark. Sits flush with
+   the card edge; the symmetric space-200 padding on the body leaves a
+   comfortable gap between stripe and content. */
 .card::before {
   content: '';
   position: absolute;
@@ -89,8 +98,8 @@
   margin: 0;
   font-family: var(--sans);
   font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-500);
-  line-height: var(--line-height-400);
+  font-size: var(--font-size-400);
+  line-height: var(--line-height-300);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
 }
@@ -98,9 +107,9 @@
 .description {
   margin: 0;
   font-family: var(--sans);
-  font-size: var(--font-size-300);
+  font-size: var(--font-size-200);
   line-height: var(--line-height-300);
-  color: var(--grey-70);
+  color: var(--grey-60);
 }
 
 /* ─── Details: hairline rows, no inner box ─────────────────── */

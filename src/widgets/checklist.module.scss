@@ -120,8 +120,8 @@
   background-image:
     repeating-linear-gradient(
       -45deg,
-      transparent 0 3px,
-      color-mix(in srgb, var(--white) 40%, transparent) 3px 4px
+      transparent 0 var(--border-width-300),
+      color-mix(in srgb, var(--white) 40%, transparent) var(--border-width-300) var(--size-04)
     );
 }
 
@@ -284,7 +284,7 @@
   position: relative;
   width: var(--size-24);
   height: var(--size-24);
-  margin-top: 2px;
+  margin-top: var(--size-02);
 
   display: inline-flex;
   align-items: center;
@@ -313,7 +313,7 @@
 
 .checkbox:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: 2px;
+  outline-offset: var(--size-02);
 }
 
 .checkbox:disabled { cursor: default; }
@@ -387,7 +387,7 @@
   color: var(--grey-60);
   text-decoration: line-through;
   text-decoration-color: color-mix(in srgb, var(--color-text-success) 60%, transparent);
-  text-decoration-thickness: 1.5px;
+  text-decoration-thickness: var(--border-width-150);
 }
 
 .itemDone .itemDescription {
