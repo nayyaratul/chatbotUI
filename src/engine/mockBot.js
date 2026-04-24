@@ -105,25 +105,25 @@ registerRule({
   build: () => ({ type: 'shift_calendar', payload: getVariantPayload('shift_calendar', 'default') }),
 })
 
-// ─── Date/Time Picker — interview slots (default) ─────────────────
-// Trigger: "interview slot", "pick interview", "book interview"
+// ─── Date/Time Picker — date only ─────────────────────────────────
+// Trigger: "pick date", "start date", "when can you start"
 registerRule({
-  match: /^(interview slot|pick interview|book (an )?interview|schedule interview)$/i,
-  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'interview') }),
+  match: /^(pick (a )?date|start date|when can (you|i) start|joining date)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'date') }),
 })
 
-// ─── Date/Time Picker — onboarding start date (date-only) ─────────
-// Trigger: "start date", "when can you start", "joining date"
+// ─── Date/Time Picker — time only ─────────────────────────────────
+// Trigger: "pick time", "pick a time", "time slots today"
 registerRule({
-  match: /^(start date|when can (you|i) start|joining date|pick start date)$/i,
-  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'onboarding') }),
+  match: /^(pick (a )?time|time slots?( today)?|pick slot)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'time') }),
 })
 
-// ─── Date/Time Picker — follow-up call (free time) ────────────────
-// Trigger: "follow up", "book call", "schedule call"
+// ─── Date/Time Picker — date + time ───────────────────────────────
+// Trigger: "date and time", "interview slot", "book interview"
 registerRule({
-  match: /^(follow ?up|book (a )?call|schedule (a )?call|call me back)$/i,
-  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'followup_call') }),
+  match: /^(date (and|&) time|datetime|interview slot|pick interview|book (an )?interview|schedule interview)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'datetime') }),
 })
 
 // ─── Carousel — composed widgets (job cards in a rail) ────────────

@@ -154,13 +154,19 @@ export function DateTimePicker({ payload }) {
   const appointmentId  = payload?.appointment_id
   const title          = payload?.title ?? 'Pick a date & time'
   const description    = payload?.description
-  const mode           = payload?.mode ?? 'datetime'
+  const mode           = payload?.mode ?? 'datetime'     /* 'date' | 'time' | 'datetime' */
   const timezone       = payload?.timezone ?? 'UTC'
   const timezoneLabel  = payload?.timezone_label ?? null
   const availableSlots = Array.isArray(payload?.available_slots) ? payload.available_slots : null
+  const fixedTimes     = Array.isArray(payload?.times) ? payload.times : null  /* for mode:'time' */
   const timeWindow     = payload?.time_window ?? null
   const submitLabel    = payload?.submit_label ?? 'Confirm'
   const isSilent       = Boolean(payload?.silent)
+
+  const showCalendar   = mode !== 'time'
+  const showTimeList   = mode !== 'date'
+  const needsDate      = mode !== 'time'
+  const needsTime      = mode !== 'date'
 
   const minDate = useMemo(() => parseYMD(payload?.min_date), [payload?.min_date])
   const maxDate = useMemo(() => parseYMD(payload?.max_date), [payload?.max_date])
@@ -249,16 +255,29 @@ export function DateTimePicker({ payload }) {
   }, [submitted, isDateDisabled])
 
   /* ─── Times for the selected date ──────────────────────────────── */
-  const timesForSelectedDate = useMemo(() => {
-    if (mode !== 'datetime') return []
+  /* Effective date for time-list operations. In datetime mode this
+     is whatever the user clicked in the calendar; in time-only mode
+     the date is fixed (payload.date, or today as a sensible default). */
+  const fixedDate = useMemo(() => parseYMD(payload?.date), [payload?.date])
+  const effectiveDate = mode === 'time'
+    ? (fixedDate ?? today)
+    : selectedDate
+
+  const timesForEffectiveDate = useMemo(() => {
+    if (mode === 'date') return []
+    if (mode === 'time') {
+      if (fixedTimes) return fixedTimes
+      return generateFreeTimes(timeWindow)
+    }
+    /* mode === 'datetime' */
     if (!selectedDate) return []
     if (slotsByDate) return slotsByDate.get(toYMD(selectedDate)) ?? []
     return generateFreeTimes(timeWindow)
-  }, [mode, selectedDate, slotsByDate, timeWindow])
+  }, [mode, fixedTimes, timeWindow, selectedDate, slotsByDate])
 
   const timeGroups = useMemo(
-    () => groupTimesByPeriod(timesForSelectedDate),
-    [timesForSelectedDate],
+    () => groupTimesByPeriod(timesForEffectiveDate),
+    [timesForEffectiveDate],
   )
 
   const handleTimeClick = useCallback((timeObj) => {
@@ -268,14 +287,13 @@ export function DateTimePicker({ payload }) {
   }, [submitted])
 
   /* ─── Submit gate + helper text ────────────────────────────────── */
-  const needsTime = mode === 'datetime'
   const canSubmit = !submitted
-    && selectedDate != null
+    && (!needsDate || selectedDate != null)
     && (!needsTime || selectedTime != null)
 
   let helperText = null
   if (!submitted) {
-    if (!selectedDate) helperText = 'Pick a date to continue'
+    if (needsDate && !selectedDate)      helperText = 'Pick a date to continue'
     else if (needsTime && !selectedTime) helperText = 'Pick a time to continue'
   }
 
@@ -285,10 +303,22 @@ export function DateTimePicker({ payload }) {
     const now = Date.now()
     setSubmitted(true)
 
-    const ymd = toYMD(selectedDate)
-    const label = selectedTime
-      ? `${formatDateLong(selectedDate)} at ${formatTime(selectedTime)}`
-      : formatDateLong(selectedDate)
+    /* Date used for the outbound payload + label:
+       - datetime / date modes → the user-picked calendar date
+       - time mode             → the pre-fixed date (or today) */
+    const reportedDate = needsDate ? selectedDate : effectiveDate
+    const ymd = toYMD(reportedDate)
+
+    let label
+    if (mode === 'time') {
+      label = sameDay(reportedDate, today)
+        ? `Today at ${formatTime(selectedTime)}`
+        : `${formatDateLong(reportedDate)} at ${formatTime(selectedTime)}`
+    } else if (mode === 'date') {
+      label = formatDateLong(reportedDate)
+    } else {
+      label = `${formatDateLong(reportedDate)} at ${formatTime(selectedTime)}`
+    }
 
     onReply?.(
       {
@@ -310,17 +340,24 @@ export function DateTimePicker({ payload }) {
       { silent: isSilent },
     )
   }, [
-    canSubmit, selectedDate, selectedTime, selectedSlotId,
-    widgetId, appointmentId, timezone, onReply, isSilent,
+    canSubmit, mode, needsDate, selectedDate, effectiveDate, selectedTime, selectedSlotId,
+    widgetId, appointmentId, timezone, today, onReply, isSilent,
   ])
 
   /* ─── Render ──────────────────────────────────────────────────── */
   return (
-    <div className={styles.card} role="article" aria-label={title}>
-      {/* Header */}
+    <div
+      className={styles.card}
+      role="article"
+      aria-label={title}
+      data-mode={mode}            /* drives per-mode min-height floor */
+    >
+      {/* Header — clock icon for time-only so the glyph matches the mode */}
       <div className={styles.header}>
         <div className={styles.iconBadge} aria-hidden="true">
-          <CalendarDays size={18} strokeWidth={2} />
+          {mode === 'time'
+            ? <Clock size={18} strokeWidth={2} />
+            : <CalendarDays size={18} strokeWidth={2} />}
         </div>
         <div className={styles.headerText}>
           <h3 className={styles.title}>{title}</h3>
@@ -337,7 +374,8 @@ export function DateTimePicker({ payload }) {
         </div>
       )}
 
-      {/* Calendar */}
+      {/* Calendar — hidden in time-only mode */}
+      {showCalendar && (
       <div className={styles.calendar}>
         <div className={styles.monthNav}>
           <button
@@ -413,24 +451,30 @@ export function DateTimePicker({ payload }) {
           })}
         </div>
       </div>
+      )}
 
-      {/* Time list — reveals when mode:datetime and a date is selected.
-          Times bucket into Morning / Afternoon / Evening so a long free
-          window still reads at a glance. Stagger cap at 8 per §11. */}
-      {mode === 'datetime' && selectedDate && !submitted && (
+      {/* Time list — renders in datetime mode once a date is picked, OR
+          always in time-only mode. Times bucket into Morning / Afternoon
+          / Evening so a long free window still reads at a glance.
+          Stagger cap at 8 per §11. */}
+      {showTimeList && !submitted && (mode === 'time' || selectedDate) && (
         <div
-          className={styles.timeSection}
-          key={toYMD(selectedDate)}                      /* re-trigger entry animation per date */
+          className={cx(styles.timeSection, mode === 'time' && styles.timeSectionStandalone)}
+          key={`${mode}-${effectiveDate ? toYMD(effectiveDate) : 'none'}`}
         >
           <div className={styles.timeHead}>
             <Clock size={12} strokeWidth={2} aria-hidden="true" />
-            <span className={styles.timeHeadLabel}>Times</span>
-            <span className={styles.timeHeadDate}>
-              · {formatDateLong(selectedDate)}
+            <span className={styles.timeHeadLabel}>
+              {mode === 'time' ? 'Available times' : 'Times'}
             </span>
+            {effectiveDate && (
+              <span className={styles.timeHeadDate}>
+                · {sameDay(effectiveDate, today) ? 'Today' : formatDateLong(effectiveDate)}
+              </span>
+            )}
           </div>
 
-          {timesForSelectedDate.length === 0 ? (
+          {timesForEffectiveDate.length === 0 ? (
             <div className={styles.timeEmpty}>
               No times available for this date.
             </div>
@@ -494,7 +538,9 @@ export function DateTimePicker({ payload }) {
           <div className={styles.successBody}>
             <div className={styles.successTitle}>Appointment confirmed</div>
             <div className={styles.successSub}>
-              {formatDateLong(selectedDate)}
+              {mode === 'time' && sameDay(effectiveDate, today)
+                ? 'Today'
+                : formatDateLong(effectiveDate)}
               {selectedTime && ` · ${formatTime(selectedTime)}`}
               {timezoneLabel && ` · ${timezoneLabel}`}
             </div>

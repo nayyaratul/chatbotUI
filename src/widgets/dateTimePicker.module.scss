@@ -14,10 +14,8 @@
   padding: var(--space-200);
   width: 100%;
 
-  /* §4 floor — 30rem matches Image Capture (the other reveal-style
-     widget in the family). Covers the tallest state: calendar grid
-     + time list + submit, no jump when the time section slides in. */
-  min-height: 30rem;
+  /* §4 floor — sized per mode so the card feels right for what it
+     contains. 18/24/30 is the allowed set; we use all three. */
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -34,6 +32,13 @@
   border-color: var(--grey-30);
   box-shadow: var(--shadow-100);
 }
+
+/* Per-mode floors. Time-only is the lightest (just a handful of pills
+   + submit); date-only is mid (calendar + submit); datetime is full
+   (calendar + reveal time list + submit), and needs the most room. */
+.card[data-mode="time"]     { min-height: 18rem; }
+.card[data-mode="date"]     { min-height: 24rem; }
+.card[data-mode="datetime"] { min-height: 30rem; }
 
 /* ─── Header ─────────────────────────────────────────────────────── */
 
@@ -350,6 +355,14 @@
   border-top: var(--border-width-100) solid var(--grey-10);
 
   animation: dtpRevealUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* In time-only mode the time section is the widget's main body — no
+   calendar sits above it, so the separator line has nothing to
+   separate. Drop the top border + top padding for that case. */
+.timeSectionStandalone {
+  padding-top: 0;
+  border-top: none;
 }
 
 .timeHead {
