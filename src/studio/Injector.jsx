@@ -71,7 +71,11 @@ export function Injector({ bot }) {
 
   const selectWidget = (type) => {
     if (type === state.type) return
-    const firstVariant = widgetSchemas[type].variants[0]
+    const firstVariant = widgetSchemas[type].variants?.[0] ?? null
+    if (!firstVariant) {
+      console.warn(`[Injector] widget '${type}' has no variants — skipping`)
+      return
+    }
     setState({
       type,
       variantId: firstVariant.id,
