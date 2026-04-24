@@ -34,8 +34,6 @@
   box-shadow: var(--shadow-100);
 }
 
-.card_success { --tone-color: var(--color-text-success); }
-
 @keyframes vplRiseUp {
   from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
   to   { opacity: var(--opacity-100); transform: translateY(0); }
@@ -202,6 +200,12 @@
   pointer-events: none;
 }
 
+.playOverlay:focus-visible {
+  outline: var(--border-width-200) solid var(--white);
+  outline-offset: var(--size-02);
+  box-shadow: 0 0 0 var(--border-width-300) color-mix(in srgb, var(--brand-60) 60%, transparent);
+}
+
 .playOverlayGlyph {
   /* Nudge the triangle slightly right so it reads as centered inside
      the circle (Play glyphs are optically left-heavy). */
@@ -276,6 +280,11 @@
   background: color-mix(in srgb, var(--brand-60) 18%, var(--white));
 }
 
+.playButton:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
 .time {
   font-size: var(--font-size-200);
   font-variant-numeric: tabular-nums;
@@ -311,6 +320,11 @@
 }
 
 .speedButton:hover { color: var(--grey-90); }
+
+.speedButton:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
 
 .speedButton_active {
   background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
@@ -353,6 +367,11 @@
   color: var(--grey-90);
 }
 
+.fsButton:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
 .fsLabel {
   white-space: nowrap;
 }
@@ -370,6 +389,11 @@
 }
 
 .progressTrack_enforced { cursor: default; }
+
+.progressTrack:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
 
 .progressFill {
   position: absolute;

@@ -30,6 +30,8 @@ const VARIANT_EYEBROW = {
   enforced: 'Compliance · Must watch in full',
 }
 
+/* Completion fires on the first timeupdate where watched ratio meets
+   this threshold. Matches the spec's "≥99% watched = done" rule. */
 const COMPLETION_THRESHOLD = 0.99
 
 function formatClockTime(seconds) {
@@ -74,22 +76,20 @@ export function VideoPlayer({ payload }) {
     if (completedRef.current) return
     completedRef.current = true
     setCompleted(true)
-    const vid = videoRef.current
-    const finalDuration = vid?.duration || duration || 0
-    const reached = Math.max(maxWatched, vid?.currentTime ?? 0)
-    const pct = finalDuration > 0 ? Math.round((reached / finalDuration) * 100) : 100
+    /* completed=true always pairs with watch_percentage=100 so downstream
+       consumers don't see the "completed but only 99% watched" edge. */
     onReply({
       type: 'widget_response',
       payload: {
         widget_id: payload?.widget_id,
         source_type: 'video',
         video_id,
-        watch_percentage: pct,
+        watch_percentage: 100,
         completed: true,
         total_watch_time_seconds: Math.round(accumulatedWatchRef.current),
       },
     }, { silent })
-  }, [duration, maxWatched, onReply, payload?.widget_id, video_id, silent])
+  }, [onReply, payload?.widget_id, video_id, silent])
 
   const handlePlay = useCallback(() => {
     setPlaying(true)
@@ -200,7 +200,7 @@ export function VideoPlayer({ payload }) {
   const eyebrow = VARIANT_EYEBROW[variant] ?? 'Video'
 
   return (
-    <div className={cx(styles.card, completed && styles.card_success)}>
+    <div className={styles.card}>
       <header className={styles.header}>
         <span className={styles.iconBadge} aria-hidden>
           <PlaySquare size={18} strokeWidth={2} />
@@ -219,7 +219,6 @@ export function VideoPlayer({ payload }) {
           hasPlayed && styles.media_hasPlayed,
         )}
         onClick={toggle}
-        role="presentation"
       >
         {thumbnail_url ? (
           <img className={styles.poster} src={thumbnail_url} alt="" />
@@ -232,6 +231,7 @@ export function VideoPlayer({ payload }) {
           src={url}
           preload="metadata"
           playsInline
+          tabIndex={-1}  /* chrome buttons own focus; keep <video> out of tab order */
           onPlay={handlePlay}
           onPause={handlePause}
           onEnded={handleEnded}
