@@ -1,0 +1,402 @@
+/* Video Player Widget (#16) — inline training / compliance video
+   See spec: docs/superpowers/specs/2026-04-24-video-player-design.md
+   Rule book: docs/widget-conventions.md */
+
+.card {
+  --tone-color:  var(--brand-60);
+  --tone-tint:   color-mix(in srgb, var(--tone-color) 10%, var(--white));
+  --tone-border: color-mix(in srgb, var(--tone-color) 22%, transparent);
+
+  --color-action-primary:       var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 24rem;  /* §4 mid-density floor */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: vplRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.card_success { --tone-color: var(--color-text-success); }
+
+@keyframes vplRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* ─── §2 header (with eyebrow) ──────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── 16:9 media region ─────────────────────────────────────────── */
+
+.media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: var(--grey-20);
+  cursor: pointer;
+}
+
+.poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: var(--opacity-100);
+  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.posterFallback {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--grey-30) 40%, var(--grey-20)) 0%,
+      var(--grey-20) 100%
+    );
+}
+
+.media_playing .poster,
+.media_playing .posterFallback {
+  opacity: var(--opacity-000);
+  pointer-events: none;
+}
+
+.videoEl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: var(--opacity-000);
+  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.media_playing .videoEl,
+.media_hasPlayed .videoEl {
+  opacity: var(--opacity-100);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--grey-90) 24%, transparent);
+  opacity: var(--opacity-000);
+  pointer-events: none;
+  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.media:hover .scrim {
+  opacity: var(--opacity-100);
+}
+
+.media_playing:hover .scrim {
+  opacity: var(--opacity-000);  /* don't scrim actively-playing video */
+}
+
+/* Big centered play overlay — visible when idle / paused */
+.playOverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-56);
+  height: var(--size-56);
+  border-radius: var(--radius-full);
+
+  background: color-mix(in srgb, var(--brand-60) 92%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--white) 40%, transparent);
+  color: var(--white);
+  cursor: pointer;
+
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    background-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.media:hover .playOverlay {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.media_playing .playOverlay {
+  opacity: var(--opacity-000);
+  pointer-events: none;
+}
+
+.playOverlayGlyph {
+  /* Nudge the triangle slightly right so it reads as centered inside
+     the circle (Play glyphs are optically left-heavy). */
+  margin-left: var(--size-02);
+}
+
+/* Completion chip — success tone, top-right of the media region */
+.completionChip {
+  position: absolute;
+  top: var(--space-125);
+  right: var(--space-125);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 88%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 40%, transparent);
+  color: var(--white);
+
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+
+  animation: vplCompletionIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes vplCompletionIn {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(calc(-1 * var(--space-100))) scale(0.92);
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Controls row ──────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  flex-wrap: wrap;  /* wrap to a second line at narrow widths; no icon-only chrome */
+  min-width: 0;
+}
+
+.playButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  padding: var(--space-050) var(--space-125);
+  border-radius: var(--radius-500);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  color: var(--brand-60);
+
+  font-family: inherit;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+
+  transition: background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+              border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.playButton:hover {
+  background: color-mix(in srgb, var(--brand-60) 18%, var(--white));
+}
+
+.time {
+  font-size: var(--font-size-200);
+  font-variant-numeric: tabular-nums;
+  color: var(--grey-80);
+}
+
+.controlsSpacer { flex: 1; }
+
+.speedGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+}
+
+.speedButton {
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-100);
+  border: var(--border-width-100) solid transparent;
+  background: transparent;
+  color: var(--grey-60);
+
+  font-family: inherit;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+
+  transition:
+    background 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.speedButton:hover { color: var(--grey-90); }
+
+.speedButton_active {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.speedLock {
+  padding: var(--space-025) var(--space-075);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+.fsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-100);
+  border: none;
+  background: transparent;
+  color: var(--grey-60);
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+
+  transition:
+    background 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.fsButton:hover {
+  background: color-mix(in srgb, var(--grey-10) 60%, var(--white));
+  color: var(--grey-90);
+}
+
+.fsLabel {
+  white-space: nowrap;
+}
+
+/* ─── Progress bar ──────────────────────────────────────────────── */
+
+.progressTrack {
+  position: relative;
+  width: 100%;
+  height: var(--size-02);
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.progressTrack_enforced { cursor: default; }
+
+.progressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--brand-60);
+  border-radius: var(--radius-full);
+  /* Width is driven by onTimeUpdate — no CSS transition, it would
+     lag the time readout. */
+}
+
+/* Hatched "must watch" overlay — covers the region from maxWatched
+   to end, enforced variant only. Pattern vocabulary borrowed from
+   Shift Calendar's full-shift treatment. Positioned via left offset
+   driven by inline style (see component). */
+.progressHatch {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  /* left comes from inline style — same as maxWatched % */
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--grey-20) 0 var(--border-width-300),
+      transparent var(--border-width-300) calc(var(--border-width-300) + var(--size-04))
+    );
+  opacity: var(--opacity-064);
+  pointer-events: none;
+}

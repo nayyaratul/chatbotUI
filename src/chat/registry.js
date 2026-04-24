@@ -21,6 +21,7 @@ import { ShiftCalendar } from '../widgets/ShiftCalendar.jsx'
 import { DateTimePicker } from '../widgets/DateTimePicker.jsx'
 import { TrainingScenario } from '../widgets/TrainingScenario.jsx'
 import { Approval } from '../widgets/Approval.jsx'
+import { VideoPlayer } from '../widgets/VideoPlayer.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -46,4 +47,5 @@ export const registry = {
   datetime_picker: DateTimePicker,
   training_scenario: TrainingScenario,
   approval: Approval,
+  video: VideoPlayer,
 }
