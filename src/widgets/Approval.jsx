@@ -13,6 +13,7 @@ import {
   CircleHelp,
   Flag,
 } from 'lucide-react'
+// useRef is still used by Approval's pendingDecisionRef (hand-off timing).
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './approval.module.scss'
@@ -40,73 +41,13 @@ const VERDICT_LABEL_DONE = {
   escalate:   'ESCALATED',
 }
 
-/* r=18 fits inside the 44×44 viewBox with gutter for the 3px stroke. */
-const ARC_CIRCUMFERENCE = 2 * Math.PI * 18
-
-const VERDICT_GLYPH = {
-  approve:    Check,
-  reject:     XIcon,
-  borderline: CircleHelp,
-}
-
-function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = null }) {
-  const target = committed ? 1 : (confidence ?? 0)
-  const [swept, setSwept] = useState(false)
-  const wasCommittedRef = useRef(committed)
-  const [morphing, setMorphing] = useState(false)
-
-  // mount-only — Studio variant switches remount the widget, so no re-trigger needed here.
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setSwept(true))
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  // Tone morph: when committed flips from false → true, run a short
-  // "through-neutral" animation on the fill stroke, timed to the
-  // success-banner's 280ms spring-in so the two feel like one motion.
-  useEffect(() => {
-    if (!wasCommittedRef.current && committed) {
-      setMorphing(true)
-      const t = setTimeout(() => setMorphing(false), 320)
-      wasCommittedRef.current = committed
-      return () => clearTimeout(t)
-    }
-    wasCommittedRef.current = committed
-  }, [committed])
-
-  const dashOffset =
-    ARC_CIRCUMFERENCE * (1 - (swept ? Math.max(0, Math.min(1, target)) : 0))
-  const labelWord = committed
-    ? (VERDICT_LABEL_DONE[decisionKey] ?? VERDICT_LABEL[verdict] ?? '')
-    : (VERDICT_LABEL[verdict] ?? '')
-
-  const Glyph = !committed ? VERDICT_GLYPH[verdict] : null
-
-  return (
-    <div className={cx(styles.arcWrap, swept && styles.arcWrap_ready)}>
-      <svg
-        className={styles.arcSvg}
-        viewBox="0 0 44 44"
-        role="img"
-        aria-label={`Confidence ${Math.round((confidence ?? 0) * 100)} percent`}
-      >
-        <circle className={styles.arcTrack} cx="22" cy="22" r="18" />
-        <circle
-          className={cx(styles.arcFill, morphing && styles.arcFill_morphing)}
-          cx="22"
-          cy="22"
-          r="18"
-          style={{ strokeDasharray: ARC_CIRCUMFERENCE, strokeDashoffset: dashOffset }}
-        />
-      </svg>
-      <span className={styles.arcVerdict}>
-        {Glyph && (
-          <Glyph size={12} strokeWidth={2} className={styles.arcVerdictGlyph} aria-hidden />
-        )}
-        <span className={styles.arcVerdictWord}>{labelWord}</span>
-      </span>
-    </div>
-  )
+/* Eyebrow — announces "this is an approval card for ___" per variant.
+   Uses §12 eyebrow style (see approval.module.scss .eyebrow rule). */
+const VARIANT_EYEBROW = {
+  bgv:        'Approval · Background check',
+  interview:  'Approval · Interview review',
+  qc_flagged: 'Approval · QC audit',
+  offer:      'Approval · Offer sign-off',
 }
 
 /* ─── Evidence body renderers ───────────────────────────────────────
@@ -430,30 +371,35 @@ export function Approval({ payload }) {
     [],
   )
 
+  const eyebrow = VARIANT_EYEBROW[variant] ?? 'Approval'
+  const confidencePct = Math.round((recommendation?.confidence ?? 0) * 100)
+  const showRecommendation = !decision && recommendation?.verdict
+
   return (
     <div className={cx(styles.card, toneClass && styles[toneClass])}>
       <header className={styles.header}>
-        <div className={styles.headerStart}>
-          <span className={styles.iconBadge} aria-hidden>
-            <Icon size={18} strokeWidth={2} />
-          </span>
-          <div className={styles.headerText}>
-            <h3 className={styles.title}>{summary?.title}</h3>
-            {summary?.subtitle && (
-              <p className={styles.description}>{summary.subtitle}</p>
-            )}
-          </div>
+        <span className={styles.iconBadge} aria-hidden>
+          <Icon size={18} strokeWidth={2} />
+        </span>
+        <div className={styles.headerText}>
+          <p className={styles.eyebrow}>{eyebrow}</p>
+          <h3 className={styles.title}>{summary?.title}</h3>
+          {summary?.subtitle && (
+            <p className={styles.description}>{summary.subtitle}</p>
+          )}
         </div>
-        <ConfidenceArc
-          confidence={recommendation?.confidence}
-          verdict={recommendation?.verdict}
-          committed={!!decision}
-          decisionKey={decision?.action}
-        />
       </header>
       {reasoning && (
         <blockquote className={styles.reasoning}>
-          {reasoning}
+          {showRecommendation && (
+            <span className={styles.reasoningTag}>
+              <span className={styles.reasoningDot} aria-hidden />
+              <span className={styles.reasoningTagLabel}>
+                AI recommends {VERDICT_LABEL[recommendation.verdict]} · {confidencePct}% confidence
+              </span>
+            </span>
+          )}
+          <span className={styles.reasoningText}>{reasoning}</span>
         </blockquote>
       )}
       {evidence.length > 0 && (

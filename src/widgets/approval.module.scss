@@ -43,15 +43,6 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-125);
-  justify-content: space-between;
-}
-
-.headerStart {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-125);
-  min-width: 0;  /* so the text truncates before pushing the arc */
-  flex: 1;
 }
 
 .iconBadge {
@@ -72,6 +63,20 @@
   flex-direction: column;
   gap: var(--space-025);
   min-width: 0;
+  flex: 1;
+}
+
+/* Eyebrow — §12 eyebrow style. Announces "this is an approval card
+   for ___". Visible in both pre- and post-decision states so the card
+   type stays identified throughout. */
+.eyebrow {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
 }
 
 .title {
@@ -96,121 +101,53 @@
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
-/* Confidence arc — §2 header-right flourish, the signature primitive.
-   Three-step entry micro-timeline on mount:
-     (1)   0 →  180ms: track circle fades in  (state-transition curve)
-     (2) 120 →  720ms: fill arc draws         (rise-up curve, overlaps track)
-     (3) 540 →  780ms: verdict label settles  (springy curve)
-   Total sequence ~780ms. */
+.reasoning {
+  margin: 0;
+  padding: var(--space-025) 0 var(--space-025) var(--space-125);
+  border-left: var(--border-width-300) solid var(--tone-color);
 
-.arcWrap {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-025);
-  flex: 0 0 auto;
+  gap: var(--space-075);
+
+  transition: border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.arcSvg {
-  width: var(--size-44);
-  height: var(--size-44);
-  display: block;
-}
-
-.arcTrack {
-  fill: none;
-  stroke: var(--grey-10);
-  stroke-width: var(--border-width-300);
-  opacity: var(--opacity-000);
-  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.arcWrap_ready .arcTrack {
-  opacity: var(--opacity-100);
-}
-
-.arcFill {
-  fill: none;
-  stroke: var(--tone-color);
-  stroke-width: var(--border-width-300);
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  transition:
-    stroke-dashoffset 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 120ms,
-    stroke 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-/* Tone morph on commit — eases through neutral grey before settling on
-   the decided tone. Timed to the success-banner's 280ms spring-in so
-   they feel like one motion. Animates the stroke via color-mix() at
-   three keyframe stops: start on the pre-commit tone, dip through
-   grey-30 at the midpoint, settle on the decided tone. Browsers
-   interpolate color-mix() per keyframe, so the visual is a smooth
-   desaturated swing rather than an abrupt color swap. */
-
-.arcFill_morphing {
-  animation: apvArcMorph 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
-}
-
-@keyframes apvArcMorph {
-  0%   { stroke: color-mix(in srgb, var(--grey-30)  0%, var(--tone-color)); }
-  45%  { stroke: color-mix(in srgb, var(--grey-30) 85%, var(--tone-color)); }
-  100% { stroke: color-mix(in srgb, var(--grey-30)  0%, var(--tone-color)); }
-}
-
-.arcVerdict {
+/* Recommendation tag — AI's verdict + confidence, rendered at the top
+   of the reasoning quote pre-commit. Ties the verdict to the reasoning
+   that justifies it. Hides post-commit (the committed banner is the
+   source of truth for the decision). */
+.reasoningTag {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-050);
+  gap: var(--space-075);
+  align-self: flex-start;
+}
 
+.reasoningDot {
+  flex: 0 0 auto;
+  width: var(--size-08);
+  height: var(--size-08);
+  border-radius: var(--radius-full);
+  background: var(--tone-color);
+  transition: background 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.reasoningTagLabel {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--tone-color);
-
-  opacity: var(--opacity-000);
-  transform: translateY(calc(var(--size-02) * -1));
   transition: color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.arcWrap_ready .arcVerdict {
-  animation: apvVerdictSettle 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 540ms both;
-}
-
-.arcVerdictGlyph {
-  flex: 0 0 auto;
-  /* tone inherits from .arcVerdict currentColor */
-}
-
-.arcVerdictWord {
-  /* keeps the word node selectable for aria/test without the glyph wrapping it */
-}
-
-@keyframes apvVerdictSettle {
-  from {
-    opacity: var(--opacity-000);
-    transform: translateY(calc(var(--size-02) * -1));
-  }
-  to {
-    opacity: var(--opacity-100);
-    transform: translateY(0);
-  }
-}
-
-.reasoning {
-  margin: 0;
-  padding: var(--space-025) 0 var(--space-025) var(--space-125);
-  border-left: var(--border-width-300) solid var(--tone-color);
-
+.reasoningText {
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-90);  /* §12 body/value */
-
-  transition: border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 /* ── Evidence accordion ─────────────────────────────────────────── */
