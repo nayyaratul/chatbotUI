@@ -49,6 +49,14 @@ const STATUS_LABEL = {
   failed:     'Failed',
 }
 
+/* Short context label for the total's eyebrow row. Kept to one word so
+   it doesn't compete with the period label shown in the §2 header. */
+const VARIANT_EYEBROW = {
+  paycheck:  'Earned',
+  incentive: 'Earned',
+  advance:   'Available',
+}
+
 function toneForStatus(status) {
   if (status === 'completed')  return 'success'
   if (status === 'processing') return 'warning'
@@ -74,6 +82,31 @@ function formatCurrency(amount, currency) {
     }).format(amount)
   } catch {
     return `${currency} ${Math.round(amount).toLocaleString()}`
+  }
+}
+
+/* Split the localised currency output into its symbol + digits parts
+   so the two can carry distinct typographic weight — symbol quieter,
+   digits bold. Mirrors the hierarchy financial apps use (Mint / bank
+   dashboards) where the numeric value dominates and the symbol reads
+   as a label. */
+function formatCurrencyParts(amount, currency) {
+  const locale = localeForCurrency(currency)
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).formatToParts(amount)
+    const symbol = parts.find((p) => p.type === 'currency')?.value ?? currency
+    const rest = parts
+      .filter((p) => p.type !== 'currency')
+      .map((p) => p.value)
+      .join('')
+      .trim()
+    return { symbol, rest }
+  } catch {
+    return { symbol: currency, rest: Math.round(amount).toLocaleString() }
   }
 }
 
@@ -238,31 +271,58 @@ export function Earnings({ payload }) {
         </div>
       </header>
 
-      {/* Total block — tone-tinted container with count-up amount,
-          status chip, and trend chip. Signature moment lives here. */}
+      {/* Total block — refined layout.
+          Row 1 (eyebrow): variant label on the left, trend indicator
+            on the top-right as a 2-line stack (value / caption). The
+            fintech convention — put "change" in the top-right where
+            brokerage apps park it.
+          Row 2 (amount): currency symbol in lighter weight + bold
+            digits; creates typographic hierarchy inside the number
+            without escalating its font-size past §12's 400 cap.
+          Row 3 (meta): inline tone-coloured status + divider + count.
+            No pills — the earlier pill-vs-text inconsistency is gone.
+          A tone-coloured top accent strip scales in on mount (via
+          ::before) as the block's refined anchor. */}
       <div className={styles.totalBlock}>
+        <div className={styles.totalHead}>
+          <span className={styles.totalEyebrow}>
+            {VARIANT_EYEBROW[variant] ?? 'Amount'}
+          </span>
+          {trend && <TrendInline trend={trend} />}
+        </div>
         <div
           className={styles.totalAmount}
           aria-label={formatCurrency(total.amount, total.currency)}
         >
-          {formatCurrency(displayAmount, total.currency)}
+          {(() => {
+            const amountParts = formatCurrencyParts(displayAmount, total.currency)
+            return (
+              <>
+                <span className={styles.totalCurrency} aria-hidden="true">
+                  {amountParts.symbol}
+                </span>
+                <span className={styles.totalAmountValue} aria-hidden="true">
+                  {amountParts.rest}
+                </span>
+              </>
+            )
+          })()}
         </div>
         <div className={styles.totalMeta}>
-          <div className={styles.totalMetaLeft}>
-            {breakdown.length > 0 && (
-              <span className={styles.totalCount}>
+          <span
+            className={cx(styles.statusInline, styles[`statusInline_${status}`])}
+          >
+            <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
+            {STATUS_LABEL[status]}
+          </span>
+          {breakdown.length > 0 && (
+            <>
+              <span className={styles.metaDivider} aria-hidden="true">·</span>
+              <span className={styles.metaCount}>
                 {breakdown.length} {breakdown.length === 1 ? 'item' : 'items'}
               </span>
-            )}
-            <span
-              className={cx(styles.statusChip, styles[`statusChip_${status}`])}
-              aria-label={STATUS_LABEL[status]}
-            >
-              <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
-              {STATUS_LABEL[status]}
-            </span>
-          </div>
-          {trend && <TrendChip trend={trend} />}
+            </>
+          )}
         </div>
       </div>
 
@@ -310,18 +370,26 @@ export function Earnings({ payload }) {
   )
 }
 
-/* ─── Trend chip ──────────────────────────────────────────────── */
-function TrendChip({ trend }) {
+/* ─── Trend inline — 2-line stack (value / caption) ─────────────
+   Lives in the total block's eyebrow row (top-right). Fintech
+   convention: put "change" next to "when", freeing the zone below
+   the amount for status + count. Directional nudge on the value
+   span only (arrow + percent move; caption stays put). */
+function TrendInline({ trend }) {
   const dir = trend.direction ?? 'flat'
   const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus
   const sign = dir === 'up' ? '+' : dir === 'down' ? '-' : '±'
   const pct  = Math.abs(trend.percent ?? 0)
   return (
-    <span className={cx(styles.trendChip, styles[`trendChip_${dir}`])}>
-      <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
-      <span className={styles.trendChipValue}>{sign}{pct}%</span>
-      {trend.label && <span className={styles.trendChipLabel}>{trend.label}</span>}
-    </span>
+    <div className={cx(styles.trendInline, styles[`trendInline_${dir}`])}>
+      <span className={styles.trendInlineValue}>
+        <Icon size={12} strokeWidth={2.5} aria-hidden="true" />
+        {sign}{pct}%
+      </span>
+      {trend.label && (
+        <span className={styles.trendInlineLabel}>{trend.label}</span>
+      )}
+    </div>
   )
 }
 
