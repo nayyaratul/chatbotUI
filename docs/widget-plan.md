@@ -18,11 +18,11 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 ## Status
 
-**20 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
+**21 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Approval (#23) — landed in two passes, `0124597` (Pass 2 review fixes) on top of `5dc086d` (Pass 2 elevation) on top of `3880a58` (Pass 1 close).
+**Last shipped:** Video Player (#16) — landed in two passes, `e74350b` (Pass 2 review fix) on top of `f42262b` (Pass 2 elevation) on top of `4787844` (Pass 1 close).
 
-**Pending:** 10 widgets — 2 P1 (Phase 1-2), 8 P2 (Phase 2+).
+**Pending:** 9 widgets — 1 P1 (Phase 1-2), 8 P2 (Phase 2+).
 
 ---
 
@@ -42,7 +42,7 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 18 | Score Card | `ScoreCard.jsx` | Overall + category breakdown; expandable reasoning |
 | 20 | QC Evidence Review | `QcEvidenceReview.jsx` (+ `EvidenceReview.jsx` worker-facing) | Bounding-box overlay is its signature moment |
 
-## Done — P1 / Phase 1–2 (9 / 11)
+## Done — P1 / Phase 1–2 (10 / 11)
 
 | # | Widget | File | Notes |
 |---|---|---|---|
@@ -50,17 +50,17 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 11 | Instruction Card | `InstructionCard.jsx` | Numbered-circle rail is the signature moment |
 | 12 | Rating | `RatingWidget.jsx` | Hover-preview stars; stars/thumbs/emoji/NPS variants |
 | 15 | Date/Time Picker | `DateTimePicker.jsx` | Three mode-aligned variants (date / time / datetime); success pop on §16 springy curve |
+| 16 | Video Player | `VideoPlayer.jsx` | Two variants (standard / enforced); enforced mode's hatched "must watch" progress bar is the signature — slow diagonal drift reads as "alive, watching you." Two-stage poster→video reveal, sonar-ping on play overlay hover, media-region completion pulse synchronous with chip. Reduced-motion aware. |
 | 17 | Validated Input | `ValidatedInput.jsx` | Phone / email / Aadhaar / PAN / PIN / bank / custom; shake keyframe on error |
 | 19 | Carousel | `Carousel.jsx` | `data-widget-variant="wide"` opts the slot out of the 32rem cap (§3) |
 | 21 | Shift Calendar | `ShiftCalendar.jsx` | §6 segmented pills with hatched pattern for full-shift state |
-| 23 | Approval | `Approval.jsx` | Confidence arc (header-right SVG) is the signature moment; four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve one-tap, destructive two-step with inline notes |
+| 23 | Approval | `Approval.jsx` | Four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve 50/50 with Reject; destructive actions two-step with tone-striped inline notes. Eyebrow announces card type per variant |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
 
-## Pending — P1 / Phase 1–2 (0 / 2) — build next
+## Pending — P1 / Phase 1–2 (0 / 1) — build next
 
 | # | Widget | Why it's up next | Signature-moment hint |
 |---|---|---|---|
-| 16 | Video Player | Pairs with Training Scenario and Instruction Card for the training flow | Enforced-completion progress bar that fills only as the video is watched (no skip-ahead) |
 | 22 | Comparison / Side-by-Side | Explains job-match / skills-gap verdicts; reuses §9 tone system | Two-column layout with match indicators between columns (check / X / partial ~) |
 
 ## Pending — P2 / Phase 2+ (0 / 8)
