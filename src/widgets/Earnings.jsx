@@ -271,18 +271,13 @@ export function Earnings({ payload }) {
         </div>
       </header>
 
-      {/* Total block — refined layout.
-          Row 1 (eyebrow): variant label on the left, trend indicator
-            on the top-right as a 2-line stack (value / caption). The
-            fintech convention — put "change" in the top-right where
-            brokerage apps park it.
-          Row 2 (amount): currency symbol in lighter weight + bold
-            digits; creates typographic hierarchy inside the number
-            without escalating its font-size past §12's 400 cap.
-          Row 3 (meta): inline tone-coloured status + divider + count.
-            No pills — the earlier pill-vs-text inconsistency is gone.
-          A tone-coloured top accent strip scales in on mount (via
-          ::before) as the block's refined anchor. */}
+      {/* Total block — compact 2-row layout.
+          Row 1 (head): eyebrow label on the left, single-line trend
+            indicator on the right (↗ +8% vs last week — all inline,
+            no 2-line stack).
+          Row 2 (amount + meta): big amount on the left, status + count
+            baseline-aligned on the right. Financial-app convention:
+            "headline number, supporting facts on the same line." */}
       <div className={styles.totalBlock}>
         <div className={styles.totalHead}>
           <span className={styles.totalEyebrow}>
@@ -290,39 +285,41 @@ export function Earnings({ payload }) {
           </span>
           {trend && <TrendInline trend={trend} />}
         </div>
-        <div
-          className={styles.totalAmount}
-          aria-label={formatCurrency(total.amount, total.currency)}
-        >
-          {(() => {
-            const amountParts = formatCurrencyParts(displayAmount, total.currency)
-            return (
+        <div className={styles.totalAmountRow}>
+          <div
+            className={styles.totalAmount}
+            aria-label={formatCurrency(total.amount, total.currency)}
+          >
+            {(() => {
+              const amountParts = formatCurrencyParts(displayAmount, total.currency)
+              return (
+                <>
+                  <span className={styles.totalCurrency} aria-hidden="true">
+                    {amountParts.symbol}
+                  </span>
+                  <span className={styles.totalAmountValue} aria-hidden="true">
+                    {amountParts.rest}
+                  </span>
+                </>
+              )
+            })()}
+          </div>
+          <div className={styles.totalMeta}>
+            <span
+              className={cx(styles.statusInline, styles[`statusInline_${status}`])}
+            >
+              <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
+              {STATUS_LABEL[status]}
+            </span>
+            {breakdown.length > 0 && (
               <>
-                <span className={styles.totalCurrency} aria-hidden="true">
-                  {amountParts.symbol}
-                </span>
-                <span className={styles.totalAmountValue} aria-hidden="true">
-                  {amountParts.rest}
+                <span className={styles.metaDivider} aria-hidden="true">·</span>
+                <span className={styles.metaCount}>
+                  {breakdown.length} {breakdown.length === 1 ? 'item' : 'items'}
                 </span>
               </>
-            )
-          })()}
-        </div>
-        <div className={styles.totalMeta}>
-          <span
-            className={cx(styles.statusInline, styles[`statusInline_${status}`])}
-          >
-            <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
-            {STATUS_LABEL[status]}
-          </span>
-          {breakdown.length > 0 && (
-            <>
-              <span className={styles.metaDivider} aria-hidden="true">·</span>
-              <span className={styles.metaCount}>
-                {breakdown.length} {breakdown.length === 1 ? 'item' : 'items'}
-              </span>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
