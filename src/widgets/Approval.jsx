@@ -245,6 +245,16 @@ const TONE_CLASS = {
   success: 'card_success',
   warning: 'card_warning',
   error:   'card_error',
+  brand:   'card_brand',
+}
+
+/* Maps a committed decision.action → §9 tone slot. 'escalate' uses
+   brand-60 rather than any semantic success/error/warning color. */
+const DECISION_TONE = {
+  approve:   'success',
+  reject:    'error',
+  more_info: 'warning',
+  escalate:  'brand',
 }
 
 const SHORTCUT_KEY = {
@@ -278,17 +288,9 @@ export function Approval({ payload }) {
 
   // §9 tone: post-commit tracks the decision; pre-commit tracks the recommendation.
   const activeTone = decision
-    ? (decision.action === 'approve'    ? 'success'
-      : decision.action === 'reject'    ? 'error'
-      : decision.action === 'more_info' ? 'warning'
-      : 'success')  // 'escalate' falls back to brand via special-case below
+    ? DECISION_TONE[decision.action]
     : recommendation?.tone
-
-  // 'escalate' gets brand-60 via its own modifier so it doesn't turn success-green.
-  const toneClass =
-    decision?.action === 'escalate'
-      ? 'card_brand'
-      : (TONE_CLASS[activeTone] ?? null)
+  const toneClass = TONE_CLASS[activeTone] ?? null
 
   const { onReply } = useChatActions()
 
@@ -370,10 +372,10 @@ export function Approval({ payload }) {
         return
       }
       const key = e.key.toLowerCase()
-      if (key === 'a' && actions.includes('approve'))   { e.preventDefault(); handleClick('approve')   }
-      if (key === 'r' && actions.includes('reject'))    { e.preventDefault(); handleClick('reject')    }
-      if (key === 'm' && actions.includes('more_info')) { e.preventDefault(); handleClick('more_info') }
-      if (key === 'e' && actions.includes('escalate'))  { e.preventDefault(); handleClick('escalate')  }
+      if (key === 'a' && visibleActions.includes('approve'))   { e.preventDefault(); handleClick('approve')   }
+      if (key === 'r' && visibleActions.includes('reject'))    { e.preventDefault(); handleClick('reject')    }
+      if (key === 'm' && visibleActions.includes('more_info')) { e.preventDefault(); handleClick('more_info') }
+      if (key === 'e' && visibleActions.includes('escalate'))  { e.preventDefault(); handleClick('escalate')  }
       if (/^[1-9]$/.test(e.key)) {
         const idx = Number(e.key) - 1
         const item = evidence[idx]
@@ -384,7 +386,7 @@ export function Approval({ payload }) {
     if (!node) return
     node.addEventListener('keydown', onKey)
     return () => node.removeEventListener('keydown', onKey)
-  }, [decision, pending, actions, evidence, handleClick, togglePanel, confirmPending, cancelPending])
+  }, [decision, pending, visibleActions, evidence, handleClick, togglePanel, confirmPending, cancelPending])
 
   return (
     <div
@@ -488,10 +490,15 @@ export function Approval({ payload }) {
       ) : (
         <div className={styles.committed}>
           <div className={styles.banner}>
-            <span className={cx(styles.bannerChip, styles[`bannerChip_${decision.action}`])}>
-              <CircleCheck size={14} strokeWidth={2} />
-              <span>{VERDICT_LABEL_DONE[decision.action]}</span>
-            </span>
+            {(() => {
+              const DecisionIcon = ACTION_META[decision.action]?.Icon ?? CircleCheck
+              return (
+                <span className={cx(styles.bannerChip, styles[`bannerChip_${decision.action}`])}>
+                  <DecisionIcon size={14} strokeWidth={2} />
+                  <span>{VERDICT_LABEL_DONE[decision.action]}</span>
+                </span>
+              )
+            })()}
             <span className={styles.bannerMeta}>
               Decided at {formatClockTime(decision.at)} · Confidence {Math.round((recommendation?.confidence ?? 0) * 100)}%
             </span>
