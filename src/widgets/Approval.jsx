@@ -114,10 +114,14 @@ function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = n
    All sit above Approval so they close over styles but not widget state. */
 
 function EvidenceBodyDocument({ body }) {
+  const hasImage = !!body?.thumbnail_url
   return (
     <div className={styles.evDocument}>
-      <div className={styles.evDocThumb} aria-hidden>
-        {body?.thumbnail_url ? (
+      <div
+        className={cx(styles.evDocThumb, !hasImage && styles.evDocThumb_empty)}
+        aria-hidden
+      >
+        {hasImage ? (
           <img src={body.thumbnail_url} alt="" />
         ) : (
           <span className={styles.evDocThumbEmpty}>
@@ -233,13 +237,28 @@ function EvidencePanel({ item, open, committed, onToggle }) {
           <ChevronRight size={16} strokeWidth={2} />
         </span>
         <span className={styles.evLabel}>{item.label}</span>
-        {item.meta && <span className={styles.evMeta}>{item.meta}</span>}
+        {item.meta && (
+          <span
+            className={cx(
+              styles.evMeta,
+              item.meta_tone && styles[`evMeta_${item.meta_tone}`],
+            )}
+          >
+            {item.meta}
+          </span>
+        )}
       </button>
-      {open && (
-        <div className={styles.evBody}>
-          <EvidenceBody kind={item.kind} body={item.body} />
+      {/* grid-template-rows 0fr→1fr trick: body stays mounted, just collapses. */}
+      <div
+        className={cx(styles.evBodyOuter, open && styles.evBodyOuter_open)}
+        aria-hidden={!open}
+      >
+        <div className={styles.evBodyInner}>
+          <div className={styles.evBody}>
+            <EvidenceBody kind={item.kind} body={item.body} />
+          </div>
         </div>
-      )}
+      </div>
     </li>
   )
 }
@@ -453,7 +472,12 @@ export function Approval({ payload }) {
       {!decision ? (
         <div className={cx(styles.actionRegion, phase === 'exiting' && styles.actionRegion_exiting)}>
           {pending && (
-            <div className={styles.pendingPrompt}>
+            <div
+              className={cx(
+                styles.pendingPrompt,
+                styles[`pendingPrompt_${ACTION_META[pending].tone}`],
+              )}
+            >
               <label className={styles.pendingLabel} htmlFor={`apv-notes-${payload?.widget_id}`}>
                 {CONFIRM_COPY[pending]?.prompt}
               </label>

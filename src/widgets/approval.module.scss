@@ -208,7 +208,7 @@
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
-  color: var(--grey-80);
+  color: var(--grey-90);  /* §12 body/value */
 
   transition: border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -276,16 +276,49 @@
 }
 
 .evMeta {
+  /* Local tone var — default informational (brand-60). Per-tone
+     modifiers below flip it so "92% match" reads success and
+     "2 / 5 failed" reads error without rebuilding the chip. */
+  --meta-tone: var(--brand-60);
+
   padding: var(--space-025) var(--space-100);
   border-radius: var(--radius-500);
-  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
-  color: var(--brand-60);
+  background: color-mix(in srgb, var(--meta-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--meta-tone) 22%, transparent);
+  color: var(--meta-tone);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   white-space: nowrap;
+
+  transition: background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+              border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+              color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.evMeta_success { --meta-tone: var(--color-text-success); }
+.evMeta_warning { --meta-tone: var(--yellow-60); }
+.evMeta_error   { --meta-tone: var(--color-text-error); }
+.evMeta_info    { --meta-tone: var(--brand-60); }  /* explicit alias for default */
+
+/* Smooth accordion body open/close via grid-template-rows trick.
+   The outer grid animates from 0fr → 1fr; the inner div handles the
+   overflow clipping. Body stays mounted in both states so content
+   doesn't re-compute on each open. */
+.evBodyOuter {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.evBodyOuter_open {
+  grid-template-rows: 1fr;
+}
+
+.evBodyInner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .evBody {
@@ -316,11 +349,25 @@
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
 }
 
+/* "Paper edge" — thin brand-tinted header bar across the top gives the
+   placeholder thumbnail a document-like read instead of a plain square.
+   Only applies when there's no real image. */
+.evDocThumb_empty {
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--brand-60) 22%, var(--grey-10)) 0 var(--size-08),
+      var(--grey-10) var(--size-08) 100%
+    );
+}
+
 .evDocThumbEmpty {
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-wide);
   color: var(--grey-60);
+  /* Offset so the initials sit below the paper-edge bar */
+  margin-top: var(--size-04);
 }
 
 .evDocText { display: flex; flex-direction: column; gap: var(--space-025); min-width: 0; }
@@ -536,16 +583,31 @@
 }
 
 .pendingPrompt {
+  /* Tone-stripe variable — matches the pending action. Red for reject,
+     yellow-60 for more_info, brand-60 for escalate. Echoes §9 tone
+     system + §8 decided-row ledger-stripe vocabulary. */
+  --pending-tone: var(--brand-60);
+
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-075);
-  padding: var(--space-125);
+  padding: var(--space-125) var(--space-125) var(--space-125) var(--space-150);
   border: var(--border-width-100) solid var(--grey-10);
+  border-left: var(--border-width-300) solid var(--pending-tone);
   border-radius: var(--radius-150);
-  background: color-mix(in srgb, var(--grey-10) 30%, var(--white));
+  background: color-mix(in srgb, var(--pending-tone) 6%, var(--white));
 
   animation: apvSlideDown 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+
+  transition: border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+              background-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
+
+.pendingPrompt_error   { --pending-tone: var(--color-text-error); }
+.pendingPrompt_warning { --pending-tone: var(--yellow-60); }
+.pendingPrompt_brand   { --pending-tone: var(--brand-60); }
+.pendingPrompt_success { --pending-tone: var(--color-text-success); }
 
 .pendingLabel {
   font-size: var(--font-size-100);
