@@ -506,11 +506,11 @@
   pointer-events: none;
 }
 
-.actionButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-075);
-}
+/* Marker class for the .actionBar_locked sibling-fade selector + for
+   the per-action tone override below. Layout (flex, gap, icon
+   alignment) is handled by Nexus Button internally via iconLeft — do
+   not re-apply flex here or it fights the Button's own .button rules. */
+.actionButton {}
 
 /* Reject tone — secondary button whose tokens locally tilt error */
 .actionButton_reject {

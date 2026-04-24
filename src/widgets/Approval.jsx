@@ -486,14 +486,14 @@ export function Approval({ payload }) {
                   variant={action === 'approve' ? 'primary' : 'secondary'}
                   onClick={() => handleClick(action)}
                   disabled={!!pending && pending !== action}
+                  iconLeft={<ActionIcon size={16} strokeWidth={2} aria-hidden />}
                   className={cx(
                     styles.actionButton,
                     styles[`actionButton_${action}`],
                     pending === action && styles.actionButton_armed,
                   )}
                 >
-                  <ActionIcon size={16} strokeWidth={2} />
-                  <span>{meta.label}</span>
+                  {meta.label}
                 </Button>
               )
             })}
