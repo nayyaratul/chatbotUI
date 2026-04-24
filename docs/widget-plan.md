@@ -18,11 +18,11 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 ## Status
 
-**22 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
+**23 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Comparison / Side-by-Side (#22) v2.1 reshape — horizontal-space UX feedback drove a criterion-as-row-header rework: `a4a14cb` (review fixes — fill-mode, note-rail alignment) / `2261717` (v2.1 code reshape) / `b3d49ae` (v2.1 spec rev). v2 history also preserved (gutter-rail v1 → explainable-table v2 → criterion-as-row v2.1).
+**Last shipped:** Payment / Earnings (#28) — landed across `497ded7` (Pass 2 close fill-mode fix) / `71c8d62` (Pass 2 sheen + settle + trend nudge + row halo) / `9b3f50f` (Pass 1 close) / `ec531b6` (Pass 1 rewrite) / `84d5ca1` (spec).
 
-**Pending:** 8 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
+**Pending:** 7 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
 
 ---
 
@@ -58,7 +58,13 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 23 | Approval | `Approval.jsx` | Four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve 50/50 with Reject; destructive actions two-step with tone-striped inline notes. Eyebrow announces card type per variant |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
 
-## Pending — P2 / Phase 2+ (0 / 8)
+## Done — P2 / Phase 2+ (1 / 8)
+
+| # | Widget | File | Notes |
+|---|---|---|---|
+| 28 | Payment / Earnings | `Earnings.jsx` | Three variants (paycheck / incentive / advance). Signature moment: RAF-driven count-up on the big total (0 → target, ease-out cubic, 720ms) inside a tone-tinted container, with a gradient sheen sweeping L→R across the container as the count lands and a brightness settle closing the beat. Trend chip pops after the count and does a one-cycle directional nudge (up / down / flat). Breakdown rows stagger with §8 ledger-dot vocabulary + tone halo. Big total stays at `font-size-400` despite CSV's 28px — prominence carried by weight + tinted container + count-up, not size escalation (§12). |
+
+## Pending — P2 / Phase 2+ (0 / 7)
 
 | # | Widget | Spec-CSV summary | Signature-moment hint |
 |---|---|---|---|
@@ -67,7 +73,6 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 25 | Audio Player | Voice content with waveform + speed toggle | Pre-rendered waveform animates as the played portion fills in accent |
 | 26 | Voice Recording | Press-and-hold capture, 10–120s | Live waveform + pulsing red dot during capture |
 | 27 | Embedded Webview | Iframe escape-hatch for complex UIs | Compact preview → expanded iframe; minimal chrome |
-| 28 | Payment / Earnings | Total + breakdown + trend | Trend sparkline + tabular-nums currency |
 | 29 | Profile Card | Worker / admin views | Circular composite-score ring (reuse §6 linear-fill vocabulary translated to circle) |
 | 30 | Incentive / Leaderboard | Personal ring OR top-5 list | Progress ring target-hit animation on §16 springy curve |
 
