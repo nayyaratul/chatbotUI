@@ -1,6 +1,8 @@
-# Comparison / Side-by-Side Widget — Design Spec
+# Comparison / Side-by-Side Widget — Design Spec (v1, superseded)
 
-**Status:** Approved in brainstorming · ready for implementation.
+> **Superseded by `2026-04-24-comparison-widget-design-v2.md`.** The v1 gutter-rail shape below shipped (commits `6259c2b` → `4995cb3`) but was redirected after UX review: the two-value pairing didn't read because the icon-only indicator and lack of column headers left the A↔B relationship ambiguous. v2 replaces the gutter rail with an explicit 4-column table (`Criterion · a_value · status chip · b_value`) plus a dual-item band that identifies each side with a Lucide icon + eyebrow label. Kept here for historical reference — do not build from this spec.
+
+**Status:** Superseded · v2 is authoritative.
 **Widget number:** #22 in `AI_Labs_Widget_Specification - Rich Chat Widgets.csv`.
 **Priority / phase:** P1, Phase 2.
 **Family rule book:** `docs/widget-conventions.md` (everything below conforms to it; the doc wins in any conflict).
