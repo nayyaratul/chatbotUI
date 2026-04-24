@@ -1,4 +1,4 @@
-/* Comparison Widget (#22) — side-by-side match card */
+/* Comparison Widget (#22, v2 — explainable table) */
 
 .card {
   /* Local tone variable — driven by criteria mix (all-match / any-partial / any-gap).
@@ -85,35 +85,55 @@
   color: var(--grey-60);
 }
 
-/* ─── Column-label row ──────────────────────────────────────── */
+/* ─── Dual-item band — gives each side a distinct identity via icon
+       + eyebrow label. Cells share the same neutral tint so neither
+       side feels "favoured"; identity comes from icon + copy. ───── */
 
-.columnLabels {
+.itemBand {
   display: grid;
-  grid-template-columns: 1fr var(--size-44) 1fr;
-  column-gap: var(--space-125);
-  align-items: end;
+  grid-template-columns: 1fr 1fr;
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  overflow: hidden;
+
+  animation: cmpRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 60ms;
 }
 
-.columnLabel {
+.itemBandCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125);
+  background: color-mix(in srgb, var(--grey-10) 35%, var(--white));
+  min-width: 0;
+}
+
+.itemBandCell + .itemBandCell {
+  border-left: var(--border-width-100) solid var(--grey-10);
+}
+
+.itemBandIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-80);
+}
+
+.itemBandText {
   display: flex;
   flex-direction: column;
   gap: var(--space-025);
   min-width: 0;
 }
 
-.columnLabelRight {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.columnLabelGutter {
-  /* Empty spacer — reserves the center column so labels stack cleanly
-     over the indicator column below. No visual decoration (Pass 2 may
-     add a connector tick as part of the gutter-rail elevation). */
-  display: block;
-}
-
-.columnEyebrow {
+.itemBandLabel {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
@@ -122,19 +142,50 @@
   color: var(--grey-50);
 }
 
-.columnSubtitle {
+.itemBandSubtitle {
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ─── Criteria grid ─────────────────────────────────────────── */
+/* ─── Column headers — make the 4-col relationship explicit ─── */
+
+.columnHeaders {
+  display: grid;
+  grid-template-columns: minmax(var(--size-96), 1.5fr) minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: var(--space-125);
+  padding: 0 var(--space-125) var(--space-075);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+
+  animation: cmpRiseUp 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 120ms;
+}
+
+.columnHeader {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.columnHeader_center { text-align: center; }
+.columnHeader_right  { text-align: right; }
+
+/* ─── Criteria grid — 4-column table ───────────────────────── */
 
 .criteriaGrid {
-  position: relative;
   display: grid;
-  grid-template-columns: 1fr var(--size-44) 1fr;
+  grid-template-columns: minmax(var(--size-96), 1.5fr) minmax(0, 1fr) auto minmax(0, 1fr);
   column-gap: var(--space-125);
   row-gap: 0;
   border-radius: var(--radius-150);
@@ -143,27 +194,9 @@
   background: var(--white);
 }
 
-/* Rail spine — a faint vertical hairline that runs behind every indicator
-   chip in the center column. Reads as "this is one axis the rail scans
-   along" rather than four orphan connectors. Part of the gutter-rail
-   signature, not a second primitive — purely decorative texture the
-   connector lines extend out of. */
-.criteriaGrid::before {
-  content: '';
-  position: absolute;
-  top: var(--space-100);
-  bottom: var(--space-100);
-  left: 50%;
-  width: var(--border-width-100);
-  transform: translateX(calc(-1 * var(--border-width-100) / 2));
-  background: var(--grey-10);
-  opacity: var(--opacity-072);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Row sets display:contents so cells land directly in the outer grid.
-   data-status resolves to the row's local --status-tone. */
+/* Row uses display:contents so its 4 cells land directly in the outer
+   grid. Classes (not nth-of-type) drive tint + first-row-no-border so
+   mixed <button>/<div> row tags don't break the selectors (v1 bug). */
 .criterionRow {
   display: contents;
   --status-tone: var(--grey-60);
@@ -173,15 +206,11 @@
 .criterionRow[data-status="partial"] { --status-tone: var(--yellow-60); }
 .criterionRow[data-status="gap"]     { --status-tone: var(--color-text-error); }
 
-/* Per-row cells share padding + type. Tint + first-row-no-border are
-   driven by explicit classes (criterionRow_tinted / criterionRow_first)
-   rather than :nth-of-type/:first-of-type — those selectors misfire when
-   row tags mix <button> (clickable) and <div> (non-clickable) and when
-   .noteRow <div>s live as siblings inside .criteriaGrid. */
 .criterionRow > * {
   padding: var(--space-100) var(--space-125);
   background: var(--white);
   border-top: var(--border-width-100) solid var(--grey-10);
+  min-width: 0;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-100));
@@ -197,7 +226,6 @@
   background: color-mix(in srgb, var(--grey-10) 35%, var(--white));
 }
 
-/* Clickable rows (those with notes) — full-row hover affordance. */
 .criterionRow_clickable {
   cursor: pointer;
 }
@@ -216,7 +244,7 @@
   outline-offset: calc(-1 * var(--border-width-300));
 }
 
-/* Rows are also form-buttons when clickable; strip native button chrome. */
+/* Strip native button chrome so <button> rows match <div> rows. */
 .criterionRow {
   border: 0;
   background: none;
@@ -225,85 +253,29 @@
   color: inherit;
 }
 
+.cellCriterion {
+  display: flex;
+  align-items: center;
+}
+
 .cellA {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-025);
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
+}
+
+.cellChip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cellB {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  align-items: center;
-  min-width: 0;
   text-align: right;
-}
-
-/* Bump specificity over `.criterionRow > *` (0,1,1) so the zero-
-   horizontal-padding override actually lands.
-
-   The cell is `position: relative` so the two connector-line pseudos
-   can absolutely-position across the gap into the neighbouring cells.
-   `isolation: isolate` creates a local stacking context so the chip
-   (z-index 2) floats above the lines (z-index 1) without needing
-   z-index on every sibling cell. */
-.criterionRow > .cellIndicator {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  padding-left: 0;
-  padding-right: 0;
-  isolation: isolate;
-  overflow: visible;
-}
-
-/* ─── Gutter-rail connector line ─────────────────────────────
-   Two thin border-width-100 strokes that draw outward from the indicator chip:
-     ::before → left stroke, neutral grey-30, scales from the chip
-                edge out toward the a_value cell. The left side is
-                "the given" — neutral is honest.
-     ::after  → right stroke, --status-tone (match/partial/gap),
-                scales from the chip edge out toward the b_value
-                cell. Carries the verdict's tone outward.
-
-   Each stroke's transform-origin sits at its inner edge (closest
-   to the chip) so the draw reads as "line extruded from the chip
-   outward" — synchronized with the chip's springy pop for a single
-   coherent rhythm per row.
-
-   Both strokes use the §16 entry curve (not the springy curve the
-   chip uses) so the draw is a clean scan rather than a bounce —
-   two curves from the same §16 family, one per motion role.       */
-.cellIndicator::before,
-.cellIndicator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  height: var(--border-width-100);
-  width: calc(50% + var(--space-125) / 2);
-  transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(0);
-  border-radius: var(--radius-full);
-  pointer-events: none;
-  z-index: 1;
-  animation: cmpRailDraw 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
-  animation-delay: calc(var(--cmp-row-delay, 0ms) + 120ms);
-}
-
-/* Left stroke — neutral side ("the given") */
-.cellIndicator::before {
-  right: 50%;
-  background: var(--grey-30);
-  transform-origin: right center;
-}
-
-/* Right stroke — tone side ("the verdict") */
-.cellIndicator::after {
-  left: 50%;
-  background: color-mix(in srgb, var(--status-tone) 55%, var(--white));
-  transform-origin: left center;
+  min-width: 0;
 }
 
 .criterionName {
@@ -321,41 +293,40 @@
   word-break: break-word;
 }
 
-/* ─── Indicator chip — tri-state ────────────────────────────── */
+/* ─── Status chip — §7 pill with copy + tiny glyph ─────────── */
 
-.indicatorChip {
-  position: relative;
-  z-index: 2;  /* floats above the connector lines in cellIndicator */
+.statusChip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: var(--size-28);
-  height: var(--size-28);
-  border-radius: var(--radius-full);
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
   background: color-mix(in srgb, var(--status-tone) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 28%, transparent);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 24%, transparent);
   color: var(--status-tone);
 
-  /* Springy scale-in lands after the row content settles. Override
-     the shared `.criterionRow > *` rise animation on just this chip
-     so it still opacity-fades but with the springy curve. */
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+
+  /* Springy pop lands 120ms after the row cells fade in — the chip
+     is the row's verdict, so it settles last as the signature beat. */
   animation: cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
   animation-delay: calc(var(--cmp-row-delay, 0ms) + 120ms);
+  transform-origin: center center;
 }
 
-.srOnly {
-  position: absolute;
-  width: var(--size-01);
-  height: var(--size-01);
-  padding: 0;
-  margin: calc(-1 * var(--size-01));
+.statusChipCopy {
+  /* Guard against absurdly long copy overflowing the cell. */
+  max-width: var(--size-96);
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  text-overflow: ellipsis;
   white-space: nowrap;
-  border: 0;
 }
 
-/* ─── Expandable note row (§9 pull-quote) ──────────────────── */
+/* ─── Expandable note row — §9 pull-quote ──────────────────── */
 
 .noteRow {
   grid-column: 1 / -1;
@@ -373,7 +344,6 @@
 .noteRow[data-status="partial"] { --status-tone: var(--yellow-60); }
 .noteRow[data-status="gap"]     { --status-tone: var(--color-text-error); }
 
-/* Match the tint of the row above so the note reads as a continuation. */
 .noteRow_tinted {
   background: color-mix(in srgb, var(--grey-10) 35%, var(--white));
 }
@@ -423,10 +393,9 @@
   background: var(--tone-color);
   border-radius: var(--radius-full);
 
-  /* Pill grows from 0 to the target (--cmp-pct) after the final row's
-     indicator chip settles. --cmp-summary-delay is set inline per render
-     so the pause scales with actual criteria count (shorter grids don't
-     stall waiting for the full 8-row budget). */
+  /* Grow from 0 to target (--cmp-pct) after the final chip settles.
+     --cmp-summary-delay is set inline per render so the pause scales
+     with actual criteria count. */
   animation: cmpSummaryFill 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
   animation-delay: var(--cmp-summary-delay, 400ms);
 }
@@ -438,8 +407,6 @@
   margin-top: auto;
 }
 
-/* §10 banner — a §7 tone-success chip + one line of tabular-nums meta.
-   Single-row; no stacked subcopy. */
 .successBanner {
   display: flex;
   align-items: center;
@@ -494,25 +461,8 @@
   to   { opacity: var(--opacity-100); transform: scale(1); }
 }
 
-/* Gutter-rail connector draw — scales each stroke from 0 → 1 along
-   the X axis, synchronized with the chip's springy pop. The opacity
-   ramps in the final third so the line doesn't flash before it has
-   length. Origin is set on the pseudo itself (right-edge for ::before,
-   left-edge for ::after) so each stroke extrudes outward from the chip. */
-@keyframes cmpRailDraw {
-  from {
-    opacity: var(--opacity-000);
-    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(0);
-  }
-  60% { opacity: var(--opacity-072); }
-  to {
-    opacity: var(--opacity-072);
-    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(1);
-  }
-}
-
-/* Grows the pill from 0 to the target width. --cmp-pct is set inline on
-   .summaryFill so each render carries its own target into the keyframe. */
+/* --cmp-pct is set inline on .summaryFill so each render carries its
+   target width into the keyframe. */
 @keyframes cmpSummaryFill {
   from { width: 0; opacity: var(--opacity-000); }
   to   { width: var(--cmp-pct, 0%); opacity: var(--opacity-100); }
@@ -525,14 +475,15 @@
 
 /* ─── Reduced motion ────────────────────────────────────────── */
 
-/* `!important` is used on purpose to defeat the entry/stagger animation
-   declarations that otherwise set opacity:0 / transform: translate via
-   `both` fill-mode — a plain transition override would still paint the
-   initial frame before respecting the media query. */
+/* !important is deliberate — it defeats entry/stagger animations
+   whose `both` fill-mode otherwise paints the initial opacity:0 /
+   transform frame before the media query takes effect. */
 @media (prefers-reduced-motion: reduce) {
   .card,
+  .itemBand,
+  .columnHeaders,
   .criterionRow > *,
-  .indicatorChip,
+  .statusChip,
   .summaryFill,
   .successBanner {
     animation: none !important;
@@ -540,17 +491,6 @@
     transition: none !important;
     opacity: var(--opacity-100);
     transform: none;
-  }
-
-  /* Gutter-rail lines — collapse the draw to instant final state.
-     The pseudos' own transform-origin is preserved; we just land at
-     scaleX(1) with no animation rather than building up. */
-  .cellIndicator::before,
-  .cellIndicator::after {
-    animation: none !important;
-    animation-delay: 0ms !important;
-    opacity: var(--opacity-072);
-    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(1);
   }
 
   .summaryFill {

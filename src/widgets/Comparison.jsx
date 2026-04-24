@@ -4,31 +4,35 @@ import {
   GitCompare,
   TrendingUp,
   ClipboardCheck,
+  User,
+  Briefcase,
+  Wrench,
+  Target,
+  Camera,
+  CheckCircle2,
   Check,
   Minus,
   X,
   ArrowRight,
-  CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './comparison.module.scss'
 
-/* ─── Comparison Widget (#22) ─────────────────────────────────────
-   Side-by-side display for verdicts that resolve per criterion:
-   candidate vs role (hiring), skills vs target (training gap),
-   submitted vs expected (QC spec check).
+/* ─── Comparison Widget (#22, v2 — explainable table) ──────────────
+   Side-by-side display for verdicts that resolve per criterion.
+   Layout is a 4-column table: criterion · a_value · status chip ·
+   b_value. Status chip carries a short copy ("Exceeds by 6mo",
+   "Close match", "Missing") — the verdict is stated, not decoded
+   from an icon.
 
-   Signature moment is the center gutter rail — each criterion row
-   resolves into a tri-state indicator chip (match / partial / gap)
-   that scans down the card. Tones:
-     match   → color-text-success (Check glyph)
-     partial → yellow-60 (Minus glyph — reads "close, not exact")
-     gap     → color-text-error (X glyph)
+   Variants:
+     candidate_match → User (left) vs Briefcase (right)
+     skills_gap      → Wrench (left) vs Target (right)
+     qc_spec         → Camera (left) vs CheckCircle2 (right)
 
-   Rows with a `note` are click-to-expand (single-open accordion).
-   Summary pill at the bottom uses §6 linear-fill tinted to the
-   overall verdict. Optional §5 CTA if `action` is present. ─── */
+   Signature moment is the staggered chip reveal — each table row
+   settles, then its chip springs in last carrying the verdict. ─── */
 
 const MAX_CRITERIA = 8   /* §11 stagger cap */
 
@@ -38,10 +42,22 @@ const VARIANT_ICON = {
   qc_spec:         ClipboardCheck,
 }
 
+const ITEM_ICONS = {
+  candidate_match: { a: User,   b: Briefcase },
+  skills_gap:      { a: Wrench, b: Target },
+  qc_spec:         { a: Camera, b: CheckCircle2 },
+}
+
 const STATUS_GLYPH = {
   match:   Check,
   partial: Minus,
   gap:     X,
+}
+
+const DEFAULT_STATUS_COPY = {
+  match:   'Matches',
+  partial: 'Close match',
+  gap:     'Missing',
 }
 
 function timeLabel(ms) {
@@ -53,18 +69,12 @@ function timeLabel(ms) {
   return `${hh}:${mm} ${ampm}`
 }
 
-/* Overall tone derived from the criteria status mix.
-   – any gap → error (hard miss dominates)
-   – any partial (no gap) → warning
-   – all match → success */
 function overallTone(criteria) {
   if (criteria.some((c) => c.status === 'gap')) return 'error'
   if (criteria.some((c) => c.status === 'partial')) return 'warning'
   return 'success'
 }
 
-/* Weighted ratio for the summary pill fill width.
-   match counts as 1, partial counts as 0.5, gap counts as 0. */
 function metRatio(criteria) {
   if (criteria.length === 0) return 0
   const weighted = criteria.reduce((sum, c) => {
@@ -80,8 +90,9 @@ export function Comparison({ payload }) {
 
   const widgetId = payload?.widget_id
   const variant  = payload?.variant ?? 'candidate_match'
-  const itemA    = payload?.item_a ?? { label: 'A' }
-  const itemB    = payload?.item_b ?? { label: 'B' }
+  const itemA    = payload?.item_a ?? { label: 'Item A' }
+  const itemB    = payload?.item_b ?? { label: 'Item B' }
+
   const rawCriteria = useMemo(
     () => (Array.isArray(payload?.criteria) ? payload.criteria : []),
     [payload?.criteria],
@@ -98,10 +109,11 @@ export function Comparison({ payload }) {
     }
   }, [rawCriteria.length])
 
-  const [openIdx, setOpenIdx]   = useState(null)
-  const [actedAt, setActedAt]   = useState(null)
+  const [openIdx, setOpenIdx] = useState(null)
+  const [actedAt, setActedAt] = useState(null)
 
-  const Icon = VARIANT_ICON[variant] ?? GitCompare
+  const HeaderIcon = VARIANT_ICON[variant] ?? GitCompare
+  const { a: ItemAIcon, b: ItemBIcon } = ITEM_ICONS[variant] ?? ITEM_ICONS.candidate_match
   const title = payload?.title ?? defaultTitle(variant, itemB)
   const description = payload?.description
     ?? `${matchCount(criteria)} of ${criteria.length} criteria met`
@@ -110,11 +122,13 @@ export function Comparison({ payload }) {
   const ratio = metRatio(criteria)
   const pct   = Math.round(ratio * 100)
 
-  /* Summary pill starts filling 180ms after the last row's indicator chip
-     settles. chip settles at row_delay + 120ms (start) + 280ms (duration).
-     So summaryDelay = (lastRowIdx * 60ms) + 400ms + 180ms. */
+  /* Pill starts filling 180ms after the last row's chip settles.
+     chip settle = row_delay + 120 + 280 = row_delay + 400.
+     summaryDelay = (lastRowIdx * 60) + 400 + 180.
+     Add 120ms floor because the dual-item band + column headers land
+     before the first row. */
   const lastRowIdx = Math.max(0, Math.min(criteria.length - 1, MAX_CRITERIA - 1))
-  const summaryDelay = lastRowIdx * 60 + 580
+  const summaryDelay = 120 + lastRowIdx * 60 + 580
 
   const toggleRow = useCallback((idx) => {
     setOpenIdx((prev) => (prev === idx ? null : idx))
@@ -147,10 +161,10 @@ export function Comparison({ payload }) {
       role="article"
       aria-label={title}
     >
-      {/* Header — §2 */}
+      {/* §2 Header */}
       <header className={styles.header}>
         <span className={styles.iconBadge} aria-hidden="true">
-          <Icon size={18} strokeWidth={2} />
+          <HeaderIcon size={18} strokeWidth={2} />
         </span>
         <div className={styles.headerText}>
           <h3 className={styles.title}>{title}</h3>
@@ -158,40 +172,44 @@ export function Comparison({ payload }) {
         </div>
       </header>
 
-      {/* Column-label row (eyebrow over subtitle) */}
-      <div className={styles.columnLabels}>
-        <div className={styles.columnLabel}>
-          <span className={styles.columnEyebrow}>{itemA.label}</span>
-          {itemA.subtitle && (
-            <span className={styles.columnSubtitle}>{itemA.subtitle}</span>
-          )}
-        </div>
-        <span className={styles.columnLabelGutter} aria-hidden="true" />
-        <div className={cx(styles.columnLabel, styles.columnLabelRight)}>
-          <span className={styles.columnEyebrow}>{itemB.label}</span>
-          {itemB.subtitle && (
-            <span className={styles.columnSubtitle}>{itemB.subtitle}</span>
-          )}
-        </div>
+      {/* Dual-item band — gives each side a distinct identity so the
+          pairing is obvious before the table even renders. */}
+      <div className={styles.itemBand}>
+        <ItemBandCell
+          Icon={ItemAIcon}
+          label={itemA.label}
+          subtitle={itemA.subtitle}
+        />
+        <ItemBandCell
+          Icon={ItemBIcon}
+          label={itemB.label}
+          subtitle={itemB.subtitle}
+        />
       </div>
 
-      {/* Criteria grid — the signature body. No role="list" on the grid
-          because clickable rows render as <button> and mixing listitem
-          semantics with button semantics loses button announcement in
-          some screen readers. The grid is a visual scan target, not an
-          a11y list. */}
+      {/* Column headers — make the 4-col relationship explicit. */}
+      <div className={styles.columnHeaders} role="presentation">
+        <span className={styles.columnHeader}>Criterion</span>
+        <span className={styles.columnHeader}>{itemA.label}</span>
+        <span className={cx(styles.columnHeader, styles.columnHeader_center)}>Match</span>
+        <span className={cx(styles.columnHeader, styles.columnHeader_right)}>{itemB.label}</span>
+      </div>
+
+      {/* Criteria grid — the tabular body. */}
       <div className={styles.criteriaGrid}>
         {criteria.map((c, idx) => {
-          const Glyph = STATUS_GLYPH[c.status] ?? Minus
-          const isOpen = openIdx === idx
+          const Glyph   = STATUS_GLYPH[c.status] ?? Minus
+          const copy    = c.status_copy ?? DEFAULT_STATUS_COPY[c.status] ?? '—'
+          const isOpen  = openIdx === idx
           const hasNote = Boolean(c.note)
-          const rowKey = `${c.name ?? 'row'}-${idx}`
+          const rowKey  = `${c.name ?? 'row'}-${idx}`
           return (
             <CriterionRow
               key={rowKey}
               idx={idx}
               criterion={c}
               Glyph={Glyph}
+              copy={copy}
               hasNote={hasNote}
               isOpen={isOpen}
               isFirst={idx === 0}
@@ -202,14 +220,10 @@ export function Comparison({ payload }) {
         })}
       </div>
 
-      {/* Summary pill — §6 linear fill, tone-tinted. --cmp-pct carries
-          the target width to the keyframe so the fill animates 0→target
-          rather than appearing at target on mount. --cmp-summary-delay
-          scales with actual row count so the fill lands right after the
-          last indicator settles. */}
+      {/* §6 linear-fill summary pill, tone-tinted. */}
       <div className={styles.summary}>
         <div className={styles.summaryEyebrow}>
-          {matchCount(criteria)} of {criteria.length} criteria met
+          Overall match · {matchCount(criteria)} of {criteria.length} criteria met
         </div>
         <div
           className={styles.summaryTrack}
@@ -229,7 +243,7 @@ export function Comparison({ payload }) {
         </div>
       </div>
 
-      {/* Footer — optional CTA OR §10 success banner (chip + one line). */}
+      {/* §10 success banner OR §5 CTA. */}
       {actedAt ? (
         <div className={styles.successBanner}>
           <span className={styles.successChip}>
@@ -255,13 +269,24 @@ export function Comparison({ payload }) {
   )
 }
 
-/* ─── Single criterion row ────────────────────────────────────────
-   Rendered with display:contents on a grid-row wrapper so cells land
-   directly in the outer criteria grid columns. When `hasNote`, the
-   row renders as a <button>; otherwise as a plain <div> — no dead
-   click affordance. ─── */
+/* ─── Dual-item band cell ──────────────────────────────────────── */
+function ItemBandCell({ Icon, label, subtitle }) {
+  return (
+    <div className={styles.itemBandCell}>
+      <span className={styles.itemBandIcon} aria-hidden="true">
+        <Icon size={16} strokeWidth={2} />
+      </span>
+      <div className={styles.itemBandText}>
+        <span className={styles.itemBandLabel}>{label}</span>
+        {subtitle && <span className={styles.itemBandSubtitle}>{subtitle}</span>}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Criterion row (4 cells) + optional note ──────────────────── */
 function CriterionRow({
-  idx, criterion, Glyph, hasNote, isOpen, isFirst, isTinted, onToggle,
+  idx, criterion, Glyph, copy, hasNote, isOpen, isFirst, isTinted, onToggle,
 }) {
   const rowClass = cx(
     styles.criterionRow,
@@ -270,8 +295,8 @@ function CriterionRow({
     hasNote && styles.criterionRow_clickable,
     isOpen && styles.criterionRow_open,
   )
-  const rowId   = `cmp-row-${idx}`
-  const noteId  = `cmp-note-${idx}`
+  const rowId  = `cmp-row-${idx}`
+  const noteId = `cmp-note-${idx}`
   const RowTag = hasNote ? 'button' : 'div'
   const rowProps = hasNote
     ? {
@@ -291,15 +316,17 @@ function CriterionRow({
         data-status={criterion.status}
         style={{ '--cmp-row-delay': `${Math.min(idx, 7) * 60}ms` }}
       >
-        <div className={styles.cellA}>
+        <div className={styles.cellCriterion}>
           <span className={styles.criterionName}>{criterion.name}</span>
+        </div>
+        <div className={styles.cellA}>
           <span className={styles.criterionValue}>{criterion.a_value}</span>
         </div>
-        <div className={styles.cellIndicator}>
-          <span className={styles.indicatorChip} aria-hidden="true">
-            <Glyph size={16} strokeWidth={2.25} />
+        <div className={styles.cellChip}>
+          <span className={styles.statusChip}>
+            <Glyph size={12} strokeWidth={2.5} aria-hidden="true" />
+            <span className={styles.statusChipCopy}>{copy}</span>
           </span>
-          <span className={styles.srOnly}>{statusLabel(criterion.status)}</span>
         </div>
         <div className={styles.cellB}>
           <span className={styles.criterionValue}>{criterion.b_value}</span>
@@ -308,7 +335,11 @@ function CriterionRow({
       {hasNote && (
         <div
           id={noteId}
-          className={cx(styles.noteRow, isOpen && styles.noteRow_open, isTinted && styles.noteRow_tinted)}
+          className={cx(
+            styles.noteRow,
+            isOpen && styles.noteRow_open,
+            isTinted && styles.noteRow_tinted,
+          )}
           data-status={criterion.status}
           role="group"
           aria-labelledby={rowId}
@@ -323,13 +354,6 @@ function CriterionRow({
 
 function matchCount(criteria) {
   return criteria.filter((c) => c.status === 'match').length
-}
-
-function statusLabel(status) {
-  if (status === 'match') return 'Matches'
-  if (status === 'partial') return 'Partial match'
-  if (status === 'gap') return 'Gap'
-  return 'Unknown'
 }
 
 function defaultTitle(variant, itemB) {
