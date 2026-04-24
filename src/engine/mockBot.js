@@ -127,7 +127,7 @@ registerRule({
 })
 
 // ─── Approval — BGV default ──────────────────────────────────────
-// Trigger: "approval", "approve", "review case", "bgv review"
+// Trigger: "approval", "approve", "review case", "bgv review", "admin review"
 registerRule({
   match: /^(approval|approve|review case|bgv review|admin review)$/i,
   build: () => ({ type: 'approval', payload: getVariantPayload('approval', 'bgv') }),

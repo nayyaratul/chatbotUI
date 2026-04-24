@@ -278,7 +278,7 @@ function buildApprovalPayload(variant) {
     }
   }
 
-  return base
+  throw new Error(`buildApprovalPayload: unknown variant "${variant}"`)
 }
 
 export const widgetSchemas = {
