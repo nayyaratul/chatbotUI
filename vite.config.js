@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const nexusRoot = path.resolve(__dirname, '../nexus-design-system/src')
+const nexusRoot = path.resolve(__dirname, 'node_modules/nexus-design-system/src')
 const localNexus = path.resolve(__dirname, 'src/styles/nexus')
 
 export default defineConfig({

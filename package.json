@@ -27,6 +27,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "classnames": "^2.5.1",
     "lucide-react": "^0.577.0",
+    "nexus-design-system": "github:nayyaratul/nexus-design-system",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "uuid": "^9.0.1"
