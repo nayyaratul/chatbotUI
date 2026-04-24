@@ -290,14 +290,20 @@ img.photo {
   margin-top: var(--space-025);
 }
 
+/* Verdict word under the ring. Width is bounded by the 64px ring
+   column; line-height-200 (16px) allows up to two-line wrap for any
+   verdict override that exceeds the single-word default. */
 .ringVerdict {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
-  line-height: 1;
+  line-height: var(--line-height-200);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--tone-color);
   text-align: center;
+  max-width: var(--size-64);
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 /* ─── Stats list — full-width now that the ring lives in the header.
@@ -399,26 +405,26 @@ img.photo {
   gap: var(--space-075);
 }
 
-/* Skill tag — modern solid treatment. Sentence case, medium weight,
-   rounded-rect (not fully pilled), borderless. Differentiated from
-   the §7 status-chip vocabulary (which uses uppercase + pill +
-   border) because skills aren't terminal states — they're semantic
-   tags, and the family's chip vocabulary was reading as dated on a
-   profile card. Linear/Notion-style. */
+/* Skill tag — matches ScoreCard's .chip vocabulary: pill (radius-
+   full), bordered, uppercase semibold with letter-spacing-wide.
+   Neutral grey tones since skills don't carry semantic state (no
+   pass/fail). Same type rhythm as the rest of the family's chips
+   — availability, status banners, etc. */
 .skillChip {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  padding: var(--space-075) var(--space-125);
-  border-radius: var(--radius-100);
-  background: color-mix(in srgb, var(--grey-10) 70%, var(--white));
-  border: 0;
+  gap: var(--space-050);
+  padding: var(--space-050) var(--space-100);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--grey-10) 60%, var(--white));
+  border: var(--border-width-100) solid var(--grey-20);
   color: var(--grey-80);
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.2;
-  letter-spacing: var(--letter-spacing-normal);
-  text-transform: none;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050)) scale(0.96);
@@ -427,7 +433,7 @@ img.photo {
 
   transition:
     background 160ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    color 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    border-color 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 /* Overflow chip — dashed outline signals "there's more under this". */

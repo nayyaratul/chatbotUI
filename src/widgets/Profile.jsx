@@ -76,8 +76,10 @@ function scoreVerdict(value, max, override) {
   const tone = scoreTone(value, max)
   if (tone === 'success') return 'Strong'
   if (tone === 'warning') return 'Decent'
-  if (tone === 'error')   return 'Room to grow'
-  return 'Not yet scored'
+  if (tone === 'error')   return 'Growing'   /* single-word, positive
+                                                 framing; fits the ring
+                                                 column without wrap */
+  return 'Unscored'
 }
 
 function timeLabel(ms) {
