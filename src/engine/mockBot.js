@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid'
+import { makeId } from './ids.js'
 
 /**
  * Rule-based mock bot. Each rule is { match: RegExp, build: (userMessage) => botWidget | null }.
@@ -37,11 +37,6 @@ export function respond(userMessage) {
     }
   }
   return defaultEcho(userMessage)
-}
-
-// Helper used by widget rule factories to stamp fresh ids on each build.
-export function makeId(prefix = 'w') {
-  return `${prefix}-${uuid().slice(0, 8)}`
 }
 
 /* ─── Shared rich job payloads ───────────────────────────────────
