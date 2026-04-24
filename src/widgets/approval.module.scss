@@ -92,6 +92,6 @@
 }
 
 @keyframes apvRiseUp {
-  from { opacity: 0; transform: translateY(var(--space-100)); }
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
