@@ -19,6 +19,7 @@ import { ValidatedInput } from '../widgets/ValidatedInput.jsx'
 import { Carousel } from '../widgets/Carousel.jsx'
 import { ShiftCalendar } from '../widgets/ShiftCalendar.jsx'
 import { DateTimePicker } from '../widgets/DateTimePicker.jsx'
+import { TrainingScenario } from '../widgets/TrainingScenario.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -42,4 +43,5 @@ export const registry = {
   carousel: Carousel,
   shift_calendar: ShiftCalendar,
   datetime_picker: DateTimePicker,
+  training_scenario: TrainingScenario,
 }

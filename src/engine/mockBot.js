@@ -126,6 +126,20 @@ registerRule({
   build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'datetime') }),
 })
 
+// ─── Training Scenario — pre-practice brief ───────────────────────
+// Trigger: "training", "scenario", "practice", "role play", "brief"
+registerRule({
+  match: /^(training|scenario|practice|role[- ]?play|brief|mission brief|start practice)$/i,
+  build: () => ({ type: 'training_scenario', payload: getVariantPayload('training_scenario', 'pre_practice') }),
+})
+
+// ─── Training Scenario — post-practice results ────────────────────
+// Trigger: "practice results", "scenario results", "feedback"
+registerRule({
+  match: /^(practice results|scenario results|training results|scenario feedback|practice feedback)$/i,
+  build: () => ({ type: 'training_scenario', payload: getVariantPayload('training_scenario', 'post_practice') }),
+})
+
 // ─── Carousel — composed widgets (job cards in a rail) ────────────
 // Trigger: "job picks", "recommended jobs", "pick a role"
 // Demonstrates the CSV-spec item composition (carousel of job_cards).

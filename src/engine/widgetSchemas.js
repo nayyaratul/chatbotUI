@@ -1388,6 +1388,65 @@ export const widgetSchemas = {
     ],
   },
 
+  training_scenario: {
+    label: 'Training Scenario',
+    category: 'advanced',
+    variants: [
+      {
+        id: 'pre_practice',
+        label: 'Pre-practice (brief)',
+        payload: () => ({
+          widget_id: makeId('scen'),
+          scenario_id: 'reliance-price-objection',
+          mode: 'pre',
+          title: 'Handling a price objection',
+          subtitle: 'Enterprise sales · 10-minute role-play',
+          context: 'You are pitching our platform to a decision-maker at a Mumbai-based logistics firm. They have expressed interest but are pushing back on pricing. Your goal is to understand the real concern, reframe the value, and move toward a next step — without dropping price on the first call.',
+          role: {
+            title: 'Senior Sales Executive',
+            description: 'Product pitch lead for the Reliance account. You know the product cold and have closed two similar deals in the region this quarter.',
+          },
+          persona: {
+            name: 'Rohan Mehta',
+            title: 'Head of Operations, Prime Logistics',
+            description: 'Data-driven, skeptical of vendor claims. Budget owner. Has used a competitor (ShipRocket) for 3 years and is hesitant to switch.',
+          },
+          criteria: [
+            { name: 'Probe the concern',     description: 'Ask open-ended questions to surface the underlying objection before responding.' },
+            { name: 'Reframe value',         description: 'Articulate ROI in their context — cost per shipment, onboarding time saved, switching pain offset.' },
+            { name: 'Hold the line',         description: 'Avoid discounting on the first pass. Anchor the conversation to value before commercials.' },
+            { name: 'Commit to a next step', description: 'Close on a concrete follow-up that moves the deal forward (pilot, deck review, stakeholder intro).' },
+          ],
+          start_label: 'Start practice',
+          silent: false,
+        }),
+      },
+      {
+        id: 'post_practice',
+        label: 'Post-practice (results)',
+        payload: () => ({
+          widget_id: makeId('scen'),
+          scenario_id: 'reliance-price-objection',
+          mode: 'post',
+          title: 'Handling a price objection',
+          subtitle: 'Enterprise sales · completed 2 min ago',
+          results: {
+            session_id: 'sess-2026-04-24-prime',
+            overall_score: 74,
+            criteria_scores: [
+              { name: 'Probe the concern',     score: 82, feedback: 'Good discovery — "What\'s driving the timing pressure?" landed well and surfaced their Q4 board review.' },
+              { name: 'Reframe value',         score: 78, feedback: 'Strong ROI framing, but you missed linking it back to their stated competitor-switching pain.' },
+              { name: 'Hold the line',         score: 54, feedback: 'You offered a 12% discount at 8:42 without being asked. Anchor the commercial conversation to value first.' },
+              { name: 'Commit to a next step', score: 82, feedback: 'Clean close — "Let\'s pilot with one route for 30 days" got a verbal yes on the call.' },
+            ],
+          },
+          retry_label: 'Try again',
+          silent: false,
+        }),
+      },
+    ],
+  },
+
 }
 
 /**

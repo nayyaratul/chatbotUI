@@ -1,0 +1,543 @@
+/* ─── Training Scenario Widget ───────────────────────────────────────
+   Role-play brief + results. Two modes on the same shell — pre-practice
+   (mission brief) and post-practice (scored breakdown). Shares the
+   family's card shell + header + submit CTA + success banner
+   vocabulary. Nexus tokens only.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ─────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: tsRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* Per-mode floor. Pre mode is dense (context + role + persona +
+   criteria + CTA); post mode is dense (score + breakdown + CTA). */
+.card[data-mode="pre"]  { min-height: 30rem; }
+.card[data-mode="post"] { min-height: 30rem; }
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Mode pill — declares "brief" vs "results" context ─────────── */
+
+.modePill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Pre = informational (brand); post = success (green). Both tones
+   are pulled straight from the §7 chip vocabulary. */
+.modePill_pre {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+}
+
+.modePill_post {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  color: var(--color-text-success);
+}
+
+/* ─── Pre — context paragraph ───────────────────────────────────── */
+
+.context {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+/* ─── Pre — brief cards (role + persona) ─────────────────────────── */
+
+.brief {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.briefCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding: var(--space-125) var(--space-150);
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+}
+
+.briefEyebrow {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.briefHeadline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-075);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.briefBadge {
+  flex-shrink: 0;
+  width: var(--size-24);
+  height: var(--size-24);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+
+  background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
+  color: var(--brand-60);
+}
+
+.personaAvatar {
+  flex-shrink: 0;
+  width: var(--size-24);
+  height: var(--size-24);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+
+  background: color-mix(in srgb, var(--brand-60) 88%, var(--grey-90));
+  color: var(--white);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.briefName {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-050);
+  min-width: 0;
+}
+
+.personaTitle {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-60);
+}
+
+.briefDesc {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-70);
+}
+
+/* ─── Pre — evaluation criteria list ─────────────────────────────── */
+
+.criteriaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+.criteriaHead {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  line-height: 1;
+  color: var(--grey-50);
+
+  > svg { color: var(--grey-50); }
+}
+
+.criteriaHeadLabel {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.criteriaList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.criterionRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  padding: var(--space-075) var(--space-100);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+}
+
+.criterionName {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+}
+
+.criterionDesc {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Post — overall score panel ─────────────────────────────────── */
+
+.overall {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-050);
+  padding: var(--space-125) var(--space-150);
+
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 20%, transparent);
+  border-radius: var(--radius-150);
+}
+
+.overall_strong {
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
+}
+
+.overall_okay {
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 20%, transparent);
+}
+
+.overall_weak {
+  background: color-mix(in srgb, var(--yellow-60) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--yellow-60) 32%, transparent);
+}
+
+.overallEyebrow {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.overallValue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-700);      /* 28px — overall score reads as a headline */
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.overallMax {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-50);
+}
+
+.overallVerdict {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--grey-70);
+}
+
+/* ─── Post — per-criterion breakdown ─────────────────────────────── */
+
+.scoresList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-125);
+}
+
+.scoreRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.scoreHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-100);
+}
+
+.scoreName {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+}
+
+.scoreValue {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.scoreValue_strong { color: var(--color-text-success); }
+.scoreValue_okay   { color: var(--brand-60); }
+.scoreValue_weak   { color: var(--yellow-60); }
+
+/* Linear fill bar per §6 — a single-bar indicator of the criterion's
+   relative score. Accent colour by band. */
+.scoreBar {
+  width: 100%;
+  height: var(--size-04);
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background: var(--brand-60);
+  border-radius: var(--radius-full);
+  transition: width 360ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.scoreBarFill_strong { background: var(--color-text-success); }
+.scoreBarFill_okay   { background: var(--brand-60); }
+.scoreBarFill_weak   { background: var(--yellow-60); }
+
+/* Feedback quote — §8 ledger-stripe vocabulary, italicised body. */
+.scoreFeedback {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
+  padding: var(--space-075) var(--space-100) var(--space-075) var(--space-125);
+  margin-left: var(--space-025);
+
+  background: var(--grey-0);
+  border-radius: var(--radius-150);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+  font-style: italic;
+
+  > svg { flex-shrink: 0; margin-top: var(--size-02); color: var(--grey-40); }
+}
+
+.scoreFeedback::before {
+  content: '';
+  position: absolute;
+  left: 0; top: var(--space-050); bottom: var(--space-050);
+  width: var(--border-width-300);
+  border-radius: var(--radius-full);
+  background: var(--grey-30);
+}
+
+.scoreRow_strong .scoreFeedback::before { background: var(--color-text-success); }
+.scoreRow_okay   .scoreFeedback::before { background: var(--brand-60); }
+.scoreRow_weak   .scoreFeedback::before { background: var(--yellow-60); }
+
+/* ─── Post — empty state ─────────────────────────────────────────── */
+
+.empty {
+  padding: var(--space-200);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  color: var(--grey-50);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ─── Primary CTA + success banner ───────────────────────────────── */
+
+.submitBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+
+  margin-top: auto;       /* §4 constant-height — pin to card bottom */
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  margin-top: auto;
+
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+
+  animation: tsSuccessPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  width: var(--size-28);
+  height: var(--size-28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text-success);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes tsRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes tsSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
