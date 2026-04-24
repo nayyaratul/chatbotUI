@@ -132,6 +132,7 @@
 /* ─── Criteria grid ─────────────────────────────────────────── */
 
 .criteriaGrid {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr var(--size-44) 1fr;
   column-gap: var(--space-125);
@@ -140,6 +141,25 @@
   overflow: hidden;
   border: var(--border-width-100) solid var(--grey-10);
   background: var(--white);
+}
+
+/* Rail spine — a faint vertical hairline that runs behind every indicator
+   chip in the center column. Reads as "this is one axis the rail scans
+   along" rather than four orphan connectors. Part of the gutter-rail
+   signature, not a second primitive — purely decorative texture the
+   connector lines extend out of. */
+.criteriaGrid::before {
+  content: '';
+  position: absolute;
+  top: var(--space-100);
+  bottom: var(--space-100);
+  left: 50%;
+  width: var(--border-width-100);
+  transform: translateX(calc(-1 * var(--border-width-100) / 2));
+  background: var(--grey-10);
+  opacity: var(--opacity-072);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Row sets display:contents so cells land directly in the outer grid.
@@ -222,13 +242,68 @@
 }
 
 /* Bump specificity over `.criterionRow > *` (0,1,1) so the zero-
-   horizontal-padding override actually lands. */
+   horizontal-padding override actually lands.
+
+   The cell is `position: relative` so the two connector-line pseudos
+   can absolutely-position across the gap into the neighbouring cells.
+   `isolation: isolate` creates a local stacking context so the chip
+   (z-index 2) floats above the lines (z-index 1) without needing
+   z-index on every sibling cell. */
 .criterionRow > .cellIndicator {
+  position: relative;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   padding-left: 0;
   padding-right: 0;
+  isolation: isolate;
+  overflow: visible;
+}
+
+/* ─── Gutter-rail connector line ─────────────────────────────
+   Two thin 1px strokes that draw outward from the indicator chip:
+     ::before → left stroke, neutral grey-30, scales from the chip
+                edge out toward the a_value cell. The left side is
+                "the given" — neutral is honest.
+     ::after  → right stroke, --status-tone (match/partial/gap),
+                scales from the chip edge out toward the b_value
+                cell. Carries the verdict's tone outward.
+
+   Each stroke's transform-origin sits at its inner edge (closest
+   to the chip) so the draw reads as "line extruded from the chip
+   outward" — synchronized with the chip's springy pop for a single
+   coherent rhythm per row.
+
+   Both strokes use the §16 entry curve (not the springy curve the
+   chip uses) so the draw is a clean scan rather than a bounce —
+   two curves from the same §16 family, one per motion role.       */
+.cellIndicator::before,
+.cellIndicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: var(--border-width-100);
+  width: calc(50% + var(--space-125) / 2);
+  transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(0);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  z-index: 1;
+  animation: cmpRailDraw 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: calc(var(--cmp-row-delay, 0ms) + 120ms);
+}
+
+/* Left stroke — neutral side ("the given") */
+.cellIndicator::before {
+  right: 50%;
+  background: color-mix(in srgb, var(--grey-60) 45%, var(--white));
+  transform-origin: right center;
+}
+
+/* Right stroke — tone side ("the verdict") */
+.cellIndicator::after {
+  left: 50%;
+  background: color-mix(in srgb, var(--status-tone) 55%, var(--white));
+  transform-origin: left center;
 }
 
 .criterionName {
@@ -249,6 +324,8 @@
 /* ─── Indicator chip — tri-state ────────────────────────────── */
 
 .indicatorChip {
+  position: relative;
+  z-index: 2;  /* floats above the connector lines in cellIndicator */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -258,6 +335,14 @@
   background: color-mix(in srgb, var(--status-tone) 10%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 28%, transparent);
   color: var(--status-tone);
+  /* Solid white fill behind the tinted background so the rail lines
+     terminate cleanly at the chip edge rather than bleeding through
+     the translucent tint. Two-layer background: tint on top, white
+     underneath. */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--status-tone) 10%, var(--white)),
+                    color-mix(in srgb, var(--status-tone) 10%, var(--white))),
+    linear-gradient(var(--white), var(--white));
 
   /* Springy scale-in lands after the row content settles. Override
      the shared `.criterionRow > *` rise animation on just this chip
@@ -417,6 +502,23 @@
   to   { opacity: var(--opacity-100); transform: scale(1); }
 }
 
+/* Gutter-rail connector draw — scales each stroke from 0 → 1 along
+   the X axis, synchronized with the chip's springy pop. The opacity
+   ramps in the final third so the line doesn't flash before it has
+   length. Origin is set on the pseudo itself (right-edge for ::before,
+   left-edge for ::after) so each stroke extrudes outward from the chip. */
+@keyframes cmpRailDraw {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(0);
+  }
+  60% { opacity: var(--opacity-072); }
+  to {
+    opacity: var(--opacity-072);
+    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(1);
+  }
+}
+
 /* Grows the pill from 0 to the target width. --cmp-pct is set inline on
    .summaryFill so each render carries its own target into the keyframe. */
 @keyframes cmpSummaryFill {
@@ -446,6 +548,17 @@
     transition: none !important;
     opacity: var(--opacity-100);
     transform: none;
+  }
+
+  /* Gutter-rail lines — collapse the draw to instant final state.
+     The pseudos' own transform-origin is preserved; we just land at
+     scaleX(1) with no animation rather than building up. */
+  .cellIndicator::before,
+  .cellIndicator::after {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    opacity: var(--opacity-072);
+    transform: translateY(calc(-1 * var(--border-width-100) / 2)) scaleX(1);
   }
 
   .summaryFill {
