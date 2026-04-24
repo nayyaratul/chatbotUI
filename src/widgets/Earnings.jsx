@@ -271,55 +271,52 @@ export function Earnings({ payload }) {
         </div>
       </header>
 
-      {/* Total block — compact 2-row layout.
-          Row 1 (head): eyebrow label on the left, single-line trend
-            indicator on the right (↗ +8% vs last week — all inline,
-            no 2-line stack).
-          Row 2 (amount + meta): big amount on the left, status + count
-            baseline-aligned on the right. Financial-app convention:
-            "headline number, supporting facts on the same line." */}
+      {/* Total block — 2×2 CSS Grid for strict alignment.
+          Columns: [1fr amount/eyebrow] [auto trend/meta]
+          Rows:    [eyebrow / trend]
+                   [amount  / meta]
+          align-items: baseline at the grid level so every row's items
+          anchor to the same text baseline — no misalignments between
+          the big amount and small meta on row 2. Right-column items
+          use justify-self: end so trend and meta right edges stack. */}
       <div className={styles.totalBlock}>
-        <div className={styles.totalHead}>
-          <span className={styles.totalEyebrow}>
-            {VARIANT_EYEBROW[variant] ?? 'Amount'}
-          </span>
-          {trend && <TrendInline trend={trend} />}
-        </div>
-        <div className={styles.totalAmountRow}>
-          <div
-            className={styles.totalAmount}
-            aria-label={formatCurrency(total.amount, total.currency)}
-          >
-            {(() => {
-              const amountParts = formatCurrencyParts(displayAmount, total.currency)
-              return (
-                <>
-                  <span className={styles.totalCurrency} aria-hidden="true">
-                    {amountParts.symbol}
-                  </span>
-                  <span className={styles.totalAmountValue} aria-hidden="true">
-                    {amountParts.rest}
-                  </span>
-                </>
-              )
-            })()}
-          </div>
-          <div className={styles.totalMeta}>
-            <span
-              className={cx(styles.statusInline, styles[`statusInline_${status}`])}
-            >
-              <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
-              {STATUS_LABEL[status]}
-            </span>
-            {breakdown.length > 0 && (
+        <span className={styles.totalEyebrow}>
+          {VARIANT_EYEBROW[variant] ?? 'Amount'}
+        </span>
+        {trend && <TrendInline trend={trend} />}
+        <div
+          className={styles.totalAmount}
+          aria-label={formatCurrency(total.amount, total.currency)}
+        >
+          {(() => {
+            const amountParts = formatCurrencyParts(displayAmount, total.currency)
+            return (
               <>
-                <span className={styles.metaDivider} aria-hidden="true">·</span>
-                <span className={styles.metaCount}>
-                  {breakdown.length} {breakdown.length === 1 ? 'item' : 'items'}
+                <span className={styles.totalCurrency} aria-hidden="true">
+                  {amountParts.symbol}
+                </span>
+                <span className={styles.totalAmountValue} aria-hidden="true">
+                  {amountParts.rest}
                 </span>
               </>
-            )}
-          </div>
+            )
+          })()}
+        </div>
+        <div className={styles.totalMeta}>
+          <span
+            className={cx(styles.statusInline, styles[`statusInline_${status}`])}
+          >
+            <StatusGlyph size={12} strokeWidth={2.5} aria-hidden="true" />
+            {STATUS_LABEL[status]}
+          </span>
+          {breakdown.length > 0 && (
+            <>
+              <span className={styles.metaDivider} aria-hidden="true">·</span>
+              <span className={styles.metaCount}>
+                {breakdown.length} {breakdown.length === 1 ? 'item' : 'items'}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
