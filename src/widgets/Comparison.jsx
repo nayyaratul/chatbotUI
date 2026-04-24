@@ -172,15 +172,21 @@ export function Comparison({ payload }) {
         </div>
       </header>
 
-      {/* Dual-item band — gives each side a distinct identity so the
-          pairing is obvious before the table even renders. */}
+      {/* Dual-item band — Pass 2: left cell wears a soft brand tint +
+          brand-ringed icon pod (the "candidate / your side"); right
+          cell wears a deeper neutral tint + neutral pod (the "target /
+          spec"). Identity comes from tint + ring, not from copy alone,
+          so the pair reads as two distinct parties the moment the
+          card lands. */}
       <div className={styles.itemBand}>
         <ItemBandCell
+          side="a"
           Icon={ItemAIcon}
           label={itemA.label}
           subtitle={itemA.subtitle}
         />
         <ItemBandCell
+          side="b"
           Icon={ItemBIcon}
           label={itemB.label}
           subtitle={itemB.subtitle}
@@ -270,9 +276,13 @@ export function Comparison({ payload }) {
 }
 
 /* ─── Dual-item band cell ──────────────────────────────────────── */
-function ItemBandCell({ Icon, label, subtitle }) {
+function ItemBandCell({ side, Icon, label, subtitle }) {
+  const cellClass = cx(
+    styles.itemBandCell,
+    side === 'a' ? styles.itemBandCell_a : styles.itemBandCell_b,
+  )
   return (
-    <div className={styles.itemBandCell}>
+    <div className={cellClass}>
       <span className={styles.itemBandIcon} aria-hidden="true">
         <Icon size={16} strokeWidth={2} />
       </span>

@@ -85,11 +85,17 @@
   color: var(--grey-60);
 }
 
-/* ─── Dual-item band — gives each side a distinct identity via icon
-       + eyebrow label. Cells share the same neutral tint so neither
-       side feels "favoured"; identity comes from icon + copy. ───── */
+/* ─── Dual-item band — Pass 2 elevated.
+       Left cell reads as "the candidate / your side" via a soft brand
+       tint + brand-ringed icon pod; right cell reads as "the target /
+       requirement" via a deeper grey tint + neutral-ringed pod. The
+       pairing is now two distinct parties, not a row of equivalents.
+       A faint hairline scales in on mount between the two cells to
+       stitch them together as a pair — this is a band-internal detail,
+       not a gutter rail that runs across the criteria rows. ─────── */
 
 .itemBand {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   border: var(--border-width-100) solid var(--grey-10);
@@ -100,17 +106,42 @@
   animation-delay: 60ms;
 }
 
+/* Faint hairline divider that scales in after the band settles. Sits
+   between the two cells; contained to the band's own box. */
+.itemBand::after {
+  content: '';
+  position: absolute;
+  top: var(--space-100);
+  bottom: var(--space-100);
+  left: 50%;
+  width: var(--border-width-100);
+  background: var(--grey-20);
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: center center;
+  animation: cmpBandHairline 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 240ms;
+  pointer-events: none;
+}
+
 .itemBandCell {
   display: flex;
   align-items: center;
   gap: var(--space-125);
   padding: var(--space-125);
-  background: color-mix(in srgb, var(--grey-10) 35%, var(--white));
   min-width: 0;
 }
 
-.itemBandCell + .itemBandCell {
-  border-left: var(--border-width-100) solid var(--grey-10);
+/* Left cell — soft brand-60 tint. Identity: "your side / candidate".
+   Stays within §13 — brand-60 is the accent, and this is a flat 6%
+   tint (not a primary-action brand hit, which is reserved for the
+   header badge + CTA). */
+.itemBandCell_a {
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+}
+
+/* Right cell — deeper neutral grey tint. Identity: "target / spec". */
+.itemBandCell_b {
+  background: color-mix(in srgb, var(--grey-10) 55%, var(--white));
 }
 
 .itemBandIcon {
@@ -123,6 +154,21 @@
   border-radius: var(--radius-100);
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-80);
+}
+
+/* Left pod carries the brand accent — ring + icon tint. */
+.itemBandCell_a .itemBandIcon {
+  border-color: color-mix(in srgb, var(--brand-60) 22%, transparent);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  color: var(--brand-60);
+}
+
+/* Right pod stays neutral — explicit opposite so the two sides read
+   as paired-but-distinct parties. */
+.itemBandCell_b .itemBandIcon {
+  border-color: var(--grey-20);
+  background: var(--white);
   color: var(--grey-80);
 }
 
@@ -300,7 +346,13 @@
   word-break: break-word;
 }
 
-/* ─── Status chip — §7 pill with copy + tiny glyph ─────────── */
+/* ─── Status chip — §7 pill with copy + tiny glyph.
+       Pass 2: the chip is the row's verdict and gets a tone-specific
+       settle after its spring-in lands. Three beats, one rhythm:
+         match   → a soft inner glow pulses once on land.
+         partial → a subtle scale pulse reinforces "close but not".
+         gap     → a tiny ≤2px horizontal nudge reinforces "missing".
+       All three use only the §16 curves. ───────────────────────── */
 
 .statusChip {
   display: inline-flex;
@@ -319,10 +371,41 @@
   line-height: 1;
 
   /* Springy pop lands 120ms after the row cells fade in — the chip
-     is the row's verdict, so it settles last as the signature beat. */
+     is the row's verdict, so it settles last as the signature beat.
+     Tone-specific settles below layer on top of the same pop curve. */
   animation: cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
   animation-delay: calc(var(--cmp-row-delay, 0ms) + 120ms);
   transform-origin: center center;
+}
+
+/* Tone-specific settle — runs after the pop curve finishes (pop is
+   280ms; settle delays an additional 280ms on top of the chip delay,
+   so settle starts ~400ms after the row's own 120ms offset ends). */
+.criterionRow[data-status="match"] .statusChip {
+  animation:
+    cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    cmpChipMatchGlow 640ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay:
+    calc(var(--cmp-row-delay, 0ms) + 120ms),
+    calc(var(--cmp-row-delay, 0ms) + 400ms);
+}
+
+.criterionRow[data-status="partial"] .statusChip {
+  animation:
+    cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    cmpChipPartialPulse 520ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay:
+    calc(var(--cmp-row-delay, 0ms) + 120ms),
+    calc(var(--cmp-row-delay, 0ms) + 400ms);
+}
+
+.criterionRow[data-status="gap"] .statusChip {
+  animation:
+    cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    cmpChipGapNudge 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay:
+    calc(var(--cmp-row-delay, 0ms) + 120ms),
+    calc(var(--cmp-row-delay, 0ms) + 400ms);
 }
 
 .statusChipCopy {
@@ -392,10 +475,32 @@
 }
 
 .summaryTrack {
+  position: relative;
   height: var(--size-02);
   background: var(--grey-10);
   border-radius: var(--radius-full);
   overflow: hidden;
+}
+
+/* Faint sheen that sweeps across the track as the fill lands — the
+   "tally" cue. Lives on the track, clipped by overflow:hidden, keyed
+   to the same tone so match/partial/gap each read differently at the
+   end of the fill. */
+.summaryTrack::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tone-color) 0%, transparent) 0%,
+    color-mix(in srgb, var(--tone-color) 28%, transparent) 50%,
+    color-mix(in srgb, var(--tone-color) 0%, transparent) 100%
+  );
+  transform: translateX(-100%);
+  opacity: var(--opacity-000);
+  animation: cmpSummarySheen 520ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(var(--cmp-summary-delay, 400ms) + 420ms);
+  pointer-events: none;
 }
 
 .summaryFill {
@@ -405,9 +510,15 @@
 
   /* Grow from 0 to target (--cmp-pct) after the final chip settles.
      --cmp-summary-delay is set inline per render so the pause scales
-     with actual criteria count. */
-  animation: cmpSummaryFill 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
-  animation-delay: var(--cmp-summary-delay, 400ms);
+     with actual criteria count. Pass 2: a second keyframe layers a
+     terminal tone-settle — the bar deepens and pulses once it lands,
+     which reads as a satisfying "tally" cue on full-match runs. */
+  animation:
+    cmpSummaryFill 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both,
+    cmpSummarySettle 360ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay:
+    var(--cmp-summary-delay, 400ms),
+    calc(var(--cmp-summary-delay, 400ms) + 480ms);
 }
 
 /* ─── Footer — optional CTA / success banner ──────────────── */
@@ -483,6 +594,53 @@
   to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
 }
 
+/* Band hairline — grows from 0 height once the band settles, stitching
+   the two cells together as a pair. */
+@keyframes cmpBandHairline {
+  from { opacity: var(--opacity-000); transform: translateX(-50%) scaleY(0); }
+  to   { opacity: var(--opacity-072); transform: translateX(-50%) scaleY(1); }
+}
+
+/* match — soft inner glow pulses once after the chip lands, reinforcing
+   a positive verdict. Uses the same tone the chip already carries. */
+@keyframes cmpChipMatchGlow {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-tone) 0%, transparent); }
+  35%  { box-shadow: 0 0 0 var(--size-04) color-mix(in srgb, var(--status-tone) 22%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-tone) 0%, transparent); }
+}
+
+/* partial — brief scale pulse. "Close but not quite." */
+@keyframes cmpChipPartialPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* gap — one horizontal nudge cycle at ≤2px. Reinforces "something's
+   missing" without reading as an error shake. */
+@keyframes cmpChipGapNudge {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(calc(-1 * var(--size-02))); }
+  55%  { transform: translateX(var(--size-02)); }
+  80%  { transform: translateX(calc(-1 * var(--size-01))); }
+  100% { transform: translateX(0); }
+}
+
+/* Summary track sheen — sweeps left-to-right as the fill settles. */
+@keyframes cmpSummarySheen {
+  0%   { opacity: var(--opacity-000); transform: translateX(-100%); }
+  50%  { opacity: var(--opacity-100); }
+  100% { opacity: var(--opacity-000); transform: translateX(100%); }
+}
+
+/* Summary fill terminal settle — a brief deepen + release once the
+   fill hits its target width. The "tally" cue. */
+@keyframes cmpSummarySettle {
+  0%   { filter: brightness(1); }
+  50%  { filter: brightness(0.9); }
+  100% { filter: brightness(1); }
+}
+
 /* ─── Reduced motion ────────────────────────────────────────── */
 
 /* !important is deliberate — it defeats entry/stagger animations
@@ -491,10 +649,15 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .itemBand,
+  .itemBand::after,
   .columnHeaders,
   .criterionRow > *,
   .statusChip,
+  .criterionRow[data-status="match"] .statusChip,
+  .criterionRow[data-status="partial"] .statusChip,
+  .criterionRow[data-status="gap"] .statusChip,
   .summaryFill,
+  .summaryTrack::after,
   .successBanner {
     animation: none !important;
     animation-delay: 0ms !important;
@@ -503,8 +666,18 @@
     transform: none;
   }
 
+  .itemBand::after {
+    transform: translateX(-50%) scaleY(1);
+    opacity: var(--opacity-072);
+  }
+
   .summaryFill {
     width: var(--cmp-pct, 0%);
+    filter: none;
+  }
+
+  .summaryTrack::after {
+    opacity: var(--opacity-000);
   }
 
   .noteRow {
