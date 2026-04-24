@@ -34,6 +34,14 @@
   box-shadow: var(--shadow-100);
 }
 
+/* Focus-within ring — when keyboard nav lands anywhere in the card,
+   paint a brand-tinted outline so the widget reads as "active". Uses
+   outline (not box-shadow) so it composes with the hover shadow. */
+.card:has(:focus-visible) {
+  outline: var(--border-width-300) solid color-mix(in srgb, var(--brand-60) 40%, transparent);
+  outline-offset: var(--size-02);
+}
+
 .card_success { --tone-color: var(--color-text-success); }
 .card_warning { --tone-color: var(--yellow-60); }
 .card_error   { --tone-color: var(--color-text-error); }
@@ -141,11 +149,18 @@
   min-width: 0;
 }
 
+/* ArrowLeftRight icon between the two parties. One-cycle scan on
+   mount (left → right → center) lands the "this is a comparison"
+   beat right after the item band settles. Uses the §16 springy curve
+   so the scan feels alive, not robotic. */
 .itemInlineArrow {
-  font-size: var(--font-size-200);
-  line-height: 1;
-  color: var(--grey-50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
+  color: var(--grey-50);
+  animation: cmpArrowScan 640ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: 340ms;
 }
 
 /* ─── Criteria stack — vertical list of per-criterion blocks ── */
@@ -216,9 +231,24 @@
     border-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+/* Hover reinforces the affordance without a layout shift:
+   (1) background picks up a subtle status-toned wash,
+   (2) border deepens toward the row's verdict tone,
+   (3) the left stripe gets a soft tone-colored halo (::before
+       box-shadow), so the verdict rail reads as "breathing" when the
+       row is interactive. Box-shadow on ::before composes cleanly with
+       the existing stripe spring animation on the same pseudo. */
+.criterionBlock_clickable::before {
+  transition: box-shadow 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
 .criterionBlock_clickable:hover {
   background: color-mix(in srgb, var(--status-tone) 6%, var(--white));
   border-color: color-mix(in srgb, var(--status-tone) 20%, var(--grey-10));
+}
+
+.criterionBlock_clickable:hover::before {
+  box-shadow: 0 0 var(--size-08) 0 color-mix(in srgb, var(--status-tone) 50%, transparent);
 }
 
 .criterionBlock_clickable:focus-visible {
@@ -227,6 +257,10 @@
   background: color-mix(in srgb, var(--status-tone) 10%, var(--white));
 }
 
+/* Criterion name sits lighter than the values so the comparison
+   (a_value / tone dot / b_value) is the primary eye-target. grey-50
+   is the "caption" rung in §12 — quieter than the grey-60 used for
+   body descriptions, appropriate for an eyebrow. */
 .criterionName {
   grid-column: 1 / -1;
   font-size: var(--font-size-100);
@@ -234,7 +268,7 @@
   line-height: 1;
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
-  color: var(--grey-60);
+  color: var(--grey-50);
 }
 
 .cellA {
@@ -246,6 +280,7 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
   word-break: break-word;
 }
 
@@ -260,11 +295,16 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
   word-break: break-word;
 }
 
 /* ─── Tone dot — icon-only, no copy ─────────────────────────── */
 
+/* Tone dot — icon-only. Radial-gradient inner highlight gives it a
+   hair of dimensionality (top-left hotspot, falls off to the flat
+   tone tint) so the dot reads as a small polished token rather than
+   a flat circle. Glyph sits above the highlight via z-order. */
 .toneDot {
   display: inline-flex;
   align-items: center;
@@ -273,7 +313,13 @@
   width: var(--size-20);
   height: var(--size-20);
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--status-tone) 12%, var(--white));
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      color-mix(in srgb, var(--white) 70%, transparent) 0%,
+      transparent 55%
+    ),
+    color-mix(in srgb, var(--status-tone) 12%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 28%, transparent);
   color: var(--status-tone);
 
@@ -373,6 +419,8 @@
   gap: var(--space-075);
 }
 
+/* Summary eyebrow rises in timed to the pill fill — the "tally"
+   moment lands as a coordinated beat (eyebrow + pill + sheen). */
 .summaryEyebrow {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
@@ -380,6 +428,9 @@
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--grey-50);
+
+  animation: cmpRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--cmp-summary-delay, 400ms);
 }
 
 .summaryTrack {
@@ -427,9 +478,16 @@
 
 /* ─── Footer — optional CTA / success banner ──────────────── */
 
+/* CTA closes the entry composition — lands ~180ms after the summary
+   pill's brightness settle finishes, so the sequence reads as:
+   band → rows → tone dots → summary (eyebrow + pill + sheen +
+   brightness settle) → CTA arrives. */
 .submitBtn {
   width: 100%;
   margin-top: auto;
+
+  animation: cmpRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--cmp-cta-delay, 2500ms);
 }
 
 .successBanner {
@@ -541,6 +599,16 @@
   to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
 }
 
+/* One-cycle horizontal scan — fades in, dips left (~2px), crosses
+   right (~2px), resolves center. Reads as "I'm comparing A with B"
+   without narrating it. */
+@keyframes cmpArrowScan {
+  0%   { opacity: var(--opacity-000); transform: translateX(0); }
+  25%  { opacity: var(--opacity-100); transform: translateX(calc(-1 * var(--size-02))); }
+  55%  { transform: translateX(var(--size-02)); }
+  100% { opacity: var(--opacity-100); transform: translateX(0); }
+}
+
 /* ─── Reduced motion ────────────────────────────────────────── */
 
 /* !important is deliberate — it defeats entry/stagger animations
@@ -549,14 +617,17 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .itemInline,
+  .itemInlineArrow,
   .criterionBlock,
   .criterionBlock::before,
   .toneDot,
   .criterionBlock[data-status="match"] .toneDot,
   .criterionBlock[data-status="partial"] .toneDot,
   .criterionBlock[data-status="gap"] .toneDot,
+  .summaryEyebrow,
   .summaryFill,
   .summaryTrack::after,
+  .submitBtn,
   .successBanner {
     animation: none !important;
     animation-delay: 0ms !important;

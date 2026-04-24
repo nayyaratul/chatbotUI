@@ -14,6 +14,7 @@ import {
   Minus,
   X,
   ArrowRight,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
@@ -157,6 +158,10 @@ export function Comparison({ payload }) {
       data-variant={variant}
       role="article"
       aria-label={title}
+      style={{
+        '--cmp-summary-delay': `${summaryDelay}ms`,
+        '--cmp-cta-delay':     `${summaryDelay + 1080}ms`,
+      }}
     >
       {/* §2 Header */}
       <header className={styles.header}>
@@ -176,7 +181,9 @@ export function Comparison({ payload }) {
           + subtitle vertical pair. */}
       <div className={styles.itemInline}>
         <ItemInlinePart side="a" Icon={ItemAIcon} name={itemA.subtitle ?? itemA.label} />
-        <span className={styles.itemInlineArrow} aria-hidden="true">↔</span>
+        <span className={styles.itemInlineArrow} aria-hidden="true">
+          <ArrowLeftRight size={14} strokeWidth={2} />
+        </span>
         <ItemInlinePart side="b" Icon={ItemBIcon} name={itemB.subtitle ?? itemB.label} />
       </div>
 
@@ -216,10 +223,7 @@ export function Comparison({ payload }) {
         >
           <div
             className={styles.summaryFill}
-            style={{
-              '--cmp-pct': `${pct}%`,
-              '--cmp-summary-delay': `${summaryDelay}ms`,
-            }}
+            style={{ '--cmp-pct': `${pct}%` }}
           />
         </div>
       </div>
