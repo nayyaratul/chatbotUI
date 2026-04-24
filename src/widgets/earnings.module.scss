@@ -99,7 +99,14 @@
    carried by weight + letter-spacing + the count-up animation + the
    tinted container, not by breaking the type ladder. */
 
+/* Count-up lands at ~900ms (180ms delay + 720ms RAF). The sheen
+   sweeps across the tinted container just before, and a tiny
+   brightness settle plays as the count finishes — one coordinated
+   "tally" beat on the signature moment. Both composed from the §16
+   curve family; no fourth curve introduced. */
 .totalBlock {
+  position: relative;
+  overflow: hidden;   /* clips the sheen — parks off-canvas invisibly. */
   display: flex;
   flex-direction: column;
   gap: var(--space-100);
@@ -108,8 +115,35 @@
   background: color-mix(in srgb, var(--tone-color) 8%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--tone-color) 22%, transparent);
 
-  animation: earnRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
-  animation-delay: 60ms;
+  animation:
+    earnRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both,
+    earnTotalSettle 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay:
+    60ms,
+    900ms;   /* settle starts when count lands (180 + 720). */
+}
+
+/* Sheen — tone-mixed gradient sweeps L→R as the count lands. Starts
+   at 720ms so the shine coincides with the final count frames and
+   dissipates as the brightness settle begins. */
+.totalBlock::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--tone-color) 32%, var(--white)) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  opacity: var(--opacity-000);
+  pointer-events: none;
+  animation: earnTotalSheen 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 720ms;
 }
 
 .totalAmount {
@@ -172,7 +206,14 @@
 .statusChip_processing { --chip-tone: var(--yellow-60); }
 .statusChip_failed     { --chip-tone: var(--color-text-error); }
 
-/* Trend chip — same geometry as status chip, tone from direction. */
+/* Trend chip — same geometry as status chip, tone from direction.
+   Composed animation:
+     1) pop — lands at ~1360ms (1080 + 280).
+     2) directional nudge — one cycle starting 1360ms.
+        up   → translateY(-size-02) → back
+        down → translateY(+size-02) → back
+        flat → opacity settle only (no translate)
+   Reinforces direction without narrating it. */
 .trendChip {
   display: inline-flex;
   align-items: center;
@@ -193,9 +234,29 @@
   animation-delay: calc(180ms + 720ms + 180ms);  /* 60ms after status chip */
 }
 
-.trendChip_up   { --chip-tone: var(--color-text-success); }
-.trendChip_down { --chip-tone: var(--color-text-error); }
-.trendChip_flat { --chip-tone: var(--grey-60); }
+.trendChip_up {
+  --chip-tone: var(--color-text-success);
+  animation:
+    earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    earnTrendNudgeUp 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(180ms + 720ms + 180ms), 1360ms;
+}
+
+.trendChip_down {
+  --chip-tone: var(--color-text-error);
+  animation:
+    earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    earnTrendNudgeDown 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(180ms + 720ms + 180ms), 1360ms;
+}
+
+.trendChip_flat {
+  --chip-tone: var(--grey-60);
+  animation:
+    earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    earnTrendFlatSettle 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(180ms + 720ms + 180ms), 1360ms;
+}
 
 .trendChipValue {
   font-variant-numeric: tabular-nums;
@@ -260,18 +321,38 @@
 .row[data-tone="neutral"] { --row-tone: var(--grey-60); }
 
 /* §8 status dot — small solid circle, tone-colored. Spring-in on
-   mount so the verdict arrives as a tiny beat per row. */
+   mount so the verdict arrives as a tiny beat per row, plus a soft
+   tone-colored halo (box-shadow expand-then-contract) that reads as
+   peripheral confirmation. Processing rows use the §16 springy curve
+   on their halo so the "in motion" status carries a touch more life;
+   completed/failed/neutral use the state curve for a calmer settle.
+   No second animated moment competes with the count-up — the halo
+   plays through once alongside the stagger and ends. */
 .rowDot {
+  position: relative;
   display: inline-block;
   flex: 0 0 auto;
   width: var(--size-06);
   height: var(--size-06);
   border-radius: var(--radius-full);
   background: var(--row-tone);
-
-  animation: earnDotSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
-  animation-delay: calc(var(--earn-row-delay, 300ms) + 60ms);
   transform-origin: center center;
+
+  animation:
+    earnDotSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    earnDotHalo 540ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay:
+    calc(var(--earn-row-delay, 300ms) + 60ms),
+    calc(var(--earn-row-delay, 300ms) + 60ms);
+}
+
+.row[data-status="processing"] .rowDot {
+  animation:
+    earnDotSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
+    earnDotHalo 540ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay:
+    calc(var(--earn-row-delay, 300ms) + 60ms),
+    calc(var(--earn-row-delay, 300ms) + 60ms);
 }
 
 .rowText {
@@ -380,6 +461,50 @@
   to   { opacity: var(--opacity-100); transform: scale(1); }
 }
 
+/* Dot halo — tone-colored box-shadow expands 0 → size-06 and back. */
+@keyframes earnDotHalo {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--row-tone) 40%, transparent); }
+  50%  { box-shadow: 0 0 0 var(--size-06) color-mix(in srgb, var(--row-tone) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Total-block brightness settle — 1 → 0.97 → 1, plays as the count
+   lands. Paired with the sheen for one coordinated "tally" beat. */
+@keyframes earnTotalSettle {
+  0%   { filter: brightness(1); }
+  50%  { filter: brightness(0.97); }
+  100% { filter: brightness(1); }
+}
+
+/* Sheen sweep — tone-mixed gradient crosses the total block L→R as
+   the count-up lands. Clipped by the block's overflow:hidden. */
+@keyframes earnTotalSheen {
+  0%   { transform: translateX(-100%); opacity: var(--opacity-000); }
+  20%  { opacity: var(--opacity-072); }
+  80%  { opacity: var(--opacity-072); }
+  100% { transform: translateX(320%); opacity: var(--opacity-000); }
+}
+
+/* Trend-chip directional nudges — one cycle, ≤ size-02 each way. */
+@keyframes earnTrendNudgeUp {
+  0%   { transform: translateY(0); }
+  45%  { transform: translateY(calc(-1 * var(--size-02))); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes earnTrendNudgeDown {
+  0%   { transform: translateY(0); }
+  45%  { transform: translateY(var(--size-02)); }
+  100% { transform: translateY(0); }
+}
+
+/* Flat: opacity settle only — no translate. Reads as "holding". */
+@keyframes earnTrendFlatSettle {
+  0%   { opacity: var(--opacity-100); }
+  50%  { opacity: var(--opacity-072); }
+  100% { opacity: var(--opacity-100); }
+}
+
 @keyframes earnBannerPop {
   from { opacity: var(--opacity-000); transform: translateY(var(--space-050)) scale(0.98); }
   to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
@@ -396,6 +521,9 @@
   .totalBlock,
   .statusChip,
   .trendChip,
+  .trendChip_up,
+  .trendChip_down,
+  .trendChip_flat,
   .row,
   .rowDot,
   .submitBtn,
@@ -405,5 +533,16 @@
     transition: none !important;
     opacity: var(--opacity-100);
     transform: none;
+    filter: none;
+  }
+
+  .row[data-status="processing"] .rowDot {
+    animation: none !important;
+    animation-delay: 0ms !important;
+  }
+
+  .totalBlock::after {
+    animation: none !important;
+    opacity: var(--opacity-000);
   }
 }
