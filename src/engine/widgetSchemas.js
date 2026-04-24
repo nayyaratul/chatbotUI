@@ -285,7 +285,8 @@ function buildApprovalPayload(variant) {
    Three variants for the Comparison widget (#22). Each returns a
    canonical item_a/item_b pair, 4–6 criteria with a variant-appropriate
    status mix, 1–2 notes for expandable detail rows, and an optional
-   action (display-only for qc_spec). */
+   action (display-only for qc_spec). Status is communicated by the
+   tone dot + left stripe in v2.1 — no more status_copy. */
 function buildComparisonPayload(variant) {
   const base = {
     widget_id: makeId('cmp'),
@@ -298,10 +299,10 @@ function buildComparisonPayload(variant) {
       item_a: { label: 'Candidate',  subtitle: 'Ravi Kumar' },
       item_b: { label: 'Role needs', subtitle: 'Shipping Assistant · Delhivery' },
       criteria: [
-        { name: 'Experience',  a_value: '3 yrs',   b_value: '2+ yrs',          status: 'match',   status_copy: 'Exceeds by 1yr' },
-        { name: 'Languages',   a_value: 'Hi, En',  b_value: 'Hi + regional',   status: 'partial', status_copy: 'One short', note: 'You cover Hindi and English; Delhivery prefers Hindi plus one regional language (Kannada or Telugu) for customer calls in the Koramangala zone.' },
-        { name: 'Shift',       a_value: 'Evening', b_value: 'Evening',         status: 'match',   status_copy: 'Matches' },
-        { name: 'Own vehicle', a_value: 'No',      b_value: 'Yes (2-wheeler)', status: 'gap',     status_copy: 'No 2W',      note: 'Role requires an own 2-wheeler in good condition. Company provides a fuel allowance but not the vehicle itself.' },
+        { name: 'Experience',  a_value: '3 yrs',   b_value: '2+ yrs',          status: 'match' },
+        { name: 'Languages',   a_value: 'Hi, En',  b_value: 'Hi + regional',   status: 'partial', note: 'You cover Hindi and English; Delhivery prefers Hindi plus one regional language (Kannada or Telugu) for customer calls in the Koramangala zone.' },
+        { name: 'Shift',       a_value: 'Evening', b_value: 'Evening',         status: 'match' },
+        { name: 'Own vehicle', a_value: 'No',      b_value: 'Yes (2-wheeler)', status: 'gap',     note: 'Role requires an own 2-wheeler in good condition. Company provides a fuel allowance but not the vehicle itself.' },
       ],
       action: { label: 'Apply now', intent: 'primary' },
     }
@@ -313,11 +314,11 @@ function buildComparisonPayload(variant) {
       item_a: { label: 'Your skills',  subtitle: 'From your last 6 months' },
       item_b: { label: 'Target level', subtitle: 'Team Lead — Logistics' },
       criteria: [
-        { name: 'Route planning',      a_value: 'Intermediate', b_value: 'Advanced',     status: 'partial', status_copy: 'Can improve',   note: 'You plan routes independently but have not yet optimised for multi-rider groups. Advanced requires 30+ rider coordination.' },
-        { name: 'Customer escalation', a_value: 'Beginner',     b_value: 'Intermediate', status: 'gap',     status_copy: 'Needs work',    note: 'Handled 4 escalations last quarter; target is 15+ with documented resolution. Enrol in the Escalation Handling track.' },
-        { name: 'Rider communication', a_value: 'Advanced',     b_value: 'Advanced',     status: 'match',   status_copy: 'At target' },
-        { name: 'Data literacy',       a_value: 'None',         b_value: 'Intermediate', status: 'gap',     status_copy: 'Biggest gap',   note: 'Reading rider-productivity dashboards and drawing conclusions is the biggest gap to close for this role.' },
-        { name: 'Shift planning',      a_value: 'Intermediate', b_value: 'Intermediate', status: 'match',   status_copy: 'At target' },
+        { name: 'Route planning',      a_value: 'Intermediate', b_value: 'Advanced',     status: 'partial', note: 'You plan routes independently but have not yet optimised for multi-rider groups. Advanced requires 30+ rider coordination.' },
+        { name: 'Customer escalation', a_value: 'Beginner',     b_value: 'Intermediate', status: 'gap',     note: 'Handled 4 escalations last quarter; target is 15+ with documented resolution. Enrol in the Escalation Handling track.' },
+        { name: 'Rider communication', a_value: 'Advanced',     b_value: 'Advanced',     status: 'match' },
+        { name: 'Data literacy',       a_value: 'None',         b_value: 'Intermediate', status: 'gap',     note: 'Reading rider-productivity dashboards and drawing conclusions is the biggest gap to close for this role.' },
+        { name: 'Shift planning',      a_value: 'Intermediate', b_value: 'Intermediate', status: 'match' },
       ],
       action: { label: 'Close gaps with training', intent: 'primary' },
     }
@@ -329,10 +330,10 @@ function buildComparisonPayload(variant) {
       item_a: { label: 'Submitted', subtitle: 'Audit #4812 — Indiranagar' },
       item_b: { label: 'Expected',  subtitle: 'Reliance Fresh planogram v3' },
       criteria: [
-        { name: 'SKU coverage',         a_value: '18 / 20',     b_value: '20 / 20',     status: 'partial', status_copy: '2 missing', note: 'Missing SKUs: Amul Taaza 500ml, Mother Dairy Classic 1L. Re-photograph the dairy shelf with all facings visible.' },
-        { name: 'Facing alignment',     a_value: '85%',         b_value: '≥ 95%',       status: 'gap',     status_copy: 'Below spec', note: 'Aisle 4 shelf has 3 mis-faced units. Straighten before resubmission.' },
-        { name: 'Price tag visibility', a_value: 'All visible', b_value: 'All visible', status: 'match',   status_copy: 'On spec' },
-        { name: 'Signage placement',    a_value: 'Correct',     b_value: 'Correct',     status: 'match',   status_copy: 'On spec' },
+        { name: 'SKU coverage',         a_value: '18 / 20',     b_value: '20 / 20',     status: 'partial', note: 'Missing SKUs: Amul Taaza 500ml, Mother Dairy Classic 1L. Re-photograph the dairy shelf with all facings visible.' },
+        { name: 'Facing alignment',     a_value: '85%',         b_value: '≥ 95%',       status: 'gap',     note: 'Aisle 4 shelf has 3 mis-faced units. Straighten before resubmission.' },
+        { name: 'Price tag visibility', a_value: 'All visible', b_value: 'All visible', status: 'match' },
+        { name: 'Signage placement',    a_value: 'Correct',     b_value: 'Correct',     status: 'match' },
       ],
       /* display-only — no CTA on QC spec variant */
     }
