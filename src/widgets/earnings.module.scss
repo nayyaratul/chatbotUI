@@ -289,16 +289,24 @@
    only so the arrow + number move; the "vs last period" caption
    stays static. Pop + nudge are the same Pass 2 composition but the
    target element is now the span, not a pill. */
-/* Single-line trend — value + caption inline. Caption stays muted so
-   the "-3%" / "+8%" reads as the primary signal; "vs last week" sits
-   as a quieter annotation beside it. */
+/* Trend chip — §7 pill containing icon + value + label as one
+   baseline-aligning unit. Treats the change-indicator as a single
+   stock-ticker-style badge rather than three loose elements prone
+   to internal misalignment. Tone tint (success/error/neutral)
+   carries the direction; the chip itself aligns with the eyebrow
+   on the grid row via its own text baseline. */
 .trendInline {
   display: inline-flex;
-  flex-direction: row;
   align-items: baseline;
-  gap: var(--space-100);    /* 8px between value and caption. */
+  gap: var(--space-075);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  line-height: 1;
   flex: 0 0 auto;
   --chip-tone: var(--grey-60);
+  background: color-mix(in srgb, var(--chip-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--chip-tone) 24%, transparent);
+  color: var(--chip-tone);
 }
 
 .trendInline_up   { --chip-tone: var(--color-text-success); }
@@ -307,17 +315,23 @@
 
 .trendInlineValue {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-050);
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
   color: var(--chip-tone);
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-wide);
   transform-origin: center right;
 
   animation: earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
   animation-delay: calc(180ms + 720ms + 180ms);   /* 1080ms — chip-pop rhythm */
+}
+
+/* Lucide glyph inside the chip value — anchor to text baseline. */
+.trendInlineValue svg {
+  vertical-align: text-bottom;
 }
 
 /* Directional nudge on the value — same v2.1 lesson, fill-mode
@@ -343,12 +357,19 @@
   animation-delay: calc(180ms + 720ms + 180ms), 1360ms;
 }
 
+/* Label within the chip — muted so the percent stays the primary
+   signal; "vs last month" sits as quieter annotation inside the
+   same chip body. text-transform: none overrides the uppercase
+   that the chip might inherit; line-height 1 keeps the baseline
+   flush. */
 .trendInlineLabel {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-regular);
   line-height: 1;
-  color: color-mix(in srgb, var(--chip-tone) 55%, var(--grey-70));
-  text-align: right;
+  color: color-mix(in srgb, var(--chip-tone) 60%, var(--grey-70));
+  text-transform: none;
+  letter-spacing: var(--letter-spacing-normal);
+  font-variant-numeric: normal;
 }
 
 /* ─── Breakdown list ──────────────────────────────────────────── */
