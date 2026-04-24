@@ -1,17 +1,19 @@
 import { useState, useRef, useCallback } from 'react'
 import cx from 'classnames'
 import {
-  MapPin,
-  Clock,
   Bookmark,
-  X,
-  ExternalLink,
   CheckCircle2,
   Check,
   ArrowRight,
+  ShieldCheck,
+  Clock,
+  Phone,
+  Wallet,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
+import { JobDetailsModal } from './JobDetailsModal.jsx'
 import styles from './jobCard.module.scss'
 
 /* ─── Job Card Widget ─────────────────────────────────────────────────
@@ -29,15 +31,13 @@ function companyInitials(name = '') {
   return (name.slice(0, 2)).toUpperCase()
 }
 
-/** Human-readable label for each action. */
-function actionLabel(action) {
-  switch (action) {
-    case 'apply':        return 'Apply'
-    case 'save':         return 'Save'
-    case 'dismiss':      return 'Not interested'
-    case 'view_details': return 'View details'
-    default:             return action
-  }
+/** Map a raw period ("month", "hour", "year") to its adverb form
+ *  ("monthly", "hourly", "yearly"). Cleaner typography vs "/month". */
+function periodLabel(period) {
+  if (!period) return ''
+  const p = String(period).toLowerCase()
+  const map = { month: 'monthly', hour: 'hourly', year: 'yearly', week: 'weekly', day: 'daily' }
+  return map[p] ?? `/ ${period}`
 }
 
 /** Chip label shown after user acts. */
@@ -55,6 +55,9 @@ function doneLabel(action) {
 
 function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) {
   const [doneAction, setDoneAction] = useState(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [originRect, setOriginRect] = useState(null)
+  const cardRef = useRef(null)
 
   const jobId     = item?.job_id ?? ''
   const title     = item?.title ?? 'Untitled role'
@@ -62,11 +65,14 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
   const location  = item?.location ?? {}
   const pay       = item?.pay ?? {}
   const timing    = item?.timing
-  const reqs      = (item?.requirements ?? []).slice(0, 4)
+  const allReqs   = item?.requirements ?? []
+  const reqs      = allReqs.slice(0, 3)
+  const moreReqs  = Math.max(0, allReqs.length - reqs.length)
   const actions   = item?.actions ?? ['apply']
 
-  const hasApply  = actions.includes('apply')
-  const others    = actions.filter((a) => a !== 'apply')
+  const hasApply   = actions.includes('apply')
+  const hasSave    = actions.includes('save')
+  const hasDismiss = actions.includes('dismiss')
 
   const handleAction = useCallback((action) => {
     if (doneAction) return
@@ -89,14 +95,73 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
     )
   }, [doneAction, onReply, containerWidgetId, jobId, title, isSilent])
 
-  const isNearby = location.distance_km != null && location.distance_km < 5
+  const handleCall = useCallback(() => {
+    onReply?.(
+      {
+        type: 'widget_response',
+        payload: {
+          source_type: 'job_card',
+          source_widget_id: containerWidgetId,
+          data: {
+            label: `Called HR for ${title}`,
+            job_id: jobId,
+            action: 'call_hr',
+            timestamp: Date.now(),
+          },
+        },
+      },
+      { silent: true },
+    )
+    if (item?.phone) window.location.href = `tel:${item.phone}`
+  }, [onReply, containerWidgetId, jobId, title, item])
+
+  const openDetails = useCallback(() => {
+    const rect = cardRef.current?.getBoundingClientRect()
+    const root = document.getElementById('chat-modal-root')
+    const rootRect = root?.getBoundingClientRect()
+    if (rect && rootRect && rootRect.width > 0 && rootRect.height > 0) {
+      // FLIP-style: precompute translate + scale values so the modal
+      // sheet can start at the card's size/position and animate to
+      // fill the pane. Values are relative to the modal root (pane).
+      setOriginRect({
+        x: rect.left - rootRect.left,
+        y: rect.top - rootRect.top,
+        scaleX: rect.width / rootRect.width,
+        scaleY: rect.height / rootRect.height,
+      })
+    }
+    setDetailsOpen(true)
+  }, [])
+
+  // Pay displays either a range (min–max) or a single amount.
+  // An en-dash (U+2013) separates the bounds of a range.
+  const payText = (pay?.min != null && pay?.max != null)
+    ? `${pay.min} – ${pay.max}`
+    : (pay?.amount ?? null)
 
   return (
     <div
+      ref={cardRef}
       className={cx(styles.card, isCarousel && styles.carouselCard)}
       role="article"
       aria-label={`Job: ${title} at ${company.name ?? ''}`}
     >
+      {/* Top-right corner — Save icon. Dismiss moved to a labeled
+          "Not interested" button in the actions row. Hidden when doneChip shows. */}
+      {!doneAction && hasSave && (
+        <div className={styles.cornerActions}>
+          <button
+            type="button"
+            className={styles.cornerBtn}
+            onClick={() => handleAction('save')}
+            aria-label="Save"
+            title="Save"
+          >
+            <Bookmark size={15} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {/* Done chip — appears in top-right corner after user action */}
       {doneAction && (
         <span className={cx(styles.doneChip, styles[doneAction])}>
@@ -105,15 +170,30 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
         </span>
       )}
 
-      {/* Head row */}
+      {/* Top meta strip — urgency + freshness (Indian job-card convention) */}
+      {(item?.urgent || item?.posted_at) && (
+        <div className={styles.metaStrip}>
+          {item.urgent && (
+            <span className={cx(styles.metaPill, styles.urgent)}>Urgent</span>
+          )}
+          {item.urgent && item.posted_at && (
+            <span className={styles.dotSep} aria-hidden="true">·</span>
+          )}
+          {item.posted_at && (
+            <span className={styles.metaPosted}>Posted {item.posted_at}</span>
+          )}
+        </div>
+      )}
+
+      {/* Head row: logo + title + subtitle (company ✓ · location) */}
       <div className={styles.head}>
         {company.logo_url ? (
           <img
             src={company.logo_url}
             alt={`${company.name ?? 'Company'} logo`}
             className={styles.logo}
-            width={40}
-            height={40}
+            width={36}
+            height={36}
           />
         ) : (
           <div className={styles.logoFallback} aria-hidden="true">
@@ -124,48 +204,57 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
         <div className={styles.headText}>
           <h3 className={styles.jobTitle}>{title}</h3>
           {company.name && (
-            <span className={styles.companyName}>{company.name}</span>
+            <div className={styles.subtitle}>
+              <span className={styles.subtitlePart}>
+                {company.name}
+                {company.verified && (
+                  <ShieldCheck
+                    size={12}
+                    strokeWidth={2.5}
+                    aria-label="Verified employer"
+                    className={styles.verifiedInline}
+                  />
+                )}
+              </span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Pay — tinted chip, headliner */}
-      {(pay.amount || pay.period) && (
-        <div className={styles.payChip}>
-          {pay.amount && <span className={styles.payAmount}>{pay.amount}</span>}
-          {pay.period && <span className={styles.payPeriod}>/ {pay.period}</span>}
-        </div>
-      )}
+      {/* Facts cluster — salary / location / timing. Tighter internal
+          gap than the card's macro rhythm so these three rows read as
+          one grouped "what matters" panel, not an even stack. */}
+      {(payText || location.name || timing) && (
+        <div className={styles.factsGroup}>
+          {payText && (
+            <div className={styles.factLine}>
+              <Wallet size={14} strokeWidth={2} aria-hidden="true" className={styles.factIcon} />
+              <span className={styles.factText}>
+                <strong>{payText}</strong>
+                {pay?.period && (
+                  <span className={styles.factPeriod}> {periodLabel(pay.period)}</span>
+                )}
+              </span>
+            </div>
+          )}
 
-      {/* Meta row: location (with optional Near-you badge) + timing */}
-      {(location.name || timing) && (
-        <div className={styles.metaRow}>
           {location.name && (
-            <span className={styles.metaItem}>
-              <span className={styles.metaIcon}>
-                <MapPin size={13} strokeWidth={2} aria-hidden="true" />
-              </span>
-              {location.name}
-              {isNearby && (
-                <>
-                  <span className={styles.metaSep}>·</span>
-                  <span className={styles.nearBadge}>Near you</span>
-                </>
-              )}
-            </span>
+            <div className={styles.factLine}>
+              <MapPin size={14} strokeWidth={2} aria-hidden="true" className={styles.factIcon} />
+              <span className={styles.factText}>{location.name}</span>
+            </div>
           )}
+
           {timing && (
-            <span className={styles.metaItem}>
-              <span className={styles.metaIcon}>
-                <Clock size={13} strokeWidth={2} aria-hidden="true" />
-              </span>
-              {timing}
-            </span>
+            <div className={styles.factLine}>
+              <Clock size={14} strokeWidth={2} aria-hidden="true" className={styles.factIcon} />
+              <span className={styles.factText}>{timing}</span>
+            </div>
           )}
         </div>
       )}
 
-      {/* Requirements — checklist style */}
+      {/* Requirements — compact checklist, capped at 3 + overflow label */}
       {reqs.length > 0 && (
         <ul className={styles.requirementsList} aria-label="Key requirements">
           {reqs.map((req, i) => (
@@ -176,71 +265,82 @@ function SingleCard({ item, containerWidgetId, isSilent, onReply, isCarousel }) 
               <span>{req}</span>
             </li>
           ))}
+          {moreReqs > 0 && (
+            <li className={styles.requirementMore}>
+              +{moreReqs} more {moreReqs === 1 ? 'requirement' : 'requirements'}
+            </li>
+          )}
         </ul>
       )}
 
-      {/* Actions */}
-      <div className={styles.actionsRow}>
-        {hasApply && (
-          <Button
-            variant="primary"
-            size="md"
-            disabled={!!doneAction}
-            className={styles.actionBtn}
-            onClick={() => handleAction('apply')}
+      {/* View details — sits ABOVE the primary CTAs as a secondary
+          affordance ("read more before deciding"). margin-top: auto
+          on this element pins it + the actions row to the bottom of
+          the card so all carousel cards align their CTAs. */}
+      <button
+        type="button"
+        className={styles.viewDetailsLink}
+        onClick={openDetails}
+        aria-label={`View full details for ${title}`}
+      >
+        View full details
+        <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
+      </button>
+
+      {/* Actions — conditionally rendered based on doneAction:
+          • Pre-action: [Not interested] + [Apply →] split 50/50
+          • Post-apply: [📞 Call HR now] — reward CTA, Apna pattern
+          • Post-save / post-dismiss: nothing (doneChip alone suffices) */}
+      {doneAction === 'apply' && item?.phone ? (
+        <div className={styles.actionsRow}>
+          <button
+            type="button"
+            className={styles.postApplyCallBtn}
+            onClick={handleCall}
           >
-            <span className={styles.btnInner}>
+            <Phone size={15} strokeWidth={2.25} aria-hidden="true" />
+            Call HR now
+          </button>
+        </div>
+      ) : !doneAction ? (
+        <div className={styles.actionsRow}>
+          {hasDismiss && (
+            <Button
+              variant="secondary"
+              size="md"
+              className={styles.dismissBtn}
+              onClick={() => handleAction('dismiss')}
+            >
+              Not interested
+            </Button>
+          )}
+
+          {hasApply && (
+            <Button
+              variant="primary"
+              size="md"
+              className={styles.primaryBtn}
+              iconRight={<ArrowRight size={14} strokeWidth={2.25} aria-hidden="true" />}
+              onClick={() => handleAction('apply')}
+            >
               Apply
-              <ArrowRight size={14} strokeWidth={2.25} aria-hidden="true" />
-            </span>
-          </Button>
-        )}
+            </Button>
+          )}
+        </div>
+      ) : null}
 
-        {others.includes('save') && (
-          <Button
-            variant="secondary"
-            size="md"
-            disabled={!!doneAction}
-            className={styles.actionBtn}
-            onClick={() => handleAction('save')}
-          >
-            <span className={styles.btnInner}>
-              <Bookmark size={14} strokeWidth={2} aria-hidden="true" />
-              Save
-            </span>
-          </Button>
-        )}
-
-        {others.includes('dismiss') && (
-          <Button
-            variant="secondary"
-            size="md"
-            disabled={!!doneAction}
-            className={styles.actionBtn}
-            onClick={() => handleAction('dismiss')}
-          >
-            <span className={styles.btnInner}>
-              <X size={14} strokeWidth={2} aria-hidden="true" />
-              Dismiss
-            </span>
-          </Button>
-        )}
-
-        {others.includes('view_details') && (
-          <Button
-            variant="secondary"
-            size="md"
-            disabled={!!doneAction}
-            className={styles.actionBtn}
-            onClick={() => handleAction('view_details')}
-          >
-            <span className={styles.btnInner}>
-              <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
-              Details
-            </span>
-          </Button>
-        )}
-      </div>
+      {/* Expanded modal */}
+      {detailsOpen && (
+        <JobDetailsModal
+          item={item}
+          originRect={originRect}
+          disabled={!!doneAction}
+          onClose={() => setDetailsOpen(false)}
+          onApply={() => handleAction('apply')}
+          onSave={() => handleAction('save')}
+          onDismiss={() => handleAction('dismiss')}
+        />
+      )}
     </div>
   )
 }
@@ -319,6 +419,9 @@ export function JobCard({ payload }) {
       className={styles.carousel}
       role="region"
       aria-label="Job opportunities"
+      /* Opts the carousel out of the MessageRenderer's 28rem slot
+         cap so multiple cards + peek can breathe on desktop. */
+      data-widget-variant="wide"
     >
       <div
         ref={trackRef}

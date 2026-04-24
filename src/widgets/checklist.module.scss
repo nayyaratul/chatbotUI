@@ -1,0 +1,546 @@
+/* ─── Checklist Widget ───────────────────────────────────────────────
+   Multi-step to-do list. Shares the widget family's chrome (card
+   shell, brand-60 header, constant-height contract) and borrows the
+   segmented progress treatment from QC Evidence Review so the two
+   "work through N items" widgets feel related. Nexus tokens only.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: clRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+.dotSep {
+  color: var(--grey-30);
+  user-select: none;
+}
+
+/* ─── Progress strip — per-item segments, green when done ────────── */
+
+.progressStrip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.progressSegments {
+  display: flex;
+  gap: var(--space-050);
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--size-06);
+  border-radius: var(--radius-full);
+  background: var(--grey-10);
+  transition: background 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+}
+
+.segment_pending   { background: var(--grey-10); }
+.segment_completed { background: var(--color-text-success); }
+
+/* Skipped — muted neutral so it reads as "out of consideration",
+   not as "decided positively". Intentionally different from the
+   amber/warning vocabulary so it doesn't signal urgency. */
+.segment_skipped {
+  background: var(--grey-30);
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--white) 40%, transparent) 3px 4px
+    );
+}
+
+.progressText {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-400);
+    margin-right: var(--space-050);
+  }
+}
+
+.progressOf {
+  color: var(--grey-50);
+}
+
+.progressSkipped {
+  margin-left: var(--space-075);
+  color: var(--grey-50);
+  font-size: var(--font-size-200);
+}
+
+/* "View only" chip — small, muted. Sits in the header's right
+   slot when read_only is true so the mode is legible at a glance. */
+.readOnlyChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+/* ─── Item list ──────────────────────────────────────────────────── */
+
+.itemList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  /* Slightly more left padding leaves room for the 3px decided-state
+     stripe without content butting against it. */
+  padding: var(--space-125) var(--space-125) var(--space-125) var(--space-150);
+  border-radius: var(--radius-150);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  overflow: hidden;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease,
+    transform 120ms ease;
+  animation: clItemRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* Staggered entry — each item rises slightly later than the one
+   before. Cap at 8 items so deep lists don't feel sluggish. */
+.item:nth-child(1) { animation-delay: 40ms; }
+.item:nth-child(2) { animation-delay: 80ms; }
+.item:nth-child(3) { animation-delay: 120ms; }
+.item:nth-child(4) { animation-delay: 160ms; }
+.item:nth-child(5) { animation-delay: 200ms; }
+.item:nth-child(6) { animation-delay: 240ms; }
+.item:nth-child(7) { animation-delay: 280ms; }
+.item:nth-child(8) { animation-delay: 320ms; }
+
+/* Pending rows get a soft hover lift + shadow — matches JobCard /
+   File Upload's hover vocabulary ("this is actionable"). */
+.item:hover:not(.itemDisabled) {
+  border-color: var(--grey-20);
+  background: var(--grey-0);
+  box-shadow: var(--shadow-100);
+}
+
+/* Done + skipped items carry a bold left-edge stripe — the same
+   ledger-mark used by QC Evidence Review's decided rows. The stripe
+   is the scannable cue; the subtle bg wash reinforces at close range. */
+.itemDone,
+.itemSkipped {
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--border-width-300);
+  }
+}
+
+.itemDone {
+  border-color: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
+
+  &::before { background: var(--color-text-success); }
+}
+
+/* Skipped — neutral muted treatment. Grey stripe reads as "passed
+   over" without implying a negative verdict (red would). Label
+   renders muted but without strike-through (strike = positive). */
+.itemSkipped {
+  border-color: var(--grey-20);
+  background: var(--grey-0);
+
+  &::before { background: var(--grey-40); }
+}
+
+.itemDisabled { cursor: default; }
+
+/* Read-only items — remove the hover lift since there's no action
+   to invite. Cursor stays default; decided-state treatments persist. */
+.itemReadOnly,
+.itemReadOnly:hover {
+  background: var(--white);
+  border-color: var(--grey-10);
+  box-shadow: none;
+
+  &.itemDone {
+    border-color: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+    background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
+  }
+
+  &.itemSkipped {
+    border-color: var(--grey-20);
+    background: var(--grey-0);
+  }
+}
+
+/* ─── Checkbox — custom-styled button with role="checkbox" ──────── */
+
+.checkbox {
+  flex-shrink: 0;
+  position: relative;
+  width: var(--size-24);
+  height: var(--size-24);
+  margin-top: 2px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  background: var(--white);
+  border: var(--border-width-150) solid var(--grey-30);
+  border-radius: var(--radius-100);
+  color: var(--white);
+  cursor: pointer;
+
+  transition:
+    background 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 100ms ease;
+}
+
+.checkbox:hover:not(:disabled) {
+  border-color: var(--color-text-success);
+}
+
+.checkbox:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.checkbox:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.checkbox:disabled { cursor: default; }
+
+.checkboxDone {
+  background: var(--color-text-success);
+  border-color: var(--color-text-success);
+}
+
+/* Skipped — muted filled square with a small horizontal dash. Reads
+   as "intentionally not a tick" without colour-signal implications. */
+.checkboxSkipped {
+  background: var(--grey-40);
+  border-color: var(--grey-40);
+}
+
+/* Check icon — hidden when pending, pops in on the toggle to done */
+.checkmark {
+  opacity: 0;
+  transform: scale(0.4) rotate(-10deg);
+  transition:
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.18, 0.9, 0.28, 1.08);
+}
+
+.checkboxDone .checkmark,
+.checkboxSkipped .checkmark {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* ─── Item body — label + description ────────────────────────────── */
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemBody:disabled { cursor: default; }
+
+.itemLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  transition: color 180ms ease;
+}
+
+.itemDescription {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+  transition: color 180ms ease;
+}
+
+/* Strike-through satisfaction when done — the typographic payoff
+   that makes ticking items off actually feel good. */
+.itemDone .itemLabel {
+  color: var(--grey-60);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--color-text-success) 60%, transparent);
+  text-decoration-thickness: 1.5px;
+}
+
+.itemDone .itemDescription {
+  color: var(--grey-50);
+}
+
+/* Skipped rows — label muted without strike-through (strike is
+   reserved for positive completion). */
+.itemSkipped .itemLabel {
+  color: var(--grey-60);
+}
+.itemSkipped .itemDescription {
+  color: var(--grey-50);
+}
+
+/* ─── Per-item due indicator — full chip treatment matching the
+   status-chip vocabulary used across the widget family. Tone-based
+   bg + border + text color; uppercase letter-spaced label. */
+
+.itemDue {
+  align-self: flex-start;     /* chip hugs its content width */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  margin-top: var(--space-050);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-70);
+
+  > svg { flex-shrink: 0; }
+}
+
+/* Overdue — solid red pill for maximum urgency. Matches QC's
+   rejected status chip treatment (solid tone, white ink). */
+.itemDue_overdue {
+  background: var(--red-50);
+  border-color: var(--red-50);
+  color: var(--white);
+}
+
+/* Soon — tinted amber, not solid. Alert, not alarm. */
+.itemDue_soon {
+  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  border-color: color-mix(in srgb, var(--yellow-60) 36%, transparent);
+  color: var(--yellow-60);
+}
+
+/* Ok — neutral default (already set above); explicit class for
+   clarity at the callsite. */
+.itemDue_ok {
+  background: var(--grey-0);
+  border-color: var(--grey-20);
+  color: var(--grey-70);
+}
+
+/* ─── Bottom action group — Submit ──────────────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  margin-top: auto;
+}
+
+.submitBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Submitted — success banner ─────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  margin-top: auto;
+  animation: clSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.successTime { color: var(--grey-60); }
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes clRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes clItemRise {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes clSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

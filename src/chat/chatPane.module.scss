@@ -1,9 +1,21 @@
 .pane {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
   background: var(--grey-0);
+}
+
+/* Portal target for widget-owned modals (e.g. Job Card details).
+   Absolutely positioned so modals fill the device frame but don't
+   shift chat layout; pointer-events: none lets clicks through when
+   no modal is open. */
+.modalRoot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .body {

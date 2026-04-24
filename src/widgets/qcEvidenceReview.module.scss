@@ -1,0 +1,590 @@
+/* ─── QC Evidence Review Widget (CSV #20) ───────────────────────────
+   Single-image task-photo QC with AI-generated bounding boxes.
+   Shares the widget family's chrome. The distinctive moment is the
+   annotated image — colored bounding boxes overlay the photo and
+   reveal which regions passed/failed inspection.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: qcevRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Overall verdict badge (top-right of header) ─────────────────── */
+
+.overallBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-050) var(--space-100);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overallBadge_success {
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.overallBadge_danger {
+  background: var(--red-50);
+  color: var(--white);
+}
+
+.overallBadge_warn {
+  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 36%, transparent);
+  color: var(--yellow-60);
+}
+
+.confidence {
+  padding: var(--space-025) var(--space-075);
+  background: color-mix(in srgb, var(--grey-100) 14%, transparent);
+  border-radius: var(--radius-full);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+}
+
+/* ─── Image + bounding-box overlays ──────────────────────────────── */
+
+.imageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  overflow: hidden;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  color: var(--grey-50);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Each annotation is an absolutely-positioned div overlayed on the
+   image. Colored border + a small label chip anchored at the top. */
+.annotation {
+  position: absolute;
+  pointer-events: none;
+  border: var(--border-width-200) solid;
+  border-radius: var(--radius-050);
+
+  /* Subtle fill so the region reads even against busy photos. */
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+
+  animation: qcevBoxPop 400ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.annotation_success { color: var(--color-text-success); }
+.annotation_danger  { color: var(--red-50); }
+.annotation_warn    { color: var(--yellow-60); }
+
+.annotationLabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateY(-100%);
+  padding: var(--space-025) var(--space-075);
+  background: currentColor;
+  border-radius: var(--radius-050) var(--radius-050) 0 0;
+  color: var(--white);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The text inside annotationLabel inverts — container uses the tone
+   as background via `currentColor`, so we need the text to be white. */
+.annotationLabel,
+.annotation .annotationLabel {
+  /* using a descendant pseudo-inversion isn't needed since we set
+     background: currentColor; color: white above. */
+}
+
+/* ─── Criteria list ──────────────────────────────────────────────── */
+
+.criteria {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.criteriaLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.criteriaList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+.criterion {
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  overflow: hidden;
+  animation: qcevCriterionRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.criterion:nth-child(1) { animation-delay:  60ms; }
+.criterion:nth-child(2) { animation-delay: 120ms; }
+.criterion:nth-child(3) { animation-delay: 180ms; }
+.criterion:nth-child(4) { animation-delay: 240ms; }
+.criterion:nth-child(5) { animation-delay: 300ms; }
+
+.criterionHead {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 160ms ease;
+}
+
+.criterionHead:hover:not(:disabled) {
+  background: var(--grey-0);
+}
+
+.criterionHead:disabled {
+  cursor: default;
+}
+
+.verdictIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-20);
+  height: var(--size-20);
+  border-radius: var(--radius-full);
+  color: var(--white);
+}
+
+.verdictIcon_success { background: var(--color-text-success); }
+.verdictIcon_danger  { background: var(--red-50); }
+.verdictIcon_warn    { background: var(--yellow-60); }
+
+.criterionName {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.verdictChip {
+  flex-shrink: 0;
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verdictChip_success {
+  background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  color: var(--color-text-success);
+}
+
+.verdictChip_danger {
+  background: color-mix(in srgb, var(--red-50) 12%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 32%, transparent);
+  color: var(--red-60);
+}
+
+.verdictChip_warn {
+  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 36%, transparent);
+  color: var(--yellow-60);
+}
+
+.criterionChevron {
+  flex-shrink: 0;
+  color: var(--grey-50);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.criterionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.criterionReasoning {
+  padding: 0 var(--space-125) var(--space-100);
+  margin-left: calc(var(--size-20) + var(--space-100) + var(--space-125));
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-400);
+  color: var(--grey-70);
+
+  animation: qcevReasoningFade 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ─── Reviewer note block ────────────────────────────────────────── */
+
+.noteBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding: var(--space-125);
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  animation: qcevFormFade 200ms ease both;
+}
+
+.noteLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.noteInput {
+  width: 100%;
+  resize: vertical;
+  min-height: calc(var(--size-40) * 1.2);
+
+  padding: var(--space-075) var(--space-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+
+  &::placeholder { color: var(--grey-40); }
+  &:focus {
+    outline: none;
+    border-color: var(--brand-60);
+    box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
+  }
+}
+
+.noteActions {
+  display: flex;
+  gap: var(--space-075);
+  justify-content: flex-end;
+}
+
+.noteCancelBtn,
+.noteConfirmBtn {
+  padding: var(--space-075) var(--space-125);
+  border-radius: var(--radius-100);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.noteCancelBtn {
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-70);
+}
+.noteCancelBtn:hover {
+  background: var(--grey-0);
+  border-color: var(--grey-30);
+}
+
+.noteConfirmBtn {
+  background: var(--grey-90);
+  border: var(--border-width-100) solid var(--grey-90);
+  color: var(--white);
+}
+
+.noteConfirmReject {
+  background: var(--red-50);
+  border-color: var(--red-50);
+}
+.noteConfirmReject:hover {
+  background: var(--red-60);
+  border-color: var(--red-60);
+}
+
+.noteConfirmResubmit {
+  background: var(--yellow-60);
+  border-color: var(--yellow-60);
+}
+.noteConfirmResubmit:hover {
+  background: var(--yellow-70);
+  border-color: var(--yellow-70);
+}
+
+/* ─── Admin action bar ───────────────────────────────────────────── */
+
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-100);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+.rejectBtn, .resubmitBtn { flex: 0 0 auto; }
+
+.approveBtn {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Success banner (post-decision) ─────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  animation: qcevSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successBanner_success {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
+}
+
+.successBanner_danger {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--red-50) 28%, transparent);
+}
+
+.successBanner_warn {
+  background: color-mix(in srgb, var(--yellow-60) 12%, var(--white));
+  border-color: color-mix(in srgb, var(--yellow-60) 32%, transparent);
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: currentColor;
+  color: var(--white);
+}
+
+.successBanner_success .successCheck { background: var(--color-text-success); }
+.successBanner_danger  .successCheck { background: var(--red-50); }
+.successBanner_warn    .successCheck { background: var(--yellow-60); }
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.successBanner_success .successTitle { color: var(--color-text-success); }
+.successBanner_danger  .successTitle { color: var(--red-60); }
+.successBanner_warn    .successTitle { color: var(--yellow-60); }
+
+.successSub {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.noteEcho {
+  color: var(--grey-70);
+  font-style: italic;
+}
+
+.successDot  { color: var(--grey-30); }
+.successTime { color: var(--grey-60); }
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes qcevRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes qcevBoxPop {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes qcevCriterionRise {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes qcevReasoningFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes qcevFormFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes qcevSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

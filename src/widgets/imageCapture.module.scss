@@ -1,0 +1,656 @@
+/* ─── Image Capture Widget (CSV #5) ──────────────────────────────────
+   Live camera interface with overlay guide. Five phases share a
+   single card shell:
+     • idle       — guidelines + "Start camera" CTA
+     • live       — <video> stream + overlay guide + shutter button
+     • preview    — captured image + Retake / Use this photo
+     • submitted  — success banner + captured image preview
+     • denied     — permission error + retry CTA
+
+   No gallery / file-picker fallback per spec. Nexus tokens only.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* Constant-height across state transitions. Tuned to the tallest
+     natural state (submitted: header + success banner + 4:3 preview
+     image + metadata row). Shorter states (idle, denied) pin their
+     footer via `margin-top: auto`; they never shrink the card below
+     this floor, so idle → live → preview → submitted → denied all
+     render at the same outer height. */
+  min-height: 30rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: icRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header — icon badge + title + description ──────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  border-radius: var(--radius-150);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Guidelines checklist (idle state) ─────────────────────────── */
+
+.guidelines {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  list-style: none;
+}
+
+.guidelineItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+.guidelineIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-025);
+  color: var(--color-text-success);
+}
+
+/* ─── Hint pill (for require_face_detection etc.) ────────────────── */
+
+.hintPill {
+  align-self: flex-start;
+  padding: var(--space-050) var(--space-100);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 32%, transparent);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  color: var(--yellow-60);
+}
+
+/* ─── Start camera CTA (idle state) ──────────────────────────────── */
+
+/* Large button that triggers the getUserMedia permission prompt.
+   Not a viewfinder — user hasn't granted camera yet, so showing a
+   fake viewfinder would be dishonest. This is an explicit "open
+   camera" affordance. */
+.startCameraBtn {
+  margin-top: auto;       /* pin to card bottom — constant-height contract */
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-150);
+  width: 100%;
+
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  border: var(--border-width-100) dashed color-mix(in srgb, var(--brand-60) 36%, transparent);
+  border-radius: var(--radius-200);
+  color: var(--grey-80);
+  cursor: pointer;
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 120ms ease;
+}
+
+.startCameraBtn:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 52%, transparent);
+}
+
+.startCameraBtn:active { transform: scale(0.995); }
+
+.startCameraBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.startCameraIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-52);
+  height: var(--size-52);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 32%, transparent);
+  color: var(--brand-60);
+  box-shadow: 0 var(--size-02) var(--size-08) 0
+    color-mix(in srgb, var(--brand-60) 18%, transparent);
+}
+
+.startCameraText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.startCameraLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  color: var(--grey-90);
+}
+
+.startCameraSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.2;
+  color: var(--grey-60);
+}
+
+.startCameraArrow {
+  flex-shrink: 0;
+  color: var(--brand-60);
+}
+
+/* ─── Live video stream + overlay guide ──────────────────────────── */
+
+.videoWrap {
+  position: relative;
+  /* Width capped so that on wide desktop cards the video / preview
+     doesn't stretch out of proportion. Content-sized for the
+     document use-case (≤ 352px wide); any wider and the 4:3 aspect
+     pushes the card taller than needed. */
+  width: min(100%, 22rem);
+  aspect-ratio: 4 / 3;
+  margin-left: auto;
+  margin-right: auto;
+
+  background: var(--grey-100);
+  border-radius: var(--radius-200);
+  border: var(--border-width-100) solid var(--grey-10);
+  overflow: hidden;
+  animation: icFadeIn 240ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Selfie + document + evidence all share the 4:3 outer frame so
+   capture → preview → submitted renders at identical height.
+   Capture-type-specific overlays (circle / brackets / crosshair)
+   still adapt inside the shared box. */
+.videoWrap_selfie,
+.videoWrap_document,
+.videoWrap_evidence { /* shared; kept for readability */ }
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--grey-100);
+}
+
+/* Mirror the live selfie preview so the user sees themselves as
+   they would in a mirror. The captured frame is un-mirrored at
+   canvas time so the saved image reads naturally. */
+.videoMirrored {
+  transform: scaleX(-1);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Document — centered inner rectangle with 4 corner brackets. */
+.overlay_rect .overlayRect {
+  position: relative;
+  width: 86%;
+  aspect-ratio: 4 / 3;
+  max-height: 80%;
+}
+
+/* Selfie — centered dashed circle. */
+.overlay_circle .overlayCircle {
+  width: 72%;
+  aspect-ratio: 1;
+  max-height: 84%;
+  border: var(--border-width-200) dashed color-mix(in srgb, var(--white) 78%, transparent);
+  border-radius: var(--radius-full);
+  box-shadow:
+    0 0 0 9999px color-mix(in srgb, var(--grey-100) 38%, transparent);
+  /* The wide outer shadow dims the area outside the circle so the
+     guide reads as "put your face here". Subtle-ish at 38%. */
+}
+
+/* Evidence — centered + crosshair. */
+.overlay_crosshair .overlayCross {
+  position: relative;
+  width: 44px;
+  height: 44px;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    background: color-mix(in srgb, var(--white) 80%, transparent);
+  }
+  &::before {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: var(--border-width-200);
+    margin-left: calc(-1 * var(--border-width-100));
+  }
+  &::after {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: var(--border-width-200);
+    margin-top: calc(-1 * var(--border-width-100));
+  }
+}
+
+/* Hint text pinned to the bottom of the video. */
+.overlayHint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-100);
+  transform: translateX(-50%);
+  padding: var(--space-050) var(--space-125);
+  background: color-mix(in srgb, var(--grey-100) 58%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--white);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+/* ─── Shutter button (live state) ────────────────────────────────── */
+
+.shutterBtn {
+  align-self: center;
+  margin-top: auto;
+  width: var(--size-68);
+  height: var(--size-68);
+  padding: var(--border-width-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-width-300) solid var(--grey-90);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 100ms cubic-bezier(0.18, 0.9, 0.28, 1.08);
+}
+
+.shutterBtn:hover { transform: scale(1.04); }
+.shutterBtn:active { transform: scale(0.94); }
+
+.shutterBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 3px;
+}
+
+.shutterInner {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--grey-90);
+  transition: background 160ms ease, transform 100ms ease;
+}
+
+.shutterBtn:active .shutterInner {
+  background: var(--brand-60);
+  transform: scale(0.9);
+}
+
+/* ─── Corner brackets (used on preview + submitted previews) ─────── */
+
+.brackets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bracket {
+  position: absolute;
+  width: var(--size-20);
+  height: var(--size-20);
+  --ic-bracket-color: var(--brand-60);
+}
+
+.bracketsSuccess .bracket {
+  --ic-bracket-color: var(--color-text-success);
+}
+
+.bracketTl {
+  top: var(--space-075);
+  left: var(--space-075);
+  border-top:  var(--border-width-200) solid var(--ic-bracket-color);
+  border-left: var(--border-width-200) solid var(--ic-bracket-color);
+  border-top-left-radius: var(--radius-050);
+}
+
+.bracketTr {
+  top: var(--space-075);
+  right: var(--space-075);
+  border-top:   var(--border-width-200) solid var(--ic-bracket-color);
+  border-right: var(--border-width-200) solid var(--ic-bracket-color);
+  border-top-right-radius: var(--radius-050);
+}
+
+.bracketBl {
+  bottom: var(--space-075);
+  left: var(--space-075);
+  border-bottom: var(--border-width-200) solid var(--ic-bracket-color);
+  border-left:   var(--border-width-200) solid var(--ic-bracket-color);
+  border-bottom-left-radius: var(--radius-050);
+}
+
+.bracketBr {
+  bottom: var(--space-075);
+  right: var(--space-075);
+  border-bottom: var(--border-width-200) solid var(--ic-bracket-color);
+  border-right:  var(--border-width-200) solid var(--ic-bracket-color);
+  border-bottom-right-radius: var(--radius-050);
+}
+
+/* In the live-camera overlayRect, brackets sit at the RECT's own
+   corners rather than at the video's card edges. */
+.overlayRect .bracket {
+  --ic-bracket-color: var(--white);
+}
+
+.overlayRect .bracketTl { top: 0; left: 0; }
+.overlayRect .bracketTr { top: 0; right: 0; }
+.overlayRect .bracketBl { bottom: 0; left: 0; }
+.overlayRect .bracketBr { bottom: 0; right: 0; }
+
+/* ─── Preview image (preview + submitted states) ─────────────────── */
+
+/* Preview shares the video's geometry so the layout doesn't jump
+   between live → preview → submitted. Same 4:3, same width cap,
+   same centering. */
+.previewWrap {
+  position: relative;
+  width: min(100%, 22rem);
+  aspect-ratio: 4 / 3;
+  margin-left: auto;
+  margin-right: auto;
+
+  background: var(--grey-0);
+  border-radius: var(--radius-200);
+  border: var(--border-width-100) solid var(--grey-10);
+  overflow: hidden;
+  animation: icFadeIn 240ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.previewImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--grey-0);
+}
+
+.previewWrapSuccess {
+  border-color: color-mix(in srgb, var(--color-text-success) 30%, transparent);
+}
+
+/* ─── Actions row (preview state) ────────────────────────────────── */
+
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-100);
+  margin-top: auto;
+}
+
+.retakeBtn { flex: 0 0 auto; }
+
+.primaryBtn {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Submitted — success banner + metadata readout ──────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  animation: icSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.submittedFoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-100);
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.submittedLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.submittedMeta {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* ─── Denied — permission error ──────────────────────────────────── */
+
+.deniedBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-200);
+  margin-top: auto;
+  background: color-mix(in srgb, var(--red-50) 6%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 24%, transparent);
+  border-radius: var(--radius-200);
+}
+
+.deniedIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-56);
+  height: var(--size-56);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 32%, transparent);
+  color: var(--red-60);
+}
+
+.deniedBody {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.deniedTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--red-60);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.deniedSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-70);
+  max-width: 24rem;
+}
+
+.retryBtn { margin-top: var(--space-050); }
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes icRiseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}
+
+@keyframes icFadeIn {
+  from { opacity: var(--opacity-000); transform: scale(0.98); }
+  to   { opacity: var(--opacity-100); transform: scale(1); }
+}
+
+@keyframes icSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

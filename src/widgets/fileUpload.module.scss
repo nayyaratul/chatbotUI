@@ -1,0 +1,543 @@
+/* ─── File Upload Widget ──────────────────────────────────────────────
+   Dropzone aesthetic for browsing from device storage. Differentiated
+   from Image Capture (viewfinder / brackets) via a cloud-icon drop
+   target + file-list row UI. Nexus tokens only. Inter.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* Locked floor height so the card stays the same size across
+     ready → selected → submitted transitions. Tuned to match the
+     natural "ready" state (header + aspect-16:10 dropzone + 3
+     guidelines). Card may still grow beyond this if many files
+     are added; it will never shrink below. */
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: fuRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+}
+
+/* ─── Header — icon badge + title + description ──────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  border-radius: var(--radius-150);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Dropzone (ready state) ─────────────────────────────────────── */
+
+.dropzone {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--brand-60) 4%, var(--white)) 0%,
+      var(--white) 70%
+    );
+  border: var(--border-width-100) dashed color-mix(in srgb, var(--brand-60) 28%, transparent);
+  border-radius: var(--radius-200);
+  color: var(--grey-80);
+  cursor: pointer;
+  overflow: hidden;
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 120ms ease;
+}
+
+.dropzone:hover {
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--brand-60) 9%, var(--white)) 0%,
+      color-mix(in srgb, var(--brand-60) 2%, var(--white)) 70%
+    );
+  border-color: color-mix(in srgb, var(--brand-60) 44%, transparent);
+}
+
+.dropzone:active {
+  transform: scale(0.995);
+}
+
+.dropzone:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* Drag-over highlight — stronger tint + solid border to read as
+   "release here" without introducing a different color entirely. */
+.dropzoneActive,
+.dropzoneActive:hover {
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--brand-60) 14%, var(--white)) 0%,
+      color-mix(in srgb, var(--brand-60) 4%, var(--white)) 70%
+    );
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--brand-60) 60%, transparent);
+}
+
+.dropzoneCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  text-align: center;
+  pointer-events: none;
+}
+
+.dropzoneIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-60);
+  height: var(--size-60);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+  box-shadow: 0 var(--size-02) var(--size-12) 0 color-mix(in srgb, var(--brand-60) 14%, transparent);
+}
+
+.dropzoneLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.dropzoneSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+}
+
+/* ─── Guidelines checklist ───────────────────────────────────────── */
+
+.guidelines {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  list-style: none;
+}
+
+.guidelineItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+.guidelineIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-025);
+  color: var(--color-text-success);
+}
+
+/* ─── Error banner ───────────────────────────────────────────────── */
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
+  padding: var(--space-075) var(--space-100);
+  background: color-mix(in srgb, var(--red-50) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 24%, transparent);
+  border-radius: var(--radius-150);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--red-60);
+
+  > svg { flex-shrink: 0; margin-top: 2px; }
+}
+
+/* ─── File list ──────────────────────────────────────────────────── */
+
+.fileList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+
+  animation: fuItemRise 260ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.fileItem:hover {
+  border-color: var(--grey-20);
+}
+
+/* Submitted state — file items more muted (they're a readout now,
+   not interactive affordances). */
+.fileListSubmitted .fileItem {
+  background: var(--grey-0);
+}
+
+/* ─── File thumbnail ─────────────────────────────────────────────── */
+
+.fileThumb {
+  flex-shrink: 0;
+  width: var(--size-40);
+  height: var(--size-40);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-100);
+  color: var(--grey-60);
+}
+
+.fileThumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Tint per category so PDF reads as red-ish, DOC as blue-ish, etc. */
+.fileThumb_pdf {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--red-50) 24%, transparent);
+  color: var(--red-60);
+}
+
+.fileThumb_doc {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+}
+
+.fileThumb_image {
+  background: transparent;
+  border-color: var(--grey-20);
+}
+
+/* ─── File body — name + meta ────────────────────────────────────── */
+
+.fileBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.fileName {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  letter-spacing: var(--letter-spacing-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.fileExt {
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--grey-70);
+}
+
+.fileDot {
+  color: var(--grey-30);
+}
+
+/* ─── Remove button per file ─────────────────────────────────────── */
+
+.fileRemove {
+  flex-shrink: 0;
+  width: var(--size-28);
+  height: var(--size-28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--grey-50);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.fileRemove:hover {
+  background: color-mix(in srgb, var(--red-50) 10%, transparent);
+  color: var(--red-60);
+}
+
+.fileRemove:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* ─── Actions row — Add more + Upload.
+   margin-top: auto pins the row to the card's bottom edge so it sits
+   consistently whether there's 1 file or several. */
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-100);
+  margin-top: auto;
+}
+
+.addMoreBtn {
+  flex: 0 0 auto;
+}
+
+/* Primary CTA tracks the project accent (brand-60), matching
+   Job Card + Image Capture. */
+.primaryBtn {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Submitted — success banner + file list readout ─────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  animation: fuSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* margin-top: auto pins the foot to the card's bottom edge so the
+   submitted state honours the same constant-height contract. */
+.submittedFoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-100);
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.submittedLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.submittedMeta {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes fuRiseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fuItemRise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-050));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fuSuccessPop {
+  0% {
+    opacity: 0;
+    transform: translateY(var(--space-050)) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

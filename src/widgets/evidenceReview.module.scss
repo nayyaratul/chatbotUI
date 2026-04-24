@@ -1,0 +1,671 @@
+/* ─── Evidence Review Widget ─────────────────────────────────────────
+   Admin-side widget — walk through multiple submitted evidence items
+   (photos + docs) and approve/reject each. Shares the widget family's
+   chrome. See QcEvidenceReview for the CSV-spec'd single-image task-
+   QC variant with AI-generated bounding box annotations.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* Constant-height contract — same floor as Image Capture / File
+     Upload / Document Preview. Actions group + success banner use
+     margin-top: auto to pin to the bottom edge. */
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: qcRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header — matches other widgets' identity chrome ───────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+.dotSep {
+  color: var(--grey-30);
+  user-select: none;
+}
+
+/* ─── Progress strip — one segment per item, colored by status ─── */
+
+.progressStrip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+/* Segmented bar — each item gets an equal-width segment that
+   recolors when its decision lands. Approved = green, rejected =
+   red, pending = grey. Gives a reviewer-dashboard feel vs a
+   generic linear progress fill. */
+.progressSegments {
+  display: flex;
+  gap: var(--space-050);
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--size-06);
+  border-radius: var(--radius-full);
+  background: var(--grey-10);
+  transition: background 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+}
+
+.segment_pending  { background: var(--grey-10); }
+.segment_approved { background: var(--color-text-success); }
+.segment_rejected { background: var(--red-50); }
+
+.progressText {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-400);
+    margin-right: var(--space-050);
+  }
+}
+
+.progressOf {
+  color: var(--grey-50);
+}
+
+/* ─── Item list ──────────────────────────────────────────────────── */
+
+.itemList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.item {
+  position: relative;
+  display: flex;
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-125) var(--space-125) var(--space-150);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  overflow: hidden;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease;
+  animation: qcItemRise 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* Decided items get both a subtle bg tint AND a bold left-edge
+   stripe — the stripe is the scannable cue ("what's this row's
+   verdict?"), the tint reinforces at close range. */
+.item_approved,
+.item_rejected {
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--border-width-300);
+  }
+}
+
+.item_approved {
+  border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  background: color-mix(in srgb, var(--color-text-success) 3%, var(--white));
+
+  &::before { background: var(--color-text-success); }
+}
+
+.item_rejected {
+  border-color: color-mix(in srgb, var(--red-50) 24%, transparent);
+  background: color-mix(in srgb, var(--red-50) 3%, var(--white));
+
+  &::before { background: var(--red-50); }
+}
+
+/* ─── Thumb — image preview OR tinted icon tile ─────────────────── */
+
+.thumb {
+  flex-shrink: 0;
+  width: var(--size-44);
+  height: var(--size-44);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-100);
+  color: var(--grey-60);
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb_pdf {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--red-50) 24%, transparent);
+  color: var(--red-60);
+}
+.thumb_doc {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+}
+.thumb_image { background: transparent; border-color: var(--grey-20); }
+
+/* ─── Item body — label + meta + status + actions ────────────────── */
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-075);
+  justify-content: space-between;
+}
+
+.itemLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.itemExt {
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--grey-70);
+}
+
+/* ─── Status chip — uppercase pill with state-specific tone ──────── */
+
+.statusChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statusChip_pending {
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-70);
+}
+.statusChip_approved {
+  background: var(--color-text-success);
+  color: var(--white);
+}
+.statusChip_rejected {
+  background: var(--red-50);
+  color: var(--white);
+}
+
+/* ─── Rejection note (inline readout when an item is rejected) ───── */
+
+.rejectionNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-050);
+  padding: var(--space-075) var(--space-100);
+  margin-top: var(--space-050);
+  background: color-mix(in srgb, var(--red-50) 7%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 20%, transparent);
+  border-radius: var(--radius-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--red-60);
+
+  > svg { flex-shrink: 0; margin-top: 2px; }
+}
+
+/* ─── Per-item action buttons (Approve / Reject) ─────────────────── */
+
+.itemActions {
+  display: flex;
+  gap: var(--space-075);
+  margin-top: var(--space-050);
+}
+
+.decisionBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-050);
+  padding: var(--space-075) var(--space-100);
+  border-radius: var(--radius-100);
+  background: var(--white);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 80ms ease,
+    box-shadow 160ms ease;
+}
+
+/* Tactile press — subtle downward nudge + shadow retraction so the
+   click lands like a physical button, not a state-change flash. */
+.decisionBtn:active {
+  transform: scale(0.98);
+}
+
+.decisionApprove {
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 36%, transparent);
+  color: var(--color-text-success);
+}
+.decisionApprove:hover {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border-color: var(--color-text-success);
+}
+
+.decisionReject {
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 32%, transparent);
+  color: var(--red-60);
+}
+.decisionReject:hover {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border-color: var(--red-50);
+}
+
+.decisionBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* ─── Rejection note form (inline inside the item) ───────────────── */
+
+.rejectForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  margin-top: var(--space-075);
+  padding: var(--space-100);
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-100);
+  animation: qcFormFade 200ms ease both;
+}
+
+.rejectLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+.rejectInput {
+  width: 100%;
+  resize: vertical;
+  min-height: calc(var(--size-40) * 1.2);
+
+  padding: var(--space-075) var(--space-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+
+  &::placeholder { color: var(--grey-40); }
+  &:focus {
+    outline: none;
+    border-color: var(--brand-60);
+    box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
+  }
+}
+
+.rejectActions {
+  display: flex;
+  gap: var(--space-075);
+  justify-content: flex-end;
+}
+
+.rejectCancelBtn,
+.rejectConfirmBtn {
+  padding: var(--space-050) var(--space-125);
+  border-radius: var(--radius-100);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.rejectCancelBtn {
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-70);
+}
+.rejectCancelBtn:hover {
+  background: var(--grey-0);
+  border-color: var(--grey-30);
+}
+
+.rejectConfirmBtn {
+  background: var(--red-50);
+  border: var(--border-width-100) solid var(--red-50);
+  color: var(--white);
+}
+.rejectConfirmBtn:hover {
+  background: var(--red-60);
+  border-color: var(--red-60);
+}
+
+/* ─── Undo button (on decided items) ─────────────────────────────── */
+
+.reopenBtn {
+  align-self: flex-start;
+  margin-top: var(--space-025);
+  padding: var(--space-025) var(--space-050);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color 160ms ease;
+}
+.reopenBtn:hover { color: var(--grey-80); }
+
+/* ─── Bottom actions group — bulk approve + submit ───────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  margin-top: auto;   /* pin to card bottom — constant-height contract */
+}
+
+/* Bulk-approve treatment — intentionally quieter than the primary
+   submit so a reviewer's muscle memory goes to Submit, not to
+   "approve everything without reading". */
+.bulkApproveBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-050) var(--space-100);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--brand-60);
+  border-radius: var(--radius-100);
+  transition: background 160ms ease, color 160ms ease;
+}
+.bulkApproveBtn:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
+}
+.bulkApproveBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.submitBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Submitted — green success banner ───────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  margin-top: auto;
+  animation: qcSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* Color-coded count readout — approved count rendered in green,
+   rejected in red, time as muted meta. Reads as "verdict summary"
+   at a glance without needing a separate breakdown tile. */
+.successSub {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.countApproved,
+.countRejected {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  font-weight: var(--font-weight-medium);
+
+  strong { font-weight: var(--font-weight-semibold); }
+}
+
+.countApproved {
+  color: var(--color-text-success);
+
+  > svg {
+    padding: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-text-success);
+    color: var(--white);
+  }
+}
+
+.countRejected {
+  color: var(--red-60);
+
+  > svg {
+    padding: 2px;
+    border-radius: var(--radius-full);
+    background: var(--red-50);
+    color: var(--white);
+  }
+}
+
+.successTime {
+  color: var(--grey-60);
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes qcRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes qcItemRise {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes qcFormFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes qcSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

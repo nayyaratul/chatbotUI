@@ -1,0 +1,339 @@
+/* ─── Instruction Card Widget ────────────────────────────────────────
+   Read-forward guide with numbered steps. Shares the widget family's
+   card shell + header chrome but introduces a distinctive numbered-
+   circle motif for each step — the one thing this widget owns that
+   others in the family don't. Nexus tokens only. Inter.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  /* Each tone customises the two local custom props used by the
+     header badge + number circle. Everything else stays neutral. */
+  --ic-tone-color: var(--brand-60);
+  --ic-tone-tint: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  --ic-tone-border: color-mix(in srgb, var(--brand-60) 22%, transparent);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: icdRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Tone variants ──────────────────────────────────────────────── */
+
+.tone_info {
+  --ic-tone-color: var(--brand-60);
+  --ic-tone-tint: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  --ic-tone-border: color-mix(in srgb, var(--brand-60) 22%, transparent);
+}
+
+.tone_warn {
+  --ic-tone-color: var(--yellow-60);
+  --ic-tone-tint: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  --ic-tone-border: color-mix(in srgb, var(--yellow-60) 32%, transparent);
+}
+
+.tone_success {
+  --ic-tone-color: var(--color-text-success);
+  --ic-tone-tint: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  --ic-tone-border: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+}
+
+/* ─── Header — tone-tinted icon badge + title + description ──────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: var(--ic-tone-tint);
+  border: var(--border-width-100) solid var(--ic-tone-border);
+  color: var(--ic-tone-color);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Step list ─────────────────────────────────────────────────── */
+
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+
+  /* A thin guide rail behind the numbers — connects 1 → 2 → 3 so
+     the sequence reads as a path, not disconnected bullets. The
+     rail draws itself on mount (scaleY 0 → 1 from the top) so it
+     feels like a line being traced as the steps cascade in. */
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    /* Rail centered inside the 32px number circle: 32 / 2 - (width/2). */
+    left: calc(var(--size-32) / 2 - (var(--border-width-200) / 2));
+    top: var(--space-100);
+    bottom: var(--space-100);
+    width: var(--border-width-200);
+    background: color-mix(in srgb, var(--ic-tone-color) 22%, transparent);
+    border-radius: var(--radius-full);
+    pointer-events: none;
+
+    transform-origin: top center;
+    animation: icdRailDraw 640ms cubic-bezier(0.2, 0.8, 0.3, 1) 200ms both;
+  }
+}
+
+.step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  animation: icdStepRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* Staggered step entry — numbers cascade in. Capped at 8. */
+.step:nth-child(1) { animation-delay: 40ms; }
+.step:nth-child(2) { animation-delay: 90ms; }
+.step:nth-child(3) { animation-delay: 140ms; }
+.step:nth-child(4) { animation-delay: 190ms; }
+.step:nth-child(5) { animation-delay: 240ms; }
+.step:nth-child(6) { animation-delay: 290ms; }
+.step:nth-child(7) { animation-delay: 340ms; }
+.step:nth-child(8) { animation-delay: 390ms; }
+
+/* ─── Step number — the distinctive widget motif ────────────────── */
+
+.stepNumber {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;             /* sits above the guide rail */
+
+  width: var(--size-32);
+  height: var(--size-32);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Solid tone fill with a matching soft shadow — the number circle
+     becomes the anchor of each step rather than a quiet bullet.
+     Consistent with the widget family's solid-green success check. */
+  background: var(--ic-tone-color);
+  color: var(--white);
+  border-radius: var(--radius-full);
+  box-shadow: 0 var(--size-02) var(--size-08) 0
+    color-mix(in srgb, var(--ic-tone-color) 24%, transparent);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+
+  /* Ring halo — a second, larger, translucent ring behind the solid
+     fill. Reads as a light-source aura in the tone color without
+     another layer in the DOM. Purely decorative. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--space-025));
+    border-radius: var(--radius-full);
+    border: var(--border-width-100) solid color-mix(in srgb, var(--ic-tone-color) 18%, transparent);
+    pointer-events: none;
+  }
+}
+
+/* ─── Step body — label + description + optional image ───────────── */
+
+.stepBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  /* Optical alignment against the 32px number circle — the label's
+     cap-height should align with the number digit's cap-height. */
+  padding-top: calc((var(--size-32) - var(--line-height-300)) / 2);
+}
+
+.stepLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.stepDescription {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-400);
+  color: var(--grey-70);
+}
+
+.stepImageWrap {
+  margin-top: var(--space-050);
+  border-radius: var(--radius-150);
+  border: var(--border-width-100) solid var(--grey-10);
+  background: var(--grey-0);
+  overflow: hidden;
+}
+
+.stepImage {
+  display: block;
+  width: 100%;
+  max-height: var(--size-132);
+  object-fit: cover;
+}
+
+/* ─── Bottom actions group — Acknowledge CTA ─────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  margin-top: auto;
+}
+
+.primaryBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Acknowledged success banner ────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  margin-top: auto;
+  animation: icdSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes icdRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes icdStepRise {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Guide rail drawing — scales vertically from the top, visually
+   "tracing" the path through the steps as they cascade in. */
+@keyframes icdRailDraw {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes icdSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

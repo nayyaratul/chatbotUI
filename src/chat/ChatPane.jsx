@@ -60,6 +60,8 @@ export function ChatPane({ bot }) {
           disabled={bot.isBotTyping}
           accented={showStarters}
         />
+        {/* Portal target for widget-owned modals (see JobDetailsModal) */}
+        <div id="chat-modal-root" className={styles.modalRoot} />
       </div>
     </ChatActionsProvider>
   )

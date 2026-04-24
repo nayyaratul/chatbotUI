@@ -1,0 +1,408 @@
+/* ─── Generic Carousel Widget ────────────────────────────────────────
+   Horizontal content rail. Shares the widget-family chrome (white
+   card surface per tile, brand-60 header, accent coloring via tone
+   tokens) but lives at a different scale — the whole widget is a
+   rail, not a single card, and it opts out of the 28rem slot cap
+   via data-widget-variant="wide" so desktop can show multiple
+   tiles with a peek of the next.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Widget wrapper ─────────────────────────────────────────────── */
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  width: 100%;
+
+  /* Tone-driven CSS props mirror the Instruction Card pattern —
+     one source of color for header badge + card accent + CTA. */
+  --cr-tone-color: var(--brand-60);
+  --cr-tone-tint: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  --cr-tone-border: color-mix(in srgb, var(--brand-60) 22%, transparent);
+
+  animation: crRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.tone_info {
+  --cr-tone-color: var(--brand-60);
+  --cr-tone-tint: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  --cr-tone-border: color-mix(in srgb, var(--brand-60) 22%, transparent);
+}
+
+.tone_warn {
+  --cr-tone-color: var(--yellow-60);
+  --cr-tone-tint: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  --cr-tone-border: color-mix(in srgb, var(--yellow-60) 32%, transparent);
+}
+
+.tone_success {
+  --cr-tone-color: var(--color-text-success);
+  --cr-tone-tint: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  --cr-tone-border: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+}
+
+/* ─── Header (optional) ─────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  padding: 0 var(--space-050);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: var(--cr-tone-tint);
+  border: var(--border-width-100) solid var(--cr-tone-border);
+  color: var(--cr-tone-color);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Scroll rail ────────────────────────────────────────────────── */
+
+.track {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-125);
+
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  /* hide scrollbar */
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* breathing room for hover lift + shadow */
+  padding: var(--space-050) 0;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────── */
+
+/* ─── Slide (composed widget variant) ────────────────────────────
+   Used when an item declares a `type` matching a registered widget —
+   the slide wraps that widget without adding its own chrome (each
+   widget ships its own card shell). Geometry matches the tile
+   variant so rails with mixed item kinds scroll consistently. */
+.slide {
+  position: relative;
+  flex: 0 0 auto;
+  /* 32rem ceiling matches the standalone widgetSlot cap, so a
+     composed Job Card inside a carousel slide has the SAME width
+     as a Job Card rendered standalone. No visual disconnect
+     between `jobs` (single rail) and `job picks` (composed rail). */
+  width: clamp(16rem, 88%, 32rem);
+  scroll-snap-align: start;
+
+  transition:
+    opacity 260ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation: crCardRise 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--card-delay, 0ms) backwards;
+}
+
+.slideComposed {
+  /* No extra chrome — nested widget owns its card surface. */
+}
+
+/* Mirror the non-active dim treatment used by tile cards. */
+.slideDim {
+  opacity: 0.72;
+}
+.slideDim:hover {
+  opacity: 1;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  overflow: hidden;
+
+  /* Clamp-based sizing — tile cap matches the composed-widget slide
+     cap (and the standalone widgetSlot cap of 32rem) so a rail mixed
+     with tiles + composed widgets has visually consistent card
+     widths. Wider viewports reveal MORE tiles rather than stretching
+     each tile's content. */
+  width: clamp(16rem, 88%, 32rem);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  /* Per-card stagger — each tile rises a beat later than the one
+     before it. --card-delay set inline from JSX based on index. */
+  animation: crCardRise 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--card-delay, 0ms) backwards;
+}
+
+.card:hover {
+  border-color: var(--grey-20);
+  box-shadow: var(--shadow-100);
+}
+
+/* Subtle focus hierarchy across the rail — non-active cards dim a
+   touch so the user's eye lands on the scrolled-into-view tile.
+   Applied by JS via `cardDim` when `i !== activeIndex`. Hover
+   restores full opacity + crispness. */
+.cardDim {
+  opacity: 0.72;
+  transition: opacity 260ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.cardDim:hover {
+  opacity: 1;
+}
+
+/* ─── Hero area (image or tinted icon) ───────────────────────────── */
+
+.hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--grey-0);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+  overflow: hidden;
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fallback when no image_url — tinted icon at the hero position.
+   Layered gradient for depth + a large ghost version of the icon
+   pinned bottom-right so the hero reads as a composed poster
+   rather than a single floating glyph. */
+.heroTinted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    /* Soft radial bloom from bottom-right — the corner where the
+       ghost icon lives. Lifts the composition into 2D space. */
+    radial-gradient(
+      circle at 80% 85%,
+      color-mix(in srgb, var(--cr-tone-color) 14%, transparent) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      135deg,
+      var(--cr-tone-tint) 0%,
+      color-mix(in srgb, var(--cr-tone-color) 2%, var(--white)) 60%,
+      var(--white) 100%
+    );
+  color: var(--cr-tone-color);
+}
+
+/* Ghost glyph — same icon as the foreground one, sized much larger,
+   pushed into the bottom-right corner, heavily faded. Creates a
+   "repetition as motif" feel without extra payload fields. */
+.heroGhost {
+  position: absolute;
+  right: calc(-1 * var(--space-300));
+  bottom: calc(-1 * var(--space-400));
+  color: var(--cr-tone-color);
+  opacity: 0.12;
+  pointer-events: none;
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.heroIcon {
+  position: relative;                 /* sits above the ghost */
+  z-index: 1;
+  color: var(--cr-tone-color);
+}
+
+/* Cards subtly "breathe" the ghost on hover — the background motif
+   drifts right a touch, suggesting motion/openness. Very subtle. */
+.card:hover .heroGhost {
+  transform: translate(calc(-1 * var(--space-075)), calc(-1 * var(--space-050))) rotate(-3deg);
+}
+
+/* ─── Body ───────────────────────────────────────────────────────── */
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding: var(--space-150);
+}
+
+/* Uppercase mini-label above the card title — editorial "category"
+   mark. Tone-colored so it reads as a visual anchor. */
+.accent {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cr-tone-color);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.subtitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+}
+
+.cardDescription {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-400);
+  color: var(--grey-70);
+
+  /* Clamp to 3 lines so tiles in the rail stay roughly equal
+     height without over-truncating meaningful content. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── CTA inside the card ────────────────────────────────────────── */
+
+.cta {
+  align-self: flex-start;
+  margin-top: auto;         /* push CTA to card bottom for aligned rows */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-075) var(--space-125);
+  border-radius: var(--radius-full);
+  background: var(--cr-tone-tint);
+  border: var(--border-width-100) solid var(--cr-tone-border);
+  color: var(--cr-tone-color);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 120ms ease;
+}
+
+.cta:hover {
+  background: var(--cr-tone-color);
+  color: var(--white);
+  border-color: var(--cr-tone-color);
+}
+
+.cta:hover .ctaArrow {
+  transform: translateX(var(--space-025));
+}
+
+.cta:active { transform: scale(0.97); }
+
+.ctaArrow {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.cta:focus-visible {
+  outline: var(--border-width-200) solid var(--cr-tone-color);
+  outline-offset: 2px;
+}
+
+/* ─── Dots indicator ─────────────────────────────────────────────── */
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+}
+
+.dot {
+  width: var(--space-075);
+  height: var(--space-075);
+  border-radius: var(--radius-full);
+  background: var(--grey-20);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 200ms ease, transform 200ms ease, width 200ms ease;
+  flex-shrink: 0;
+}
+
+/* Active dot stretches into a short pill — a subtle elongation that
+   reads as "current page" without needing a separate color swatch. */
+.dot.dotActive {
+  background: var(--cr-tone-color);
+  width: var(--space-200);
+  transform: none;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes crRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes crCardRise {
+  from { opacity: 0; transform: translateY(var(--space-075)); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -1,12 +1,12 @@
-/* ─── Job Card Widget ─────────────────────────────────────────────────
-   "Recruiter's brief" — pay front and centre as a tinted chip, meta row
-   with a "Near you" proximity badge, requirements as a checklist
-   (Check glyphs instead of bullets), hover lift on the card, Apply
-   button with a trailing arrow. Single-card + carousel variants.
-   Nexus tokens only. Inter only. Card body stays white.
+/* ─── Job Card Widget — "Pragmatic Scan Card" ─────────────────────────
+   Information-first. Pay is inline typography (no chip container).
+   Company + location collapse into a single subtitle row; timing joins
+   the pay row after a middot. Apply is the dominant action; Save /
+   Dismiss / Details are icon-only buttons. Nexus tokens only. Inter.
+   Card body stays white; quiet at rest, subtle lift on hover.
    ─────────────────────────────────────────────────────────────────── */
 
-/* ─── Single card shell ───────────────────────────────────────────── */
+/* ─── Card shell ──────────────────────────────────────────────────── */
 
 .card {
   position: relative;
@@ -19,44 +19,48 @@
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-200);
-  box-shadow: var(--shadow-100);
-  overflow: hidden;
 
   transition:
-    transform 240ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    box-shadow 240ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 
   animation: jcRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
+/* Hover = subtle border + shadow only. No transform lift — it was
+   causing sub-pixel shimmer on the top edge during the transition. */
 .card:hover {
-  transform: translateY(calc(-1 * var(--border-width-200)));
-  box-shadow: var(--shadow-200);
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
 }
 
-/* ─── Head row: logo + title + company ───────────────────────────── */
+/* ─── Head row: logo + title + subtitle ──────────────────────────── */
 
 .head {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-150);
+  gap: var(--space-125);
+
+  /* Reserve space for the absolute top-right corner actions (Save + Dismiss)
+     so the title wraps before colliding with them. Width = 2 × 28px btn
+     + 2px gap + ~4px breathing room ≈ 64px. */
+  padding-right: var(--size-60);
 }
 
 .logo {
   flex-shrink: 0;
-  width: var(--size-40);
-  height: var(--size-40);
+  width: var(--size-36);
+  height: var(--size-36);
   border-radius: var(--radius-100);
   border: var(--border-width-100) solid var(--grey-10);
   object-fit: contain;
   background: var(--white);
 }
 
-/* Fallback: company initials chip when no logo_url */
 .logoFallback {
   flex-shrink: 0;
-  width: var(--size-40);
-  height: var(--size-40);
+  width: var(--size-36);
+  height: var(--size-36);
   border-radius: var(--radius-100);
   border: var(--border-width-100) solid var(--grey-10);
   background: var(--grey-0);
@@ -90,104 +94,183 @@
   line-height: var(--line-height-300);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
-  white-space: nowrap;
+
+  /* Wrap to 2 lines max, then ellipsis — avoids ugly mid-word truncation */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.companyName {
-  font-family: var(--sans);
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-200);
-  color: var(--grey-60);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ─── Pay chip — the headliner ────────────────────────────────────── */
-
-.payChip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-050);
-  align-self: flex-start;
-
-  padding: var(--space-075) var(--space-125);
-  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
-  border-radius: var(--radius-150);
-}
-
-.payAmount {
-  font-family: var(--sans);
-  font-size: var(--font-size-600);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1;
-  color: var(--brand-60);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--letter-spacing-tight);
-}
-
-.payPeriod {
-  font-family: var(--sans);
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-regular);
-  line-height: 1;
-  color: var(--grey-60);
-}
-
-/* ─── Meta row: location (with optional Near-you badge) + timing ── */
-
-.metaRow {
+.subtitle {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-100) var(--space-150);
-}
-
-.metaItem {
-  display: inline-flex;
-  align-items: center;
   gap: var(--space-050);
+
   font-family: var(--sans);
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-200);
-  color: var(--grey-70);
+  color: var(--grey-60);
+
+  min-width: 0;
 }
 
-.metaIcon {
-  flex-shrink: 0;
+.subtitlePart {
   display: inline-flex;
   align-items: center;
-  color: var(--grey-50);
+  gap: var(--space-025);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.metaSep {
-  color: var(--grey-30);
-  margin: 0 var(--space-050);
+.verifiedInline {
+  flex-shrink: 0;
+  color: var(--green-60);
 }
 
-.nearBadge {
+/* ─── Top meta strip (urgent + posted) ───────────────────────────── */
+
+.metaStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+  margin-top: calc(-1 * var(--space-050));
+
+  /* Leave room for the absolute corner actions (Save + Dismiss) */
+  padding-right: var(--size-60);
+}
+
+.metaPill {
   display: inline-flex;
   align-items: center;
   padding: var(--space-025) var(--space-075);
-  background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
   border-radius: var(--radius-full);
 
   font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  color: var(--color-text-success);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
 }
 
-/* ─── Requirements as a checklist (Check glyphs, no bullets) ─────── */
+.metaPill.urgent {
+  background: var(--red-50);
+  color: var(--white);
+}
+
+.metaPosted {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-50);
+}
+
+/* ─── Top-right corner action cluster (Save / Dismiss) ──────────── */
+
+.cornerActions {
+  position: absolute;
+  top: var(--space-100);
+  right: var(--space-100);
+  display: flex;
+  gap: var(--space-025);
+  z-index: 1;
+}
+
+.cornerBtn {
+  width: var(--size-28);
+  height: var(--size-28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--grey-50);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.cornerBtn:hover {
+  background: var(--grey-10);
+  color: var(--grey-90);
+}
+
+.cornerBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* ─── Facts cluster — salary / location / timing as a grouped panel.
+   Tighter gap than the card's 12px macro rhythm so these three rows
+   read as one "what matters" block instead of a loose stack. */
+.factsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+/* ─── Fact line — icon + text row (salary, location, timing) ─────── */
+
+.factLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-075);
+}
+
+.factIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--grey-60);
+}
+
+.factText {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.factPeriod {
+  color: var(--grey-60);
+}
+
+.timing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+
+  > svg {
+    flex-shrink: 0;
+    color: var(--grey-50);
+  }
+}
+
+/* Middot separator — used inside subtitle + factText */
+.dotSep {
+  color: var(--grey-30);
+  user-select: none;
+  line-height: 1;
+}
+
+/* ─── Requirements — compact checklist ───────────────────────────── */
 
 .requirementsList {
   margin: 0;
@@ -214,28 +297,126 @@
   display: inline-flex;
   align-items: center;
   margin-top: var(--space-025);
-  color: var(--color-text-success);
+  color: var(--grey-50);
 }
 
-/* ─── Actions row ─────────────────────────────────────────────────── */
+.requirementMore {
+  margin-top: var(--space-025);
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  padding-left: calc(var(--space-100) + var(--space-075));
+}
 
+/* ─── Actions row — Not interested + Apply as peers ───────────────
+   Top border separates the CTA row from the View details link above
+   (which sits in the same bottom-pinned footer group). */
 .actionsRow {
   display: flex;
+  align-items: stretch;
   gap: var(--space-100);
-  padding-top: var(--space-100);
+  padding-top: var(--space-125);
   border-top: var(--border-width-100) solid var(--grey-10);
 }
 
-/* Uniform action button — every action (Apply / Save / Dismiss /
-   Details) gets equal width via flex: 1 so the row reads as a
-   standardised set of CTAs. min-width: 0 lets long labels
-   truncate cleanly without forcing the row to grow. */
-.actionBtn {
+/* Not interested — secondary CTA, split 50/50 with Apply */
+.dismissBtn {
   flex: 1 1 0;
   min-width: 0;
 }
 
-/* ─── Done overlay chip (applied/saved/dismissed) ────────────────── */
+/* Post-apply Call HR — revealed only after the user commits (Apply).
+   Spans the full actions-row width and uses the phone-call green
+   convention so it reads as "next step, complete your application". */
+.postApplyCallBtn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  padding: var(--space-125) var(--space-200);
+  border-radius: var(--radius-150);
+
+  background: var(--green-60);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition: background 160ms ease;
+
+  animation: jcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.postApplyCallBtn:hover {
+  background: var(--green-70);
+}
+
+.postApplyCallBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--green-60);
+  outline-offset: 2px;
+}
+
+/* Apply uses the project accent (--brand-60) rather than the Nexus Button
+   default (--brand-50). Overriding --color-action-primary locally flows
+   through the button's background + border + hover/active states. */
+.primaryBtn {
+  flex: 1 1 0;
+  min-width: 0;
+
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── View details link — below actions, quiet text affordance ──── */
+
+/* View details — left-aligned secondary affordance. margin-top: auto
+   pins this + the actions row to the bottom of the card so every
+   carousel card's CTAs line up horizontally. */
+.viewDetailsLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin-top: auto;
+  margin-left: calc(-1 * var(--space-075));
+  padding: var(--space-050) var(--space-075);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--brand-60);
+  border-radius: var(--radius-100);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.viewDetailsLink:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
+
+  > svg {
+    transform: translateX(var(--space-025));
+    transition: transform 160ms ease;
+  }
+}
+
+.viewDetailsLink:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* ─── Done overlay chip (applied / saved / dismissed / viewed) ──── */
 
 .doneChip {
   position: absolute;
@@ -247,41 +428,36 @@
   gap: var(--space-050);
 
   padding: var(--space-025) var(--space-100);
-  border-radius: var(--radius-500);
+  border-radius: var(--radius-full);
 
   font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  letter-spacing: var(--letter-spacing-wide);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 
   pointer-events: none;
-  animation: jcRiseUp 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  transform-origin: top right;
+  animation: jcDonePop 320ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
 }
 
+/* Solid status treatments — reads as a badge, not a tinted pill */
 .doneChip.applied {
-  background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 28%, transparent);
-  color: var(--brand-60);
+  background: var(--brand-60);
+  color: var(--white);
 }
-
 .doneChip.saved {
-  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
-  color: var(--color-text-success);
+  background: var(--green-60);
+  color: var(--white);
 }
-
 .doneChip.dismissed {
-  background: color-mix(in srgb, var(--grey-60) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--grey-60) 20%, transparent);
-  color: var(--grey-60);
+  background: var(--grey-70);
+  color: var(--white);
 }
-
 .doneChip.view_details {
-  background: color-mix(in srgb, var(--color-text-info, var(--brand-60)) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-info, var(--brand-60)) 20%, transparent);
-  color: var(--color-text-info, var(--brand-60));
+  background: var(--brand-60);
+  color: var(--white);
 }
 
 /* ─── Carousel container ──────────────────────────────────────────── */
@@ -308,11 +484,11 @@
     display: none;
   }
 
-  /* allow shadow breathing room at the bottom */
+  /* breathing room for the hover lift */
   padding-bottom: var(--space-050);
 }
 
-/* Each card in carousel: staggered arrival */
+/* Each card in carousel: staggered arrival, card peek hints at scroll */
 .carouselCard {
   flex: 0 0 92%;
   scroll-snap-align: start;
@@ -326,10 +502,9 @@
 .carouselCard:nth-child(5) { --jc-delay: 320ms; }
 .carouselCard:nth-child(6) { --jc-delay: 400ms; }
 
-/* Desktop: show more of each card */
 @media (min-width: 640px) {
   .carouselCard {
-    flex: 0 0 72%;
+    flex: 0 0 68%;
   }
 }
 
@@ -359,14 +534,6 @@
   transform: scale(1.25);
 }
 
-/* ─── Button label inner layout (icon + text) ─────────────────────── */
-
-.btnInner {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-075);
-}
-
 /* ─── Keyframes ───────────────────────────────────────────────────── */
 
 @keyframes jcRiseUp {
@@ -377,5 +544,22 @@
   to {
     opacity: var(--opacity-100);
     transform: translateY(0);
+  }
+}
+
+/* Done chip: a small pop that scales up and settles, feels more
+   satisfying than a simple rise-up when the user's action resolves. */
+@keyframes jcDonePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(var(--space-025));
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

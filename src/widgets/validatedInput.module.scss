@@ -1,0 +1,499 @@
+/* ─── Validated Input Widget ─────────────────────────────────────────
+   Single-field capture with live validation. Two layouts share the
+   card shell:
+     • OTP        — N split-digit boxes, monospace-ish digits
+     • Everything else — single input with inline valid / error glyph
+   Nexus tokens only. Inter.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* No artificial min-height — Validated Input has compact, similar
+     content across all states (header + field + helper + submit).
+     Let the card size to its content so single-input variants
+     (email / PAN) don't look padded-out. OTP + resend naturally
+     grows the card a bit; transitions between states stay small. */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: viRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Field block ────────────────────────────────────────────────── */
+
+.fieldBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.fieldLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+}
+
+/* ─── Single input (non-OTP) ─────────────────────────────────────── */
+
+.inputShell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-150);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+
+  &:focus-within {
+    border-color: var(--brand-60);
+    box-shadow: 0 0 0 var(--border-width-100)
+      color-mix(in srgb, var(--brand-60) 18%, transparent);
+  }
+}
+
+.inputShell_valid {
+  border-color: color-mix(in srgb, var(--color-text-success) 40%, transparent);
+}
+
+.inputShell_valid:focus-within {
+  border-color: var(--color-text-success);
+  box-shadow: 0 0 0 var(--border-width-100)
+    color-mix(in srgb, var(--color-text-success) 20%, transparent);
+}
+
+.inputShell_invalid {
+  border-color: color-mix(in srgb, var(--red-50) 40%, transparent);
+}
+
+.inputShell_invalid:focus-within {
+  border-color: var(--red-50);
+  box-shadow: 0 0 0 var(--border-width-100)
+    color-mix(in srgb, var(--red-50) 18%, transparent);
+}
+
+.inputShellDisabled {
+  background: var(--grey-0);
+  cursor: not-allowed;
+}
+
+/* Prefix reads as a tacked-on chip with a vertical divider — a
+   tactile "this is a country code / scope" signal rather than
+   free-floating inline text. Same body-size as the input field so
+   the prefix + number read as one unit; medium weight instead of
+   regular adds the subtle "attached label" feel. */
+.inputPrefix {
+  flex-shrink: 0;
+  padding-right: var(--space-100);
+  border-right: var(--border-width-100) solid var(--grey-20);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+  user-select: none;
+}
+
+.inputEl {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+
+  /* 16px (font-size-400) — the standard input body size: large
+     enough that iOS Safari won't auto-zoom on focus, small enough
+     to feel like a data-entry field, not a display heading. */
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+
+  &::placeholder {
+    color: var(--grey-40);
+    font-weight: var(--font-weight-regular);
+  }
+  &:disabled { color: var(--grey-70); cursor: not-allowed; }
+}
+
+.inputStatus {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-20);
+  height: var(--size-20);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.inputStatusInvalid {
+  background: var(--red-50);
+}
+
+/* ─── OTP row — N split-digit boxes ──────────────────────────────── */
+
+.otpRow {
+  display: flex;
+  gap: var(--space-100);
+  justify-content: center;
+  padding: var(--space-075) 0;
+}
+
+.otpBox {
+  flex: 0 0 auto;
+  position: relative;
+  width: var(--size-44);
+  height: var(--size-52);
+  padding: 0;
+  text-align: center;
+
+  background: var(--white);
+  border: var(--border-width-150) solid var(--grey-20);
+  border-radius: var(--radius-150);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-600);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--brand-60);
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 200ms ease,
+    transform 80ms ease;
+
+  /* Cascade entrance — same vocabulary as Rating stars + Instruction
+     Card numbers. Each box rises a beat later than the one before. */
+  animation: viOtpRise 380ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+
+  &:focus {
+    outline: none;
+    border-color: var(--brand-60);
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 var(--border-width-200)
+      color-mix(in srgb, var(--brand-60) 22%, transparent);
+  }
+
+  &:disabled {
+    background: var(--grey-0);
+    cursor: not-allowed;
+  }
+}
+
+/* Staggered entry — each box lifts a moment after the previous. */
+.otpRow .otpBox:nth-child(1) { animation-delay: 60ms; }
+.otpRow .otpBox:nth-child(2) { animation-delay: 110ms; }
+.otpRow .otpBox:nth-child(3) { animation-delay: 160ms; }
+.otpRow .otpBox:nth-child(4) { animation-delay: 210ms; }
+.otpRow .otpBox:nth-child(5) { animation-delay: 260ms; }
+.otpRow .otpBox:nth-child(6) { animation-delay: 310ms; }
+.otpRow .otpBox:nth-child(7) { animation-delay: 360ms; }
+.otpRow .otpBox:nth-child(8) { animation-delay: 410ms; }
+
+.otpBoxFilled {
+  border-color: var(--brand-60);
+  background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
+
+  /* Soft ring halo around filled boxes — mirrors the Instruction Card
+     number-circle halo so the filled state feels "earned". */
+  box-shadow: 0 0 0 var(--border-width-100)
+    color-mix(in srgb, var(--brand-60) 14%, transparent);
+}
+
+.otpRow_invalid .otpBox {
+  border-color: color-mix(in srgb, var(--red-50) 36%, transparent);
+
+  &:focus {
+    border-color: var(--red-50);
+    box-shadow: 0 0 0 var(--border-width-100)
+      color-mix(in srgb, var(--red-50) 18%, transparent);
+  }
+}
+
+.otpRow_valid .otpBox {
+  border-color: color-mix(in srgb, var(--color-text-success) 40%, transparent);
+  background: color-mix(in srgb, var(--color-text-success) 5%, var(--white));
+  color: var(--color-text-success);
+}
+
+/* ─── Helper / error message slot ────────────────────────────────── */
+
+.messageSlot {
+  min-height: var(--line-height-200);  /* reserved so layout doesn't jump */
+  display: flex;
+  align-items: center;
+}
+
+.helperMsg {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+}
+
+.errorMsg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--red-60);
+  animation: viErrorShake 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  > svg { flex-shrink: 0; color: var(--red-60); }
+}
+
+/* ─── Resend row (OTP only) ─────────────────────────────────────── */
+
+.resendRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  margin-top: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.resendPrompt { color: var(--grey-60); }
+
+.resendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-075);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--brand-60);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.resendBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
+}
+
+.resendBtn:disabled {
+  color: var(--grey-50);
+  cursor: default;
+}
+
+.resendBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* ─── Bottom actions ─────────────────────────────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.primaryBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Success banner ─────────────────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  animation: viSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.successValue {
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-90);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successDot  { color: var(--grey-30); }
+.successTime { color: var(--grey-60); }
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes viRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes viSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* OTP boxes cascade in on mount — small scale + fade pop with a
+   slight overshoot, same vocabulary as Rating stars and the
+   Instruction Card number circles. */
+@keyframes viOtpRise {
+  0%   { opacity: 0; transform: scale(0.6) translateY(var(--space-050)); }
+  70%  { opacity: 1; transform: scale(1.06) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Small left-right shake when validation fails — subtle, not
+   alarming. 2px displacement across ~300ms. */
+@keyframes viErrorShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-2px); }
+  40%      { transform: translateX(2px); }
+  60%      { transform: translateX(-2px); }
+  80%      { transform: translateX(1px); }
+}

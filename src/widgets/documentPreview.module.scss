@@ -1,0 +1,372 @@
+/* ─── Document Preview Widget ────────────────────────────────────────
+   Read-only render of a document the bot is showing the user.
+   Distinct visual language from Image Capture (viewfinder) and File
+   Upload (dropzone): this widget treats the doc as a tangible object
+   — stylized "page" tile with a folded corner for non-image docs,
+   tinted chrome per file category. Nexus tokens only. Inter.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* Same constant-height contract as Image Capture + File Upload.
+     Tallest natural state is the default view (header + preview
+     tile + file meta + action row). Width cap (28rem) is applied
+     once at the MessageRenderer's .widgetSlot wrapper so every
+     widget stays at phone-card proportions on desktop. */
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: dpRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header — icon badge + title/description + optional status ──── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+/* Uniform brand-60 badge — matches Image Capture + File Upload
+   header chrome. Category info lives in the preview tile below. */
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Meta strip — Job Card convention: a dedicated row under
+   the head for status / urgency pills. Keeps the header clean. */
+
+.metaStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+  margin-top: calc(-1 * var(--space-050));
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statusChip_neutral {
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-70);
+}
+.statusChip_brand {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 28%, transparent);
+  color: var(--brand-60);
+}
+.statusChip_success {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  color: var(--color-text-success);
+}
+.statusChip_danger {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 28%, transparent);
+  color: var(--red-60);
+}
+
+/* ─── Preview area — image OR stylized doc tile ──────────────────── */
+
+.preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  overflow: hidden;
+}
+
+.previewImage {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Stylized "page" tile for PDFs / docs — simulates a document sitting
+   on the card surface. Off-white "paper", subtle shadow for lift,
+   top-right corner fold to read unambiguously as "document". */
+.previewDoc {
+  position: relative;
+  width: 62%;
+  max-width: var(--size-176);
+  aspect-ratio: 5 / 7;          /* paper-like portrait */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  padding: var(--space-150);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  box-shadow:
+    0 var(--size-02) var(--size-08) 0 color-mix(in srgb, var(--grey-100) 6%, transparent),
+    0 var(--size-08) var(--size-24) calc(-1 * var(--size-04)) color-mix(in srgb, var(--grey-100) 8%, transparent);
+}
+
+/* Folded top-right corner — draws a triangular "dog-ear" using two
+   stacked background gradients: a highlight triangle + a shadow line
+   along the fold edge. */
+.pageFold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--size-20);
+  height: var(--size-20);
+  background:
+    linear-gradient(
+      225deg,
+      var(--grey-0) 0%,
+      var(--grey-0) 49%,
+      var(--grey-20) 50%,
+      var(--grey-10) 51%,
+      var(--white) 52%,
+      var(--white) 100%
+    );
+  border-top-right-radius: var(--radius-150);
+}
+
+.previewIcon {
+  color: var(--grey-50);
+}
+.preview_pdf .previewIcon { color: var(--red-60); }
+.preview_doc .previewIcon { color: var(--brand-60); }
+
+.previewType {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--grey-90);
+}
+
+.previewPages {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── File meta block ────────────────────────────────────────────── */
+
+.fileMetaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.fileName {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileMetaLine {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.fileExt {
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--grey-70);
+}
+
+.metaDot {
+  color: var(--grey-30);
+}
+
+/* ─── Actions row — 2 buttons max, split 50/50. Matches Job Card,
+   Image Capture, and File Upload patterns. */
+
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-100);
+  margin-top: auto;          /* pin to card bottom — constant-height contract */
+}
+
+.secondaryBtn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Primary CTA tracks the project accent (brand-60), same local
+   token override as the Apply button on Job Card. */
+.primaryBtn {
+  flex: 1 1 0;
+  min-width: 0;
+
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Acknowledged success banner ────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  margin-top: auto;          /* pin to card bottom */
+  animation: dpSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes dpRiseUp {
+  from {
+    opacity: var(--opacity-000);
+    transform: translateY(var(--space-100));
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: translateY(0);
+  }
+}
+
+@keyframes dpSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

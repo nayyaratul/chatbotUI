@@ -7,7 +7,8 @@
 /* Silent widgets (like `progress`) render null inside the row,
    leaving it empty. Collapse the empty row so no vertical gap
    appears in the message stream. */
-.row:empty {
+.row:empty,
+.row:has(> .widgetSlot:empty) {
   display: none;
   padding: 0;
 }
@@ -18,4 +19,36 @@
 
 .user {
   justify-content: flex-end;
+}
+
+/* Bot-side width cap. The slot is a plain block container: the
+   widget inside fills to 100% up to the cap, and the row's
+   justify-content: flex-start anchors it to the left edge.
+   On mobile the cap is never reached (device frame 390px); on
+   desktop widgets hold at 32rem (512px) — content-rich widgets
+   like Job Card / QC Evidence Review / Shift Calendar get the
+   breathing room they need while still feeling like a message
+   bubble, not a dashboard card.
+
+   Not applied to user-side rows — user bubbles are natural-width
+   and right-align via the row's flex justification. */
+.widgetSlot {
+  width: 100%;
+  max-width: 32rem;
+  min-width: 0;
+}
+
+/* Opt-out for formats that genuinely need more horizontal room —
+   the Job Card carousel, for instance, benefits from wider viewports
+   so multiple cards + the "next card peek" are visible together.
+   Widgets declare intent via data-widget-variant="wide" on their
+   top-level element; :has() propagates that to the slot wrapper. */
+.widgetSlot:has([data-widget-variant="wide"]) {
+  max-width: none;
+}
+
+/* When the widget renders null (silent reply), collapse the slot so
+   no blank row appears in the message stream. */
+.widgetSlot:empty {
+  display: none;
 }

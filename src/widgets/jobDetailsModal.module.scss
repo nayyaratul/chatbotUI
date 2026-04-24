@@ -1,0 +1,1028 @@
+/* ─── JobDetailsModal ─────────────────────────────────────────────────
+   Full-screen (within device frame) dialog. Opens by growing from the
+   triggering card's bounding rect to fill the pane, with a backdrop
+   blur and content fade-in. Exit reverses. Pure CSS — no motion lib.
+
+   Origin rect is passed as CSS custom props from JSX:
+     --jd-origin-x, --jd-origin-y, --jd-origin-w, --jd-origin-h
+   Rects are in viewport coordinates (getBoundingClientRect()).
+   Because the modal lives inside #chat-modal-root which is position:
+   absolute inside ChatPane, we translate by the card's viewport top/
+   left minus the modal root's own top/left. For the demo we assume
+   the chat frame is the visible region, so viewport coords align
+   closely enough — fine since the entrance animation is short.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Layer (wraps backdrop + sheet) ─────────────────────────────── */
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  isolation: isolate;
+}
+
+/* ─── Backdrop ───────────────────────────────────────────────────── */
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--grey-100);
+  opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    backdrop-filter 300ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.entering .backdrop,
+.exiting .backdrop {
+  opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
+.open .backdrop {
+  opacity: 0.48;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ─── Sheet (the modal container) ────────────────────────────────── */
+
+.sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top-left-radius: var(--radius-300);
+  border-top-right-radius: var(--radius-300);
+  box-shadow: 0 -12px 32px color-mix(in srgb, var(--grey-100) 18%, transparent);
+
+  /* Transforms animate FROM the card's origin rect TO inset:0.
+     We use transform-origin top-left and translate+scale to morph
+     position & size in a single, GPU-accelerated transition. */
+  transform-origin: 0 0;
+  transition:
+    transform 360ms cubic-bezier(0.2, 0.85, 0.3, 1.0),
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-radius 360ms cubic-bezier(0.2, 0.85, 0.3, 1.0);
+  will-change: transform, opacity;
+}
+
+/* Entering / exiting: sheet starts at the card's position & size
+   using FLIP (precomputed translate + scale). Both values are passed
+   as CSS custom props from JSX. Final state fills the pane. */
+.entering .sheet,
+.exiting .sheet {
+  opacity: 0;
+  transform:
+    translate(var(--jd-origin-x, 0), var(--jd-origin-y, 0))
+    scale(var(--jd-origin-scale-x, 1), var(--jd-origin-scale-y, 1));
+  border-top-left-radius: var(--radius-200);
+  border-top-right-radius: var(--radius-200);
+}
+
+.open .sheet {
+  opacity: 1;
+  transform: translate(0, 0) scale(1, 1);
+}
+
+/* ─── Header — ess-pwa PageHeader style ──────────────────────────
+   Soft pastel gradient (matches PageHeader.module.scss), left-aligned
+   back arrow + title, ~64px tall (24px padding × 2 + icon baseline).
+   Intentionally no separate close button — back arrow does double duty
+   the same way it does in ess-pwa. */
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-075);
+  /* Matches ess-pwa PageHeader: 24px padding (all sides) */
+  padding: var(--space-300);
+  background: var(--white);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+}
+
+.backBtn {
+  flex-shrink: 0;
+  width: var(--size-32);
+  height: var(--size-32);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--grey-90);
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.backBtn:hover {
+  background: color-mix(in srgb, var(--grey-100) 6%, transparent);
+}
+
+.backBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.headerTitle {
+  flex: 1;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-400);
+  color: var(--grey-90);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* Right-cluster icon buttons: Save + Share share the same treatment.
+   Packed tight next to each other by the header's gap. */
+.headerIconBtn {
+  flex-shrink: 0;
+  width: var(--size-32);
+  height: var(--size-32);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--grey-90);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.headerIconBtn:hover {
+  background: color-mix(in srgb, var(--grey-100) 6%, transparent);
+}
+
+.headerIconBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.headerIconBtn:disabled {
+  color: var(--grey-40);
+  cursor: not-allowed;
+}
+
+/* ─── Scrollable body ────────────────────────────────────────────── */
+
+.scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-150) var(--space-200) var(--space-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+
+  /* Content stagger-fade when sheet is open */
+  > * {
+    opacity: 0;
+    transform: translateY(var(--space-050));
+    transition:
+      opacity 320ms cubic-bezier(0.2, 0.8, 0.3, 1),
+      transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+}
+
+.open .scroll > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered reveal — extended to cover the full modal section list
+   without sudden jumps. Delay compresses slightly toward the end
+   so later sections don't feel like they're stalling. */
+.open .scroll > *:nth-child(1)  { transition-delay: 140ms; }
+.open .scroll > *:nth-child(2)  { transition-delay: 180ms; }
+.open .scroll > *:nth-child(3)  { transition-delay: 220ms; }
+.open .scroll > *:nth-child(4)  { transition-delay: 260ms; }
+.open .scroll > *:nth-child(5)  { transition-delay: 300ms; }
+.open .scroll > *:nth-child(6)  { transition-delay: 335ms; }
+.open .scroll > *:nth-child(7)  { transition-delay: 365ms; }
+.open .scroll > *:nth-child(8)  { transition-delay: 395ms; }
+.open .scroll > *:nth-child(9)  { transition-delay: 420ms; }
+.open .scroll > *:nth-child(10) { transition-delay: 440ms; }
+.open .scroll > *:nth-child(11) { transition-delay: 460ms; }
+.open .scroll > *:nth-child(12) { transition-delay: 475ms; }
+.open .scroll > *:nth-child(13) { transition-delay: 490ms; }
+.open .scroll > *:nth-child(14) { transition-delay: 505ms; }
+.open .scroll > *:nth-child(15) { transition-delay: 520ms; }
+
+/* ─── Sections ──────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+/* Section title — editorial micro-label treatment. A thin accent rule
+   runs before the text, giving each section a lightweight "chapter"
+   cue without heavy dividers. */
+.sectionTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+
+  &::before {
+    content: '';
+    width: var(--space-200);
+    height: var(--border-width-150);
+    background: var(--brand-60);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+  }
+
+  > svg {
+    color: var(--grey-50);
+  }
+}
+
+/* ─── Meta strip (urgency + freshness) ───────────────────────────── */
+
+.metaStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-075) var(--space-100);
+
+  /* Dot separators and inline meta text share a consistent rhythm
+     so the strip reads as one tidy row, not a grab-bag of styles. */
+  font-variant-numeric: tabular-nums;
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.metaPill.urgent {
+  background: var(--red-50);
+  color: var(--white);
+}
+
+/* Vacancies — deliberately different visual weight from urgent.
+   Tinted brand, not solid, so it reads as a signal not an alarm. */
+.metaPill.vacancies {
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+}
+
+.metaText {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+}
+
+.metaDot {
+  color: var(--grey-30);
+  user-select: none;
+}
+
+/* ─── Identity (logo + title + company + verified) ───────────────── */
+
+.identity {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-150);
+}
+
+.logo {
+  flex-shrink: 0;
+  width: var(--size-56);
+  height: var(--size-56);
+  border-radius: var(--radius-150);
+  border: var(--border-width-100) solid var(--grey-10);
+  object-fit: contain;
+  background: var(--white);
+}
+
+.logoFallback {
+  flex-shrink: 0;
+  width: var(--size-56);
+  height: var(--size-56);
+  border-radius: var(--radius-150);
+  border: var(--border-width-100) solid var(--grey-10);
+  background: var(--grey-0);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-60);
+  text-transform: uppercase;
+}
+
+.identityText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  /* 20px (font-size-500) — mobile-page-title scale. 28px felt like
+     editorial display weight on a 390px device frame and caused long
+     job titles ("Delivery Associate and Courier Manager") to wrap
+     aggressively. Still clearly primary against 16px body text. */
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-400);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.companyLine {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-70);
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--green-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--green-60) 24%, transparent);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--green-60);
+}
+
+/* ─── Quick facts — quiet salary + location rows, Apna style ─────── */
+
+.quickFacts {
+  gap: var(--space-100);
+}
+
+.factLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-100);
+}
+
+.factIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--grey-60);
+}
+
+.factText {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.factPeriod {
+  color: var(--grey-60);
+  font-weight: var(--font-weight-regular);
+}
+
+.factSub {
+  color: var(--grey-60);
+}
+
+.incentiveLine {
+  padding-left: calc(var(--space-100) + var(--size-20));
+  margin-top: calc(-1 * var(--space-025));
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--green-60);
+}
+
+/* ─── Chip row (fit chips) ───────────────────────────────────────── */
+
+.chipRow {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-050) var(--space-100);
+  border-radius: var(--radius-full);
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--grey-80);
+}
+
+.chipMuted {
+  color: var(--grey-60);
+  font-weight: var(--font-weight-regular);
+}
+
+.chipBenefit {
+  background: color-mix(in srgb, var(--green-60) 8%, var(--white));
+  border-color: color-mix(in srgb, var(--green-60) 22%, transparent);
+  color: var(--green-60);
+}
+
+/* ─── Info lines (location) ─────────────────────────────────────── */
+
+.infoLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-100);
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--grey-50);
+}
+
+.infoBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.infoSub {
+  margin-top: var(--space-025);
+  font-size: var(--font-size-200);
+  color: var(--grey-50);
+}
+
+/* ─── Qualifications — two presentations ────────────────────────── */
+
+/* Grid (legacy): 2-col layout for compact qual rows */
+.qualGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-125);
+}
+
+@media (max-width: 360px) {
+  .qualGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* List: vertical stack of labeled rows (Apna style — Department,
+   Role/Category, Employment type, Shift, etc.) */
+.qualList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-125);
+}
+
+.qualItem {
+  display: flex;
+  gap: var(--space-075);
+  align-items: flex-start;
+}
+
+.qualIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-150);
+  background: var(--grey-0);
+  color: var(--grey-60);
+}
+
+.qualLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  margin-bottom: var(--space-025);
+}
+
+.qualValue {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+/* ─── Requirements list (full, no cap) ──────────────────────────── */
+
+.requirementsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.requirementItem {
+  display: flex;
+  gap: var(--space-100);
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+.requirementIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-20);
+  height: var(--size-20);
+  margin-top: 1px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--green-60) 12%, var(--white));
+  color: var(--green-60);
+}
+
+/* ─── Benefits row ──────────────────────────────────────────────── */
+
+.benefitsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+}
+
+/* ─── Body text (description, about) ─────────────────────────────── */
+
+.bodyText {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-500);
+  color: var(--grey-80);
+}
+
+/* ─── Job highlights pod — Apna "key signals at a glance" pattern.
+   Subtle diagonal gradient adds depth; left-edge accent rule reads
+   like an editorial pull-quote without being heavy. */
+
+.highlightsPod {
+  position: relative;
+  padding: var(--space-150) var(--space-150) var(--space-150) var(--space-175);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--brand-60) 8%, var(--white)) 0%,
+      color-mix(in srgb, var(--brand-60) 2%, var(--white)) 55%,
+      var(--white) 100%
+    );
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 18%, transparent);
+  border-radius: var(--radius-200);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: var(--space-075);
+    bottom: var(--space-075);
+    width: var(--border-width-300);
+    background: var(--brand-60);
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  }
+}
+
+.highlightsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.highlightItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+
+  > svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--brand-60);
+  }
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+/* ─── Job description — title echo line above the narrative ─────── */
+
+.descTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+.descLabel {
+  color: var(--grey-60);
+}
+
+/* ─── Bullet list (Responsibilities) ─────────────────────────────── */
+
+.bulletList {
+  margin: 0;
+  padding-left: var(--space-150);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  line-height: var(--line-height-400);
+  color: var(--grey-80);
+
+  li::marker {
+    color: var(--grey-50);
+  }
+}
+
+/* ─── Must-have block (nested under Job requirements) ────────────── */
+
+.mustHaveBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding-top: var(--space-100);
+  margin-top: var(--space-050);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+.mustHaveLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+/* ─── Posted-by attribution ───────────────────────────────────────── */
+
+.postedBy {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  padding-top: var(--space-050);
+  border-top: var(--border-width-100) solid var(--grey-10);
+
+  strong {
+    color: var(--grey-80);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+/* ─── Similar jobs list ───────────────────────────────────────────── */
+
+.similarList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.similarItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  padding: var(--space-125);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.similarItem:hover {
+  border-color: var(--grey-20);
+  box-shadow: var(--shadow-100);
+}
+
+.similarLogo {
+  flex-shrink: 0;
+  width: var(--size-40);
+  height: var(--size-40);
+  border-radius: var(--radius-150);
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-60);
+  text-transform: uppercase;
+}
+
+.similarBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.similarTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+.similarCompany {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+}
+
+.similarMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin-top: var(--space-025);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+
+  > svg {
+    flex-shrink: 0;
+    color: var(--grey-50);
+  }
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.similarChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-050);
+  margin-top: var(--space-050);
+}
+
+.chipTiny {
+  padding: var(--space-025) var(--space-075);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+}
+
+.similarChevron {
+  flex-shrink: 0;
+  margin-top: var(--space-050);
+  color: var(--grey-40);
+}
+
+/* ─── Social proof ───────────────────────────────────────────────── */
+
+.socialProof {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-075);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  color: var(--grey-60);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+/* ─── Report link ────────────────────────────────────────────────── */
+
+.report {
+  padding-top: var(--space-050);
+}
+
+.reportBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  background: transparent;
+  border: none;
+  padding: var(--space-050) 0;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-50);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color 160ms ease;
+}
+
+.reportBtn:hover {
+  color: var(--red-50);
+}
+
+/* ─── Recruiter strip — inline at end of scroll content. Background
+   gradient echoes the header's pastel (highly muted) so head and
+   tail of the modal feel like the same piece of paper. */
+
+.recruiterStrip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-125);
+  background:
+    linear-gradient(
+      250deg,
+      color-mix(in srgb, #BAE9F9 35%, var(--white)) 0%,
+      color-mix(in srgb, #F5EAF2 40%, var(--white)) 60%,
+      var(--white) 100%
+    );
+  border: var(--border-width-100) solid color-mix(in srgb, var(--grey-100) 6%, transparent);
+  border-radius: var(--radius-200);
+  box-shadow: inset 0 var(--border-width-100) 0 0 color-mix(in srgb, var(--white) 80%, transparent);
+}
+
+.recruiterAvatar {
+  flex-shrink: 0;
+  width: var(--size-32);
+  height: var(--size-32);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
+  color: var(--brand-60);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.recruiterText {
+  flex: 1;
+  min-width: 0;
+}
+
+.recruiterLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  margin-bottom: 2px;
+}
+
+.recruiterName {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+}
+
+.recruiterRole {
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-60);
+}
+
+/* ─── Sticky action bar — Not interested + Apply, 50/50 ─────────── */
+
+.actionBar {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-100);
+  padding: var(--space-125) var(--space-200) var(--space-150);
+  flex-shrink: 0;
+  background: var(--white);
+  border-top: var(--border-width-100) solid var(--grey-10);
+  box-shadow: 0 -4px 16px color-mix(in srgb, var(--grey-100) 6%, transparent);
+}
+
+/* Both buttons share equal weight — the bar is a clear binary:
+   commit (Apply) or exit (Not interested). */
+.dismissBtn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.applyBtn {
+  flex: 1 1 0;
+  min-width: 0;
+
+  /* Local accent override so Apply tracks the project brand (brand-60)
+     rather than the Nexus default primary (brand-50). */
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}

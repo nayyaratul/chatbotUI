@@ -1,0 +1,667 @@
+/* ─── Rating Widget ──────────────────────────────────────────────────
+   Sentiment capture with two variants (stars / thumbs). Shares the
+   widget-family chrome but owns a distinctive interactive affordance:
+   hover-preview stars that fill as the cursor moves across, with a
+   subtle scale-pop on tap. Thumbs variant: two large ghost buttons
+   that fill in tone color on commit. Nexus tokens only. Inter.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* Rating has inherently less content than the capture / preview /
+     evidence widgets — no preview area, no metadata, no file list.
+     A 24rem floor leaves too much empty space before the user
+     commits. 18rem covers header + stars + submit comfortably, and
+     the card grows naturally when the comment block or success
+     banner appears. */
+  min-height: 18rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: rwRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Scale wrap (live label + stars) ────────────────────────────── */
+
+.scaleWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-125) 0 var(--space-150);
+}
+
+/* ─── Live sentiment label — updates on hover / select ───────────── */
+
+.liveLabel {
+  /* Reserve vertical space even when empty so the star row below
+     doesn't jump when a rating gets committed. */
+  min-height: var(--line-height-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-500);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-30);
+  text-align: center;
+
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 200ms ease,
+    transform 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Visible but uncommitted — user is hovering. Muted grey body text. */
+.liveLabelVisible {
+  opacity: 1;
+  transform: translateY(0);
+  color: var(--grey-70);
+
+  /* Key-based remount gives this a quick fade-pop whenever the label
+     text changes (e.g. as the user swipes across stars). */
+  animation: rwLabelPop 220ms cubic-bezier(0.18, 0.9, 0.28, 1.08);
+}
+
+/* Committed (clicked) — warmer amber to mirror the selected stars,
+   signaling "this is your rating" rather than "here's what you'd be
+   giving if you tapped now". */
+.liveLabelCommitted {
+  color: var(--yellow-30);
+}
+
+/* ─── Stars row ──────────────────────────────────────────────────── */
+
+.starRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
+/* Per-star button — 44×44 tap target around the 28px icon. Staggers
+   in on mount for warmth, pops on hover, presses in on active. */
+.star {
+  width: var(--size-44);
+  height: var(--size-44);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--grey-30);
+  cursor: pointer;
+
+  transition:
+    color 160ms ease,
+    transform 140ms cubic-bezier(0.18, 0.9, 0.28, 1.08);
+
+  animation: rwStarRise 420ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+/* Star cascade — each next star rises a beat later than the last.
+   Capped at 10 since scale tops out at 10 in the schema. */
+.starRow .star:nth-child(1)  { animation-delay: 80ms; }
+.starRow .star:nth-child(2)  { animation-delay: 130ms; }
+.starRow .star:nth-child(3)  { animation-delay: 180ms; }
+.starRow .star:nth-child(4)  { animation-delay: 230ms; }
+.starRow .star:nth-child(5)  { animation-delay: 280ms; }
+.starRow .star:nth-child(6)  { animation-delay: 330ms; }
+.starRow .star:nth-child(7)  { animation-delay: 380ms; }
+.starRow .star:nth-child(8)  { animation-delay: 430ms; }
+.starRow .star:nth-child(9)  { animation-delay: 480ms; }
+.starRow .star:nth-child(10) { animation-delay: 530ms; }
+
+.star:hover:not(:disabled) {
+  transform: scale(1.14);
+}
+
+.star:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.star:focus-visible {
+  outline: var(--border-width-200) solid var(--yellow-30);
+  outline-offset: 2px;
+}
+
+.star:disabled { cursor: default; }
+
+/* Filled state — amber gold (yellow-20) is the universal rating
+   vocabulary; deliberately not the active brand token so the star
+   fill reads as "rating" rather than clinical widget chrome. */
+.starFilled {
+  color: var(--yellow-20);
+
+  > svg {
+    fill: var(--yellow-20);
+    /* Warm dropshadow layered on top of the amber glow so filled
+       stars have actual presence on the page, not just a tint. */
+    filter:
+      drop-shadow(0 var(--size-02) var(--size-06)
+        color-mix(in srgb, var(--yellow-30) 40%, transparent))
+      drop-shadow(0 0 var(--size-12)
+        color-mix(in srgb, var(--yellow-20) 24%, transparent));
+  }
+}
+
+/* ─── Emoji row — 5 face icons, hover preview, tap to commit ───── */
+
+.emojiRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
+.emojiBtn {
+  width: var(--size-52);
+  height: var(--size-52);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+
+  color: var(--grey-30);
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 140ms cubic-bezier(0.18, 0.9, 0.28, 1.08);
+
+  animation: rwStarRise 420ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+/* Staggered entrance matches the stars + file-upload patterns. */
+.emojiRow .emojiBtn:nth-child(1) { animation-delay:  80ms; }
+.emojiRow .emojiBtn:nth-child(2) { animation-delay: 130ms; }
+.emojiRow .emojiBtn:nth-child(3) { animation-delay: 180ms; }
+.emojiRow .emojiBtn:nth-child(4) { animation-delay: 230ms; }
+.emojiRow .emojiBtn:nth-child(5) { animation-delay: 280ms; }
+
+.emojiBtn:hover:not(:disabled) { transform: scale(1.14); }
+.emojiBtn:active:not(:disabled) { transform: scale(0.94); }
+.emojiBtn:disabled { cursor: default; }
+
+.emojiBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+/* Active (hovered or selected) — fill color driven by per-face tone
+   so the 1–5 gradient tells a clear emotional story:
+   red-ish at the bottom end, amber in the middle+top. */
+.emojiActive,
+.emojiSelected {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.emojiTone_red.emojiActive    { color: var(--red-50); }
+.emojiTone_red.emojiSelected  { color: var(--red-50); }
+.emojiTone_grey.emojiActive   { color: var(--grey-60); }
+.emojiTone_grey.emojiSelected { color: var(--grey-60); }
+.emojiTone_amber.emojiActive  { color: var(--yellow-30); }
+.emojiTone_amber.emojiSelected { color: var(--yellow-30); }
+
+.emojiSelected > svg {
+  fill: currentColor;
+  filter:
+    drop-shadow(0 var(--size-02) var(--size-06)
+      color-mix(in srgb, currentColor 40%, transparent));
+}
+
+/* ─── NPS — 0..10 number pills with low/high anchors ────────────── */
+
+.npsWrap {
+  gap: var(--space-100);
+}
+
+.npsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-025);
+  width: 100%;
+  max-width: 26rem;
+}
+
+.npsBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  max-width: var(--size-44);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-100);
+  color: var(--grey-70);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 100ms ease;
+
+  animation: rwStarRise 380ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+/* NPS band tinting on hover — detractor (red), passive (grey),
+   promoter (green). Subtle; only shows when a button is active. */
+.npsBand_detractor:hover,
+.npsBand_detractor.npsActive {
+  background: color-mix(in srgb, var(--red-50) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--red-50) 36%, transparent);
+  color: var(--red-60);
+}
+
+.npsBand_passive:hover,
+.npsBand_passive.npsActive {
+  background: var(--grey-0);
+  border-color: var(--grey-40);
+  color: var(--grey-80);
+}
+
+.npsBand_promoter:hover,
+.npsBand_promoter.npsActive {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 36%, transparent);
+  color: var(--color-text-success);
+}
+
+/* Selected — solid fill in the band's color. */
+.npsSelected.npsBand_detractor {
+  background: var(--red-50);
+  border-color: var(--red-50);
+  color: var(--white);
+}
+.npsSelected.npsBand_passive {
+  background: var(--grey-70);
+  border-color: var(--grey-70);
+  color: var(--white);
+}
+.npsSelected.npsBand_promoter {
+  background: var(--color-text-success);
+  border-color: var(--color-text-success);
+  color: var(--white);
+}
+
+.npsBtn:active:not(:disabled) { transform: scale(0.94); }
+
+.npsBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.npsAnchors {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 26rem;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.submittedNpsBand {
+  margin-left: var(--space-050);
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-20);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-70);
+}
+
+/* ─── Thumbs row ─────────────────────────────────────────────────── */
+
+.thumbRow {
+  display: flex;
+  gap: var(--space-125);
+  padding: var(--space-100) 0;
+}
+
+.thumbBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
+  padding: var(--space-150) var(--space-100);
+  border-radius: var(--radius-200);
+  background: var(--white);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 100ms ease;
+}
+
+.thumbBtn:active:not(:disabled) { transform: scale(0.98); }
+.thumbBtn:disabled              { cursor: default; }
+
+.thumbUp {
+  border: var(--border-width-150) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  color: var(--color-text-success);
+}
+.thumbUp:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text-success) 6%, var(--white));
+}
+.thumbUp.thumbSelected {
+  background: var(--color-text-success);
+  border-color: var(--color-text-success);
+  color: var(--white);
+  box-shadow: 0 var(--size-02) var(--size-12) 0
+    color-mix(in srgb, var(--color-text-success) 28%, transparent);
+}
+
+.thumbDown {
+  border: var(--border-width-150) solid color-mix(in srgb, var(--red-50) 28%, transparent);
+  color: var(--red-60);
+}
+.thumbDown:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red-50) 6%, var(--white));
+}
+.thumbDown.thumbSelected {
+  background: var(--red-50);
+  border-color: var(--red-50);
+  color: var(--white);
+  box-shadow: 0 var(--size-02) var(--size-12) 0
+    color-mix(in srgb, var(--red-50) 28%, transparent);
+}
+
+/* ─── Comment block — appears after a value is committed ─────────── */
+
+.commentBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  animation: rwCommentFade 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.commentLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-60);
+
+  > svg { color: var(--grey-50); }
+}
+
+.commentInput {
+  width: 100%;
+  resize: vertical;
+  min-height: calc(var(--size-40) * 1.2);
+
+  padding: var(--space-075) var(--space-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+
+  &::placeholder { color: var(--grey-40); }
+  &:focus {
+    outline: none;
+    border-color: var(--brand-60);
+    box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
+  }
+}
+
+/* ─── Bottom actions group ──────────────────────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  margin-top: auto;
+}
+
+.primaryBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Success banner ─────────────────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  margin-top: auto;
+  animation: rwSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+.successDot { color: var(--grey-30); }
+.successTime { color: var(--grey-60); }
+
+.submittedStars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+}
+
+.submittedStar { color: var(--grey-30); }
+
+/* Classes are applied directly on the lucide <svg> element (not on a
+   wrapper), so fill is set on the element itself. Amber mirrors the
+   live star vocabulary from the rating control above. */
+.submittedStarFilled {
+  color: var(--yellow-20);
+  fill: var(--yellow-20);
+}
+
+.submittedStars strong {
+  margin-left: var(--space-025);
+  color: var(--grey-90);
+  font-weight: var(--font-weight-semibold);
+}
+
+.submittedThumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  color: var(--color-text-success);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes rwRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes rwCommentFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stars cascade in on mount — warmth for what's otherwise a
+   clinical control. Scale-up + fade with a slight overshoot. */
+@keyframes rwStarRise {
+  0%   { opacity: 0; transform: scale(0.4); }
+  70%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Live label swap — tiny fade-pop whenever the label text changes
+   (which happens on every hover jump between stars). */
+@keyframes rwLabelPop {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes rwSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

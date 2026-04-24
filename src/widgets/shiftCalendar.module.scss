@@ -1,0 +1,531 @@
+/* ─── Shift Calendar Widget ──────────────────────────────────────────
+   Day-grouped shift picker. Shares the widget family's card shell
+   + header chrome. Per-day sections with a subtle day-label strip
+   + stacked shift rows. Nexus tokens only.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ──────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: scRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Progress strip — one segment per shift, status-colored ──────
+   Matches the segmented-bar vocabulary already used by Checklist
+   and QC Evidence Review. Each segment encodes a shift's state:
+   pending grey, selected brand, booked green, full grey-striped. */
+
+.progressStrip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.progressSegments {
+  display: flex;
+  gap: var(--space-025);
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--size-06);
+  border-radius: var(--radius-full);
+  background: var(--grey-10);
+  transition: background 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+}
+
+.segment_available { background: var(--grey-10); }
+.segment_selected  { background: var(--brand-60); }
+.segment_booked    { background: var(--color-text-success); }
+
+/* Full shifts read as "out of consideration" — muted grey with a
+   diagonal hatch so they look intentionally disabled without
+   implying a negative verdict. Same pattern as Checklist skipped. */
+.segment_full {
+  background: var(--grey-30);
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--white) 40%, transparent) 3px 4px
+    );
+}
+
+.progressText {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+
+  strong {
+    color: var(--grey-90);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-400);
+    margin-right: var(--space-050);
+  }
+}
+
+.progressOf { color: var(--grey-50); }
+
+.progressMeta {
+  margin-left: var(--space-075);
+  color: var(--grey-50);
+}
+
+/* ─── Day list ───────────────────────────────────────────────────── */
+
+.dayList {
+  display: flex;
+  flex-direction: column;
+  /* More breathing room between days — the uppercase day labels are
+     visual section breaks and deserve real separation. */
+  gap: var(--space-200);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  /* Loosened from 6px → 10px between day header and its shift list. */
+  gap: var(--space-125);
+  animation: scDayRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--day-delay, 0ms) both;
+}
+
+/* Day header — uppercase label + date, editorial letter-spacing. */
+.dayHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-075);
+  padding: 0 var(--space-025);
+}
+
+.dayLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--grey-80);
+}
+
+.dateLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Shift list (rows per day) ──────────────────────────────────── */
+
+.shiftList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  /* Loosened from 6px → 8px. Matches Checklist's list gap so rows
+     stop feeling stacked-on-top-of-each-other. */
+  gap: var(--space-100);
+}
+
+.shift {
+  position: relative;
+}
+
+/* Each shift row is a full-width button for easy tap targeting.
+   Vertical padding bumped from 8px → 12px so the row feels like a
+   content panel, not a dense list item. */
+.shiftBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-150);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 100ms ease;
+}
+
+.shiftBtn:hover:not(:disabled) {
+  border-color: var(--grey-20);
+  background: var(--grey-0);
+}
+
+.shiftBtn:active:not(:disabled) {
+  transform: scale(0.996);
+}
+
+.shiftBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: 2px;
+}
+
+.shiftBtn:disabled { cursor: default; }
+
+/* Selected — brand-tinted panel with a left-edge ledger stripe.
+   Same "decided row" treatment used in Checklist + QC Evidence
+   Review so decisions read consistently across the family. */
+.shiftSelected .shiftBtn {
+  background: color-mix(in srgb, var(--brand-60) 5%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 36%, transparent);
+  box-shadow: 0 var(--size-02) var(--size-06) 0
+    color-mix(in srgb, var(--brand-60) 10%, transparent);
+}
+
+.shiftSelected .shiftBtn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-050);
+  bottom: var(--space-050);
+  width: var(--border-width-300);
+  background: var(--brand-60);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+}
+
+/* Booked — already committed. Green-tinted panel with a matching
+   green left stripe (same ledger-mark pattern as selected, but in
+   the success tone). Non-interactive. */
+.shiftBooked .shiftBtn {
+  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--grey-80);
+}
+
+.shiftBooked .shiftBtn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-050);
+  bottom: var(--space-050);
+  width: var(--border-width-300);
+  background: var(--color-text-success);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+}
+
+/* Full — out of capacity. Muted + striped. */
+.shiftFull .shiftBtn {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--grey-0) 0 6px,
+      color-mix(in srgb, var(--grey-10) 40%, var(--grey-0)) 6px 7px
+    );
+  border-color: var(--grey-10);
+  color: var(--grey-50);
+}
+
+/* ─── Shift indicator circle (selection checkmark slot) ──────────── */
+
+.shiftIndicator {
+  flex-shrink: 0;
+  width: var(--size-20);
+  height: var(--size-20);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--white);
+  border: var(--border-width-150) solid var(--grey-30);
+  border-radius: var(--radius-full);
+  color: var(--white);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 100ms ease;
+}
+
+.shiftIndicatorSelected {
+  background: var(--brand-60);
+  border-color: var(--brand-60);
+}
+
+.shiftIndicatorBooked {
+  background: var(--color-text-success);
+  border-color: var(--color-text-success);
+}
+
+/* ─── Shift body (time + label + pay) ────────────────────────────── */
+
+.shiftBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Loosened from 2px → 6px. The time row (semibold, tabular-nums)
+     and pay row (medium, green) now read as two distinct lines
+     instead of collapsed into each other. */
+  gap: var(--space-075);
+}
+
+.shiftTimeRow {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.shiftTimeIcon { color: var(--grey-50); }
+
+.shiftTime     { color: inherit; }
+
+.shiftLabel {
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-60);
+}
+
+.shiftDuration {
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-50);
+}
+
+.shiftPay {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-text-success);
+  font-variant-numeric: tabular-nums;
+
+  > svg { color: var(--color-text-success); }
+}
+
+/* ─── Status chip (right slot on each shift row) ─────────────────── */
+
+.shiftStatusSlot {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-full);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statusChip_booked {
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.statusChip_full {
+  background: var(--grey-20);
+  color: var(--grey-70);
+}
+
+.statusChip_lowcap {
+  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 32%, transparent);
+  color: var(--yellow-60);
+}
+
+/* ─── Helper row (when submit is gated) ──────────────────────────── */
+
+.helperRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  align-self: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--grey-60);
+
+  > svg { color: var(--grey-50); }
+}
+
+/* ─── Bottom actions group + submit ──────────────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+}
+
+.submitBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Submitted success banner ───────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+  animation: scSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--color-text-success);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes scRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes scDayRise {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
