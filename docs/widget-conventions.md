@@ -191,6 +191,14 @@ The card is `width: 100%` and never sets its own max-width. The **slot** owns wi
 - **32rem (512px)** is the family width. Mobile frames (390px) never reach it; desktop holds there. It reads as "a rich message bubble," not "a dashboard card."
 - A widget that genuinely needs more room (Job Card carousel, generic Carousel) sets `data-widget-variant="wide"` on its root element. The `:has()` selector opts the slot out.
 
+**Non-negotiable:**
+
+- Every widget card is `width: 100%` with **no** local `max-width`. Zero tolerance — same rigor as §0.1.
+- The slot in `src/chat/messageRenderer.module.scss` caps the card at `32rem` on desktop. That single value is the family's width. No widget sets its own.
+- Content naturally narrower than the card (a single pill, a small image, a short rating row) is fine — the card stays full slot-width, content sits left-aligned inside it. **Don't cap the card to match the content.**
+- `max-width: 94%` / `90%` / `96%` on the card root is forbidden. These were historical mistakes; they make the widget drift narrower than the family and break visual consistency.
+- A widget that genuinely needs more room opts out via `data-widget-variant="wide"` on its JSX root element — that's the only sanctioned escape hatch. Today only `JobCard` (carousel variant) and `Carousel` use it.
+
 ---
 
 ## 4. Constant-height contract
@@ -503,7 +511,7 @@ Import `getVariantPayload` from `./widgetSchemas.js`. **No inline payloads** —
 Don't do these. If you see them in existing code, it's a bug.
 
 1. `box-shadow: var(--shadow-100)` at rest. (Shadow is hover-only.)
-2. `max-width: 94%` / `96%` on the card. (Slot owns width.)
+2. Any local `max-width` on the card root (`94%`, `96%`, `90%`, `32rem`, anything). The slot at `messageRenderer.module.scss` owns width — universally.
 3. Asymmetric card padding (`var(--space-250) var(--space-200) var(--space-200)`). Use symmetric `var(--space-200)`.
 4. `border-bottom` on the header to separate it from the body. (Use `gap: space-150` on the card.)
 5. Title at `font-size-500` / `700`. Stay at 400.
@@ -534,10 +542,11 @@ Ran the doc against every widget SCSS file. Strays found:
 - **widgetResponse.module.scss** — same mix of pixel + hex fallback strays. Mapped to the same token set as `textMessage`; caption opacity `0.75` → `var(--opacity-072)` (closest token), caption margin `4px` → `var(--space-050)`.
 - **evidenceReview.module.scss:628, 639** — `padding: 2px` → `var(--space-025)`.
 - **confirmationCard.module.scss** — broke §1 (`max-width: 94%`), §1 (shadow at rest), §1 (asymmetric padding `space-200 space-200 space-150 space-250`), §2 (title `font-size-500`, description `font-size-300`, description color `grey-70`). Fixed: card now uses the standard shell (symmetric `space-200` padding, hover-only shadow, `width: 100%`); title → `font-size-400` / `line-height-300`; description → `font-size-200` / `grey-60`. The left accent stripe keeps its tone-bookmark role via `::before` flush with the edge — the symmetric padding leaves a 12px gap between stripe and content, which reads clean.
+- **Width-contract sweep** — three widgets were missed in the original audit and kept card-root `max-width: 94% / 90%` in violation of §3: `mcqQuiz.module.scss`, `scoreCard.module.scss`, `quickReply.module.scss`. Removed the offending lines so every widget now fills the slot's 32rem cap uniformly. Strengthened §3 with explicit non-negotiable bullets and tightened anti-pattern #2.
 
 **Passes:**
 
-Checklist, Image Capture, Instruction Card, Rating, Shift Calendar, QC Evidence Review, Validated Input, MCQ Quiz, Score Card, Document Preview, File Upload, Quick Reply, Carousel, Job Card, Form, Confirmation Card, Job Details Modal, Text Message, Widget Response, Evidence Review — every widget in `src/widgets/` clean.
+Checklist, Image Capture, Instruction Card, Rating, Shift Calendar, QC Evidence Review, Validated Input, Document Preview, File Upload, Carousel, Job Card, Form, Confirmation Card, Job Details Modal, Text Message, Widget Response, Evidence Review — every widget in `src/widgets/` clean.
 
 **Deeper sweep — also fixed in this pass (after a fuller audit turned them up):**
 
