@@ -1,0 +1,454 @@
+/* Comparison Widget (#22) — side-by-side match card */
+
+.card {
+  /* Local tone variable — driven by criteria mix (all-match / any-partial / any-gap).
+     Used by the summary pill fill and success banner check. Per-row tone lives
+     on the row itself via data-status, not on the card root — each row is
+     independent. */
+  --tone-color: var(--color-text-success);
+
+  /* §5 — brand-60 accent for the primary button (only the optional CTA uses it). */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 24rem;   /* §4 mid-density floor */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: cmpRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.card_success { --tone-color: var(--color-text-success); }
+.card_warning { --tone-color: var(--yellow-60); }
+.card_error   { --tone-color: var(--color-text-error); }
+
+/* ─── Header — §2 ───────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Column-label row ──────────────────────────────────────── */
+
+.columnLabels {
+  display: grid;
+  grid-template-columns: 1fr var(--size-44) 1fr;
+  column-gap: var(--space-125);
+  align-items: end;
+}
+
+.columnLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.columnLabelRight {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.columnLabelGutter {
+  /* Thin grey tick hint that visually anchors the gutter column in the label row. */
+  display: block;
+  width: var(--border-width-100);
+  height: var(--size-04);
+  margin: 0 auto;
+  background: var(--grey-20);
+  border-radius: var(--radius-full);
+}
+
+.columnEyebrow {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.columnSubtitle {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+/* ─── Criteria grid ─────────────────────────────────────────── */
+
+.criteriaGrid {
+  display: grid;
+  grid-template-columns: 1fr var(--size-44) 1fr;
+  column-gap: var(--space-125);
+  row-gap: 0;
+  border-radius: var(--radius-150);
+  overflow: hidden;
+  border: var(--border-width-100) solid var(--grey-10);
+  background: var(--white);
+}
+
+/* Row sets display:contents so cells land directly in the outer grid.
+   data-status resolves to the row's local --status-tone. */
+.criterionRow {
+  display: contents;
+  --status-tone: var(--grey-60);
+}
+
+.criterionRow[data-status="match"]   { --status-tone: var(--color-text-success); }
+.criterionRow[data-status="partial"] { --status-tone: var(--yellow-60); }
+.criterionRow[data-status="gap"]     { --status-tone: var(--color-text-error); }
+
+/* Per-row cells share padding + type. Alternating tint applied via
+   nth-child(even) on the contents-row + all 3 of its children. */
+.criterionRow > * {
+  padding: var(--space-100) var(--space-125);
+  background: var(--white);
+  border-top: var(--border-width-100) solid var(--grey-10);
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-100));
+  animation: cmpRowRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--cmp-row-delay, 0ms);
+}
+
+/* The topmost row's cells shouldn't carry the internal top border — the
+   grid's outer border already bounds the top. */
+.criterionRow:first-of-type > * {
+  border-top: 0;
+}
+
+/* Alternating row tint — applies to all 3 cells of the same row. nth-of-type
+   targets each cell bucket independently; since cells render left→center→right
+   in DOM order under display:contents, the order matches for all 3 roles. */
+.criteriaGrid > .criterionRow:nth-of-type(even) > * {
+  background: color-mix(in srgb, var(--grey-10) 35%, var(--white));
+}
+
+/* Clickable rows (those with notes) — full-row hover affordance. */
+.criterionRow_clickable {
+  cursor: pointer;
+}
+
+.criterionRow_clickable > * {
+  transition: background 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.criterionRow_clickable:hover > *,
+.criterionRow_clickable:focus-visible > * {
+  background: color-mix(in srgb, var(--status-tone) 6%, var(--white));
+}
+
+.criterionRow_clickable:focus-visible > *:first-child {
+  outline: var(--border-width-300) solid var(--brand-60);
+  outline-offset: calc(-1 * var(--border-width-300));
+}
+
+/* Rows are also form-buttons when clickable; strip native button chrome. */
+.criterionRow {
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: inherit;
+  color: inherit;
+}
+
+.cellA {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.cellB {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  text-align: right;
+}
+
+.cellIndicator {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-100) 0;   /* center column keeps its own vertical padding; no horizontal gutter */
+}
+
+.criterionName {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-80);
+}
+
+.criterionValue {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  word-break: break-word;
+}
+
+/* ─── Indicator chip — tri-state ────────────────────────────── */
+
+.indicatorChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--status-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 28%, transparent);
+  color: var(--status-tone);
+
+  /* Springy scale-in lands after the row content settles. Override
+     the shared `.criterionRow > *` rise animation on just this chip
+     so it still opacity-fades but with the springy curve. */
+  animation: cmpChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: calc(var(--cmp-row-delay, 0ms) + 120ms);
+}
+
+.srOnly {
+  position: absolute;
+  width: var(--size-01);
+  height: var(--size-01);
+  padding: 0;
+  margin: calc(-1 * var(--size-01));
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Expandable note row (§9 pull-quote) ──────────────────── */
+
+.noteRow {
+  grid-column: 1 / -1;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--white);
+  transition:
+    max-height 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  opacity: var(--opacity-000);
+  --status-tone: var(--grey-60);
+}
+
+.noteRow[data-status="match"]   { --status-tone: var(--color-text-success); }
+.noteRow[data-status="partial"] { --status-tone: var(--yellow-60); }
+.noteRow[data-status="gap"]     { --status-tone: var(--color-text-error); }
+
+.noteRow_open {
+  max-height: var(--size-96);
+  opacity: var(--opacity-100);
+}
+
+.noteInner {
+  padding: var(--space-100) var(--space-125) var(--space-125);
+  border-left: var(--border-width-300) solid var(--status-tone);
+  margin-left: var(--space-125);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  font-style: italic;
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+/* ─── Summary pill — §6 linear-fill ─────────────────────────── */
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.summaryEyebrow {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.summaryTrack {
+  height: var(--size-02);
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.summaryFill {
+  height: 100%;
+  background: var(--tone-color);
+  border-radius: var(--radius-full);
+  transition: width 360ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  /* Entry animation — pill grows from 0 to its target after the final
+     row indicator settles. Total pre-delay = stagger (7*60ms) + chip
+     settle (120ms + 280ms) ≈ 820ms; use 540ms of fill duration after
+     that — calc adds the two together so CSS drives the rhythm. */
+  animation: cmpSummaryGrow 540ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 820ms;
+}
+
+/* ─── Footer — optional CTA / success banner ──────────────── */
+
+.submitBtn {
+  width: 100%;
+  margin-top: auto;
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-150);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  margin-top: auto;
+
+  animation: cmpBannerPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.successCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-28);
+  height: var(--size-28);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-text-success) 18%, var(--white));
+  color: var(--color-text-success);
+}
+
+.successBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.successTitle {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+}
+
+.successSub {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────── */
+
+@keyframes cmpRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes cmpRowRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes cmpChipPop {
+  from { opacity: var(--opacity-000); transform: scale(0.6); }
+  to   { opacity: var(--opacity-100); transform: scale(1); }
+}
+
+@keyframes cmpSummaryGrow {
+  from { opacity: var(--opacity-000); }
+  to   { opacity: var(--opacity-100); }
+}
+
+@keyframes cmpBannerPop {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)) scale(0.98); }
+  to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .criterionRow > *,
+  .indicatorChip,
+  .summaryFill,
+  .successBanner {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transition: none !important;
+    opacity: var(--opacity-100);
+    transform: none;
+  }
+
+  .noteRow {
+    transition: none !important;
+  }
+}
