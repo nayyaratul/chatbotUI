@@ -1,0 +1,484 @@
+/* Profile Card Widget (#29) — worker / candidate profile summary.
+   Verified Nexus tokens for this widget:
+     space     : 025 050 075 100 125 150 200 250
+     size      : 04 06 08 12 16 20 24 28 36 44 48 64 96
+     font-size : 100 200 400   (300 used sparingly when needed)
+     font-wt   : regular medium semibold   (NO bold)
+     radius    : 100 150 200 500 full
+     border-w  : 100 150 200 300
+     opacity   : 012 024 072 100
+                                                                      */
+
+.card {
+  /* Local tone variable — drives the score ring + verdict word. */
+  --tone-color: var(--grey-60);
+
+  /* §5 — brand-60 accent for the primary CTA. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 24rem;   /* §4 mid-density floor */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: pcdRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.card:has(:focus-visible) {
+  outline: var(--border-width-300) solid color-mix(in srgb, var(--brand-60) 40%, transparent);
+  outline-offset: var(--size-02);
+}
+
+.card_success { --tone-color: var(--color-text-success); }
+.card_warning { --tone-color: var(--yellow-60); }
+.card_error   { --tone-color: var(--color-text-error); }
+.card_neutral { --tone-color: var(--grey-60); }
+
+/* ─── Header ────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  min-width: 0;
+}
+
+.photo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-48);
+  height: var(--size-48);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+  overflow: hidden;
+}
+
+/* When the <img> form is used (photo_url present), neutralise the
+   inline-flex layout and let the image cover the circle. */
+img.photo {
+  display: block;
+  object-fit: cover;
+}
+
+.photoInitials {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Availability chip — §7 pill, small filled circle + label. */
+.availability {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+  --chip-tone: var(--grey-60);
+  background: color-mix(in srgb, var(--chip-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--chip-tone) 24%, transparent);
+  color: var(--chip-tone);
+}
+
+.availability svg {
+  vertical-align: text-bottom;
+}
+
+.availability_available   { --chip-tone: var(--color-text-success); }
+.availability_busy        { --chip-tone: var(--yellow-60); }
+.availability_unavailable { --chip-tone: var(--grey-60); }
+
+/* ─── Body — ring + stats ──────────────────────────────────── */
+
+.body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-200);
+  align-items: start;
+
+  animation: pcdRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 120ms;
+}
+
+.body_noRing {
+  grid-template-columns: 1fr;
+}
+
+/* ─── Score ring ───────────────────────────────────────────── */
+
+.ringWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-075);
+  width: var(--size-64);
+  flex: 0 0 auto;
+}
+
+.ring {
+  display: block;
+  width: var(--size-64);
+  height: var(--size-64);
+  transform: rotate(-90deg);
+}
+
+.ringTrack {
+  stroke: var(--grey-10);
+  stroke-width: var(--border-width-300);
+}
+
+.ringFill {
+  stroke: var(--tone-color);
+  stroke-width: var(--border-width-300);
+  stroke-linecap: round;
+  stroke-dasharray: var(--pcd-ring-circumference);
+  stroke-dashoffset: var(--pcd-ring-circumference);
+  transform-origin: center;
+
+  /* Animate from full-empty (dashoffset = circumference) to the
+     target offset. Runs 720ms, delay 180ms — paired with the score
+     count-up inside. */
+  animation: pcdRingFill 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 180ms;
+}
+
+.ringCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  width: var(--size-64);
+  height: var(--size-64);
+}
+
+.ringValue {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.ringMax {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--space-025);
+}
+
+.ringVerdict {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--tone-color);
+  text-align: center;
+}
+
+/* ─── Stats list ──────────────────────────────────────────── */
+
+.statsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  min-width: 0;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: var(--space-125);
+  align-items: center;
+  padding: var(--space-050) 0;
+  min-width: 0;
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050));
+  animation: pcdStatRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--pcd-stat-delay, 300ms);
+}
+
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--grey-60);
+}
+
+.statLabel {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-80);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statValue {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+/* ─── Skills ──────────────────────────────────────────────── */
+
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.skillsEyebrow {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  padding-bottom: var(--space-050);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+}
+
+.skillsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-075);
+}
+
+/* Neutral §7 chip — grey-10 tint, grey-20 border, grey-80 text. */
+.skillChip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-80);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050)) scale(0.96);
+  animation: pcdChipRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: var(--pcd-chip-delay, 540ms);
+}
+
+/* Overflow chip — dashed border signals "there's more under this". */
+.skillChip_overflow {
+  border-style: dashed;
+  color: var(--grey-60);
+  background: var(--white);
+}
+
+/* ─── Footer — CTA / action bar / success banner ──────────── */
+
+.submitBtn {
+  width: 100%;
+  margin-top: auto;
+
+  animation: pcdRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--pcd-cta-delay, 1500ms);
+}
+
+/* Admin 3-button row — destructive-left / neutral-mid / primary-right. */
+.actionBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-100);
+  margin-top: auto;
+
+  animation: pcdRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--pcd-cta-delay, 1500ms);
+}
+
+.actionBtn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Destructive override — local brand to error-tone so Reject reads
+   correctly without dominating. Secondary-variant base + tone
+   override, same pattern Approval uses. */
+.actionBtn_destructive {
+  --color-action-primary: var(--color-text-error);
+  --color-action-primary-hover: color-mix(in srgb, var(--color-text-error) 88%, black);
+}
+
+.actionBtn_primary {
+  --color-action-primary: var(--brand-60);
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  flex-wrap: wrap;
+  margin-top: auto;
+
+  animation: pcdBannerPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.successChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--color-text-success);
+
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.successMeta {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────── */
+
+@keyframes pcdRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes pcdRingFill {
+  from { stroke-dashoffset: var(--pcd-ring-circumference); }
+  to   { stroke-dashoffset: var(--pcd-ring-target); }
+}
+
+@keyframes pcdStatRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes pcdChipRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)) scale(0.96); }
+  to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
+}
+
+@keyframes pcdBannerPop {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)) scale(0.98); }
+  to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+
+/* !important defeats the entry animations' `both` fill-mode which
+   would otherwise paint the initial (opacity:0, transform:translate,
+   stroke-dashoffset:full) frame before the media query lands. */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .body,
+  .statRow,
+  .skillChip,
+  .submitBtn,
+  .actionBar,
+  .successBanner,
+  .ringFill {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transition: none !important;
+    opacity: var(--opacity-100);
+    transform: none;
+  }
+
+  .ringFill {
+    stroke-dashoffset: var(--pcd-ring-target);
+  }
+}

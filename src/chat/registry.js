@@ -24,6 +24,7 @@ import { Approval } from '../widgets/Approval.jsx'
 import { VideoPlayer } from '../widgets/VideoPlayer.jsx'
 import { Comparison } from '../widgets/Comparison.jsx'
 import { Earnings } from '../widgets/Earnings.jsx'
+import { Profile } from '../widgets/Profile.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -52,4 +53,5 @@ export const registry = {
   video: VideoPlayer,
   comparison: Comparison,
   earnings: Earnings,
+  profile: Profile,
 }

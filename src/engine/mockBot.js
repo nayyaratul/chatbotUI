@@ -147,6 +147,20 @@ registerRule({
   build: () => ({ type: 'approval', payload: getVariantPayload('approval', 'bgv') }),
 })
 
+// ─── Profile — worker self-view default ──────────────────────────
+// Trigger: "profile", "my profile", "your profile", "worker profile"
+registerRule({
+  match: /^(profile|my profile|your profile|worker profile)$/i,
+  build: () => ({ type: 'profile', payload: getVariantPayload('profile', 'worker') }),
+})
+
+// ─── Profile — admin review variant ──────────────────────────────
+// Trigger: "candidate profile", "review profile", "profile review"
+registerRule({
+  match: /^(candidate profile|review profile|admin profile|profile review)$/i,
+  build: () => ({ type: 'profile', payload: getVariantPayload('profile', 'admin') }),
+})
+
 // ─── Earnings — paycheck default ─────────────────────────────────
 // Trigger: "earnings", "paycheck", "payout", "my earnings"
 registerRule({

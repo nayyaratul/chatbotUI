@@ -407,6 +407,63 @@ function buildEarningsPayload(variant) {
   throw new Error(`buildEarningsPayload: unknown variant "${variant}"`)
 }
 
+/* ─── Shared profile payload builder ──────────────────────────────
+   Two variants for the Profile Card widget (#29). Worker = self-view
+   with a single primary "Update profile" CTA. Admin = recruiter review
+   with a 3-button action bar (Reject / View full / Shortlist). */
+function buildProfilePayload(variant) {
+  const base = {
+    widget_id: makeId('pcd'),
+    variant,
+  }
+
+  if (variant === 'worker') {
+    return {
+      ...base,
+      worker_id: 'w-1042',
+      name: 'Priya Sharma',
+      headline: 'Shipping Assistant · 3 yrs',
+      availability: 'available',
+      stats: [
+        { icon: 'star',        label: 'Rating',       value: '4.8 / 5' },
+        { icon: 'target',      label: 'Tasks done',   value: '147' },
+        { icon: 'globe',       label: 'Languages',    value: 'Hi, En, Ka' },
+        { icon: 'clock',       label: 'Experience',   value: '3 yrs' },
+      ],
+      skills: ['Navigation', 'Field ops', 'COD handling', 'Bike handling', 'Customer comms', 'Route planning', 'English'],
+      score: { value: 82, max: 100 },
+      actions: [
+        { id: 'update', label: 'Update profile', intent: 'primary' },
+      ],
+    }
+  }
+
+  if (variant === 'admin') {
+    return {
+      ...base,
+      worker_id: 'c-2198',
+      name: 'Rahul Verma',
+      headline: 'Candidate · Applied for Delivery Executive',
+      availability: 'available',
+      stats: [
+        { icon: 'briefcase',   label: 'Experience',   value: '2 yrs' },
+        { icon: 'award',       label: 'Prior roles',  value: 'Swiggy, Zomato' },
+        { icon: 'trending-up', label: 'Match score',  value: '74 %' },
+        { icon: 'globe',       label: 'Languages',    value: 'Hi, En' },
+      ],
+      skills: ['Two-wheeler', 'Customer comms', 'Navigation apps', 'Light lifting', 'Punctual'],
+      score: { value: 74, max: 100 },
+      actions: [
+        { id: 'reject',    label: 'Reject',             intent: 'destructive' },
+        { id: 'view_full', label: 'View full profile',  intent: 'neutral' },
+        { id: 'shortlist', label: 'Shortlist',          intent: 'primary' },
+      ],
+    }
+  }
+
+  throw new Error(`buildProfilePayload: unknown variant "${variant}"`)
+}
+
 /* ─── Shared video payload builder ────────────────────────────────
    Returns a representative payload per variant for the Video Player
    widget (#16). Both variants point at the Blender Foundation's
@@ -1693,6 +1750,15 @@ export const widgetSchemas = {
       { id: 'paycheck',  label: 'Paycheck',  payload: () => buildEarningsPayload('paycheck') },
       { id: 'incentive', label: 'Incentive', payload: () => buildEarningsPayload('incentive') },
       { id: 'advance',   label: 'Advance',   payload: () => buildEarningsPayload('advance') },
+    ],
+  },
+
+  profile: {
+    label: 'Profile',
+    category: 'display',
+    variants: [
+      { id: 'worker', label: 'Worker', payload: () => buildProfilePayload('worker') },
+      { id: 'admin',  label: 'Admin',  payload: () => buildProfilePayload('admin') },
     ],
   },
 

@@ -22,6 +22,7 @@ import {
   Gavel,
   GitCompare,
   Wallet,
+  UserCircle2,
   FileText,
   BookOpen,
   ScanSearch,
@@ -59,6 +60,7 @@ const WIDGET_ICONS = {
   approval:           Gavel,
   comparison:         GitCompare,
   earnings:           Wallet,
+  profile:            UserCircle2,
 }
 
 /**
