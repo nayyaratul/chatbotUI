@@ -1,3 +1,14 @@
+/* ─── Studio Panel — Instrument-panel aesthetic ───────────────────
+   Each section carries a semantic colour (green/brand/amber/blue/slate)
+   via data-color → --section-dot CSS variable. The dot appears in the
+   section header; on hover, a subtle tint of the same colour washes
+   the section background and a 2px accent rail appears on the left
+   edge. When collapsed, the dots become a vertical rail of icon
+   buttons, each badged with its section colour — orientation at a
+   glance.
+
+   Brand section tracks the active brand swatch live via var(--brand-*). */
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -10,110 +21,117 @@
   overflow: hidden;
 }
 
-.panel.collapsed .section,
-.panel.collapsed .headerTitle {
-  display: none;
-}
+/* ─── Header ───────────────────────────────────────────────────── */
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--grey-10);
   background: var(--white);
   position: sticky;
   top: 0;
-  z-index: 1;
-}
-
-.headerTitle {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--grey-90);
-  letter-spacing: -0.01em;
-}
-
-.headerBadge {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--grey-50);
+  z-index: 2;
+  min-height: 50px;
 }
 
 .panel.collapsed .header {
-  padding: 10px 8px;
+  padding: 10px 4px;
   justify-content: center;
 }
 
-.collapseButton {
+.titleBlock {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Small brand-tinted square next to the wordmark — tracks the active
+   brand so switching Brand presets animates this tile live. */
+.titleMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--brand-60);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--black) 10%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--brand-60) 14%, transparent);
+  flex-shrink: 0;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.title {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--grey-90);
+  line-height: 1;
+}
+
+.subtitle {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--grey-50);
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Icon buttons (collapse, reset) ──────────────────────────── */
+
+.iconButton {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
   background: transparent;
-  border: 1px solid var(--grey-10);
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: var(--grey-60);
+  color: var(--grey-55, var(--grey-60));
   flex-shrink: 0;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-
-  &:hover {
-    background: var(--grey-10);
-    color: var(--grey-90);
-    border-color: var(--grey-20);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--grey-90);
-    outline-offset: 1px;
-  }
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
 }
 
-.utilityStrip {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 12px;
-  background: var(--grey-0);
-  border-bottom: 1px solid var(--grey-10);
+.iconButton:hover {
+  background: var(--grey-05, var(--grey-10));
+  color: var(--grey-90);
+  border-color: var(--grey-10);
 }
 
-.panel.collapsed .utilityStrip {
-  display: none;
+.iconButton:active {
+  transform: scale(0.96);
 }
 
-.resetButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  cursor: pointer;
-  color: var(--grey-60);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-
-  &:hover {
-    background: var(--white);
-    color: var(--grey-90);
-    border-color: var(--grey-10);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--grey-90);
-    outline-offset: 1px;
-  }
+.iconButton:focus-visible {
+  outline: 2px solid var(--grey-90);
+  outline-offset: 1px;
 }
+
+.iconButton[data-variant="destructive"]:hover {
+  background: var(--red-0);
+  border-color: var(--red-10);
+  color: var(--red-60);
+}
+
+/* ─── Sections (expanded state) ───────────────────────────────── */
 
 .sections {
   display: flex;
@@ -121,43 +139,170 @@
   padding: 0 0 32px;
 }
 
+/* Map section colour tokens. Values deliberately pulled from Nexus
+   tokens so nothing is hard-coded outside the token system. */
+.section[data-color="green"] { --section-dot: var(--green-40); }
+.section[data-color="brand"] { --section-dot: var(--brand-60); }
+.section[data-color="amber"] { --section-dot: var(--yellow-30); }
+.section[data-color="blue"]  { --section-dot: var(--blue-50);  }
+.section[data-color="slate"] { --section-dot: var(--cool-50);  }
+
 .section {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--grey-10);
-
-  &:last-of-type {
-    border-bottom: none;
-  }
+  padding: 14px 16px 16px;
+  border-bottom: 1px solid var(--grey-05, var(--grey-10));
+  transition: background 160ms ease;
 }
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+/* Accent rail on the left edge — dormant by default, lights up on
+   section hover. 2px wide, spans full height. */
+.section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background 180ms ease;
+  pointer-events: none;
+}
+
+.section:hover {
+  background: color-mix(in srgb, var(--section-dot) 4%, transparent);
+}
+
+.section:hover::before {
+  background: var(--section-dot);
+}
+
+/* ─── Section header ──────────────────────────────────────────── */
 
 .sectionHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--grey-70);
+  gap: 10px;
+  min-height: 18px;
 }
 
-.sectionIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: var(--white);
-  border: 1px solid var(--grey-10);
-  color: var(--grey-60);
+/* The signature detail. A small solid dot + faint ring — reads as an
+   LED indicator. Scales subtly on section hover. */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--section-dot);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--section-dot) 14%, transparent);
   flex-shrink: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.section:hover .dot {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--section-dot) 22%, transparent);
 }
 
 .sectionTitle {
-  font-size: 12px;
+  font-family: var(--sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--grey-80);
   margin: 0;
+  line-height: 1;
+}
+
+/* Meta text (e.g. active brand name) — small, quiet, right-aligned */
+.meta {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--grey-55, var(--grey-60));
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Monospace count pill (Inspector msg count). Tabular numerals keep
+   the width stable as the count grows. */
+.count {
+  margin-left: auto;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--grey-80);
+  background: color-mix(in srgb, var(--section-dot) 8%, var(--white));
+  border: 1px solid color-mix(in srgb, var(--section-dot) 20%, var(--grey-10));
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
+/* ─── Collapsed rail ──────────────────────────────────────────── */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 14px;
+  gap: 2px;
+}
+
+.railItem[data-color="green"] { --section-dot: var(--green-40); }
+.railItem[data-color="brand"] { --section-dot: var(--brand-60); }
+.railItem[data-color="amber"] { --section-dot: var(--yellow-30); }
+.railItem[data-color="blue"]  { --section-dot: var(--blue-50);  }
+.railItem[data-color="slate"] { --section-dot: var(--cool-50);  }
+
+.railItem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--grey-55, var(--grey-60));
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+}
+
+.railItem:hover {
+  background: color-mix(in srgb, var(--section-dot) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--section-dot) 22%, var(--grey-10));
+  color: var(--grey-90);
+}
+
+.railItem:focus-visible {
+  outline: 2px solid var(--section-dot);
+  outline-offset: 1px;
+}
+
+/* The tiny section-colour badge — top-right of the icon button,
+   6px, with a white ring so it reads clearly against the icon. */
+.railBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--section-dot);
+  box-shadow:
+    0 0 0 1.5px var(--white),
+    0 0 0 2.5px color-mix(in srgb, var(--section-dot) 28%, transparent);
 }
