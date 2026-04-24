@@ -885,6 +885,95 @@ export const widgetSchemas = {
     ],
   },
 
+  datetime_picker: {
+    label: 'Date / Time Picker',
+    category: 'input',
+    variants: [
+      {
+        id: 'interview',
+        label: 'Interview (slots)',
+        payload: () => ({
+          widget_id: makeId('dtp'),
+          appointment_id: 'interview-okaygo-9021',
+          title: 'Pick an interview slot',
+          description: 'Morning slots fill up fastest — book early.',
+          mode: 'datetime',
+          timezone: 'Asia/Kolkata',
+          timezone_label: 'IST',
+          min_date: '2026-04-27',
+          max_date: '2026-05-09',
+          available_slots: [
+            { date: '2026-04-28', times: [
+              { slot_id: 'apr28-0930', time: '09:30', remaining: 3 },
+              { slot_id: 'apr28-1100', time: '11:00', remaining: 1 },
+              { slot_id: 'apr28-1400', time: '14:00', remaining: 5 },
+              { slot_id: 'apr28-1630', time: '16:30', remaining: 2 },
+            ] },
+            { date: '2026-04-29', times: [
+              { slot_id: 'apr29-1000', time: '10:00', remaining: 4 },
+              { slot_id: 'apr29-1530', time: '15:30', remaining: 3 },
+            ] },
+            { date: '2026-04-30', times: [
+              { slot_id: 'apr30-0930', time: '09:30', remaining: 2 },
+              { slot_id: 'apr30-1200', time: '12:00', remaining: 6 },
+              { slot_id: 'apr30-1630', time: '16:30', remaining: 1 },
+            ] },
+            { date: '2026-05-04', times: [
+              { slot_id: 'may04-1000', time: '10:00', remaining: 4 },
+              { slot_id: 'may04-1400', time: '14:00', remaining: 2 },
+            ] },
+            { date: '2026-05-05', times: [
+              { slot_id: 'may05-1100', time: '11:00', remaining: 3 },
+              { slot_id: 'may05-1500', time: '15:00', remaining: 2 },
+              { slot_id: 'may05-1730', time: '17:30', remaining: 5 },
+            ] },
+            { date: '2026-05-06', times: [
+              { slot_id: 'may06-0930', time: '09:30', remaining: 1 },
+              { slot_id: 'may06-1330', time: '13:30', remaining: 4 },
+            ] },
+          ],
+          submit_label: 'Confirm slot',
+          silent: false,
+        }),
+      },
+      {
+        id: 'onboarding',
+        label: 'Onboarding date',
+        payload: () => ({
+          widget_id: makeId('dtp'),
+          appointment_id: 'onboarding-start-2026',
+          title: 'When can you start?',
+          description: 'Pick a date within the next three weeks. You can change this later.',
+          mode: 'date',
+          timezone: 'Asia/Kolkata',
+          timezone_label: 'IST',
+          min_date: '2026-04-28',
+          max_date: '2026-05-18',
+          submit_label: 'Confirm start date',
+          silent: false,
+        }),
+      },
+      {
+        id: 'followup_call',
+        label: 'Follow-up call (free time)',
+        payload: () => ({
+          widget_id: makeId('dtp'),
+          appointment_id: 'followup-call-a42',
+          title: 'Schedule a follow-up call',
+          description: 'Pick any 30-minute window that works for you.',
+          mode: 'datetime',
+          timezone: 'Asia/Kolkata',
+          timezone_label: 'IST',
+          min_date: '2026-04-27',
+          max_date: '2026-05-09',
+          time_window: { start_hour: 9, end_hour: 18, step_min: 30 },
+          submit_label: 'Book the call',
+          silent: false,
+        }),
+      },
+    ],
+  },
+
   // ─── display ─────────────────────────────────────────────────────
 
   progress: {

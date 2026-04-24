@@ -1,0 +1,499 @@
+/* ─── Date/Time Picker Widget ────────────────────────────────────────
+   Calendar month grid + reveal-on-select time list. Shares the widget
+   family's card shell, header chrome, submit CTA, and success banner
+   vocabulary. Nexus tokens only.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell ─────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* §4 floor — 30rem matches Image Capture (the other reveal-style
+     widget in the family). Covers the tallest state: calendar grid
+     + time list + submit, no jump when the time section slides in. */
+  min-height: 30rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: dtpRiseUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-150);
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Timezone strip — subtle eyebrow above the calendar ─────────── */
+
+.tzStrip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tzPrefix { color: var(--grey-50); }
+
+.tzValue {
+  color: var(--grey-80);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Calendar ───────────────────────────────────────────────────── */
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+}
+
+.navBtn {
+  flex-shrink: 0;
+  width: var(--size-28);
+  height: var(--size-28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-full);
+  color: var(--grey-70);
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--grey-0);
+  border-color: var(--grey-20);
+  color: var(--grey-90);
+}
+
+.navBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.navBtn:disabled {
+  color: var(--grey-30);
+  cursor: default;
+}
+
+.monthLabel {
+  flex: 1;
+  text-align: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-050);
+}
+
+.weekdayCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--size-20);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.dayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-050);
+}
+
+.dayCell {
+  aspect-ratio: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--white);
+  border: var(--border-width-100) solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--grey-90);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 100ms ease;
+}
+
+.dayCell:hover:not(:disabled) {
+  background: var(--grey-0);
+  border-color: var(--grey-20);
+}
+
+.dayCell:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.dayCell:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.dayCell:disabled {
+  cursor: default;
+  color: var(--grey-30);
+}
+
+.dayCell:disabled:hover {
+  background: var(--white);
+  border-color: transparent;
+}
+
+.dayCellMuted:not(:disabled) { color: var(--grey-30); }
+.dayCellMuted:disabled       { color: var(--grey-20); }
+
+/* Today — outlined brand ring, text stays brand. Overridden by
+   dayCellSelected below when the user picks today as their date. */
+.dayCellToday {
+  border-color: color-mix(in srgb, var(--brand-60) 40%, transparent);
+  color: var(--brand-60);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dayCellSelected,
+.dayCellSelected.dayCellToday {
+  background: var(--brand-60);
+  border-color: var(--brand-60);
+  color: var(--white);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dayCellSelected:hover:not(:disabled) {
+  background: var(--brand-60);
+  border-color: var(--brand-60);
+}
+
+/* ─── Time section — reveals when a date is selected ─────────────── */
+
+.timeSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+
+  animation: dtpRevealUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.timeHead {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  line-height: 1;
+  color: var(--grey-50);
+
+  > svg { color: var(--grey-50); }
+}
+
+.timeHeadLabel {
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.timeHeadDate {
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.timeList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-075);
+}
+
+.timeBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-075);
+  padding: var(--space-100) var(--space-125);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  color: var(--grey-90);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 100ms ease;
+}
+
+.timeBtn:hover {
+  background: var(--grey-0);
+  border-color: var(--grey-20);
+}
+
+.timeBtn:active { transform: scale(0.98); }
+
+.timeBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.timeBtnSelected,
+.timeBtnSelected:hover {
+  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
+  border-color: var(--brand-60);
+  color: var(--brand-60);
+}
+
+.timeBtnLabel {
+  font-weight: var(--font-weight-semibold);
+}
+
+.timeBtnMeta {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-50);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.timeBtnMetaLow {
+  color: var(--yellow-60);
+  font-weight: var(--font-weight-semibold);
+}
+
+.timeEmpty {
+  padding: var(--space-100);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  color: var(--grey-50);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ─── Helper row + submit ─────────────────────────────────────────── */
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding-top: var(--space-100);
+  border-top: var(--border-width-100) solid var(--grey-10);
+  margin-top: auto;             /* §4 constant-height — pin to card bottom */
+}
+
+.helperRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  align-self: center;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--grey-60);
+
+  > svg { color: var(--grey-50); }
+}
+
+.submitBtn {
+  --color-action-primary:        var(--brand-60);
+  --color-action-primary-hover:  var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+}
+
+/* ─── Success banner ──────────────────────────────────────────────── */
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-125);
+  margin-top: auto;
+
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  border-radius: var(--radius-150);
+
+  animation: dtpSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+}
+
+.successCheck {
+  flex-shrink: 0;
+  width: var(--size-28);
+  height: var(--size-28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-text-success);
+  color: var(--white);
+}
+
+.successBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text-success);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-70);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes dtpRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes dtpRevealUp {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dtpSuccessPop {
+  0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

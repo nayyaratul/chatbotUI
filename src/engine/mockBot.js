@@ -105,6 +105,27 @@ registerRule({
   build: () => ({ type: 'shift_calendar', payload: getVariantPayload('shift_calendar', 'default') }),
 })
 
+// ─── Date/Time Picker — interview slots (default) ─────────────────
+// Trigger: "interview slot", "pick interview", "book interview"
+registerRule({
+  match: /^(interview slot|pick interview|book (an )?interview|schedule interview)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'interview') }),
+})
+
+// ─── Date/Time Picker — onboarding start date (date-only) ─────────
+// Trigger: "start date", "when can you start", "joining date"
+registerRule({
+  match: /^(start date|when can (you|i) start|joining date|pick start date)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'onboarding') }),
+})
+
+// ─── Date/Time Picker — follow-up call (free time) ────────────────
+// Trigger: "follow up", "book call", "schedule call"
+registerRule({
+  match: /^(follow ?up|book (a )?call|schedule (a )?call|call me back)$/i,
+  build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'followup_call') }),
+})
+
 // ─── Carousel — composed widgets (job cards in a rail) ────────────
 // Trigger: "job picks", "recommended jobs", "pick a role"
 // Demonstrates the CSV-spec item composition (carousel of job_cards).

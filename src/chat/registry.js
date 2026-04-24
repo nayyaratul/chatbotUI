@@ -18,6 +18,7 @@ import { RatingWidget } from '../widgets/RatingWidget.jsx'
 import { ValidatedInput } from '../widgets/ValidatedInput.jsx'
 import { Carousel } from '../widgets/Carousel.jsx'
 import { ShiftCalendar } from '../widgets/ShiftCalendar.jsx'
+import { DateTimePicker } from '../widgets/DateTimePicker.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -40,4 +41,5 @@ export const registry = {
   validated_input: ValidatedInput,
   carousel: Carousel,
   shift_calendar: ShiftCalendar,
+  datetime_picker: DateTimePicker,
 }
