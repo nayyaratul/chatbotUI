@@ -666,38 +666,6 @@
   to   { opacity: var(--opacity-100); transform: translateX(0); }
 }
 
-/* ── Keyboard focus outline ─────────────────────────────────────── */
-
-.card:focus-visible {
-  outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: var(--size-02);
-}
-
-/* ── kbd shortcut chips inside action buttons ───────────────────── */
-
-.kbd {
-  margin-left: var(--space-075);
-  padding: 0 var(--space-050);
-  min-width: var(--size-16);
-  height: var(--size-16);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-100);
-  background: color-mix(in srgb, var(--grey-90) 6%, var(--white));
-  border: var(--border-width-100) solid var(--grey-10);
-  color: var(--grey-60);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
-/* Hide on touch-only devices — shortcuts only make sense with a keyboard */
-@media (hover: none) or (pointer: coarse) {
-  .kbd { display: none; }
-}
-
 /* ── §11 Staggered entry for evidence panels ─────────────────────── */
 
 .evPanel {
