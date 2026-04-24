@@ -101,13 +101,62 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  overflow: hidden;
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-150);
   background: var(--grey-20);
   cursor: pointer;
+  /* overflow stays clipped on children via their own absolute-inset;
+     the region itself allows its ::after pulse ring to paint outside
+     the rounded box at completion. */
 }
 
+/* Pass 2 completion acknowledgement — a one-shot success-tone pulse
+   ring on the outside of the media region, synchronous with the
+   completion chip's springy entry. The card itself "acknowledges"
+   completion, not just the chip. Fires via the `.media_completed`
+   modifier the component sets the frame the chip mounts. */
+.media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-150);
+  pointer-events: none;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 60%, transparent);
+  opacity: var(--opacity-000);
+}
+
+.media_completed::after {
+  animation: vplMediaPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes vplMediaPulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 60%, transparent);
+    opacity: var(--opacity-100);
+  }
+  to {
+    box-shadow: 0 0 0 var(--size-06) color-mix(in srgb, var(--color-text-success) 60%, transparent);
+    opacity: var(--opacity-000);
+  }
+}
+
+/* Children clip against the rounded media box via their own absolute
+   positioning; we wrap them in a crop layer so the media itself can
+   paint outside via ::after while video/poster/overlays stay clipped. */
+.mediaCrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* ─── Poster → video reveal (two-stage) ─────────────────────────────
+   Pass 2: the poster holds ~100ms while the <video> element mounts,
+   then a staged crossfade with a subtle scale — poster grows 1.0 → 1.02
+   as it fades out; video starts at 0.98 and settles at 1.0 as it fades
+   in. The effect reads as "the video emerges from the poster" rather
+   than "poster swaps to video." Timing: 100ms hold + 220ms crossfade,
+   all on the §16 state curve. */
 .poster {
   position: absolute;
   inset: 0;
@@ -115,7 +164,11 @@
   height: 100%;
   object-fit: cover;
   opacity: var(--opacity-100);
-  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms;
 }
 
 .posterFallback {
@@ -127,11 +180,18 @@
       color-mix(in srgb, var(--grey-30) 40%, var(--grey-20)) 0%,
       var(--grey-20) 100%
     );
+  opacity: var(--opacity-100);
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms;
 }
 
 .media_playing .poster,
 .media_playing .posterFallback {
   opacity: var(--opacity-000);
+  transform: scale(1.02);
   pointer-events: none;
 }
 
@@ -142,12 +202,17 @@
   height: 100%;
   display: block;
   opacity: var(--opacity-000);
-  transition: opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform: scale(0.98);
+  transform-origin: center;
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 100ms;
 }
 
 .media_playing .videoEl,
 .media_hasPlayed .videoEl {
   opacity: var(--opacity-100);
+  transform: scale(1);
 }
 
 .scrim {
@@ -167,7 +232,17 @@
   opacity: var(--opacity-000);  /* don't scrim actively-playing video */
 }
 
-/* Big centered play overlay — visible when idle / paused */
+/* Big centered play overlay — visible when idle / paused.
+
+   Pass 2 hover choreography:
+     • transform scales 1.0 → 1.04 (state curve, 180ms) — as before.
+     • background brightens from brand-60/92 → brand-60/78 (more
+       white mixed in) for a subtle shimmer on hover-enter.
+     • a one-shot sonar-ping ring via the `::after` pseudo pulses
+       outward from spread-radius 0 → var(--size-04), fading from
+       opacity-100 → opacity-000 across 280ms on the springy curve.
+       The pseudo is painted behind the button (z-index: -1) so the
+       glyph stays crisp. */
 .playOverlay {
   position: absolute;
   top: 50%;
@@ -184,6 +259,7 @@
   border: var(--border-width-100) solid color-mix(in srgb, var(--white) 40%, transparent);
   color: var(--white);
   cursor: pointer;
+  isolation: isolate;  /* contain the ::after pulse under this button */
 
   transition:
     transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -191,8 +267,35 @@
     opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+.playOverlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 40%, transparent);
+  opacity: var(--opacity-000);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .media:hover .playOverlay {
   transform: translate(-50%, -50%) scale(1.04);
+  background: color-mix(in srgb, var(--brand-60) 78%, var(--white));
+}
+
+.media:hover .playOverlay::after {
+  animation: vplPlayPing 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes vplPlayPing {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 40%, transparent);
+    opacity: var(--opacity-100);
+  }
+  to {
+    box-shadow: 0 0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 40%, transparent);
+    opacity: var(--opacity-000);
+  }
 }
 
 .media_playing .playOverlay {
@@ -408,7 +511,13 @@
 /* Hatched "must watch" overlay — covers the region from maxWatched
    to end, enforced variant only. Pattern vocabulary borrowed from
    Shift Calendar's full-shift treatment. Positioned via left offset
-   driven by inline style (see component). */
+   driven by inline style (see component).
+
+   Pass 2: the signature primitive. The pattern drifts left at ~9s
+   per cycle — slow enough to read as ambient ("alive, watching you"),
+   fast enough to telegraph the lock is live, not decorative. Linear
+   timing keeps the stripes moving at uniform velocity; curves here
+   would read as stuttering. */
 .progressHatch {
   position: absolute;
   top: 0;
@@ -421,6 +530,25 @@
       var(--grey-20) 0 var(--border-width-300),
       transparent var(--border-width-300) calc(var(--border-width-300) + var(--size-04))
     );
+  /* One stripe period = border-width-300 + (border-width-300 + size-04)
+     = 2×border-width-300 + size-04. Translating background-position by
+     that distance completes one seamless cycle. */
+  background-size: calc(var(--size-04) + var(--border-width-300) + var(--border-width-300))
+                   calc(var(--size-04) + var(--border-width-300) + var(--border-width-300));
   opacity: var(--opacity-064);
   pointer-events: none;
+
+  animation: vplHatchDrift 9000ms linear infinite;
+}
+
+@keyframes vplHatchDrift {
+  from { background-position: 0 0; }
+  to   { background-position: calc(-1 * (var(--size-04) + var(--border-width-300) + var(--border-width-300))) 0; }
+}
+
+/* Respect users with motion-sensitivity — freeze the drift. */
+@media (prefers-reduced-motion: reduce) {
+  .progressHatch { animation: none; }
+  .playOverlay::after { animation: none !important; }
+  .media_completed::after { animation: none !important; }
 }

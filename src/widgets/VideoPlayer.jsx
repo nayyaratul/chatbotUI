@@ -217,51 +217,57 @@ export function VideoPlayer({ payload }) {
           styles.media,
           playing && styles.media_playing,
           hasPlayed && styles.media_hasPlayed,
+          completed && styles.media_completed,
         )}
         onClick={toggle}
       >
-        {thumbnail_url ? (
-          <img className={styles.poster} src={thumbnail_url} alt="" />
-        ) : (
-          <div className={styles.posterFallback} aria-hidden />
-        )}
-        <video
-          ref={videoRef}
-          className={styles.videoEl}
-          src={url}
-          preload="metadata"
-          playsInline
-          tabIndex={-1}  /* chrome buttons own focus; keep <video> out of tab order */
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onEnded={handleEnded}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onSeeking={handleSeeking}
-        />
-        <div className={styles.scrim} aria-hidden />
-        {!playing && (
-          <button
-            type="button"
-            className={styles.playOverlay}
-            onClick={(e) => { e.stopPropagation(); toggle() }}
-            aria-label={hasPlayed ? 'Resume video' : 'Play video'}
-          >
-            <Play
-              size={20}
-              strokeWidth={2}
-              fill="currentColor"
-              className={styles.playOverlayGlyph}
-              aria-hidden
-            />
-          </button>
-        )}
-        {completed && (
-          <span className={styles.completionChip}>
-            <CircleCheck size={14} strokeWidth={2} aria-hidden />
-            Completed
-          </span>
-        )}
+        {/* Inner crop layer: children clip to the rounded media box,
+            while the .media itself is unclipped so its ::after pulse
+            ring can paint outside the border on completion. */}
+        <div className={styles.mediaCrop}>
+          {thumbnail_url ? (
+            <img className={styles.poster} src={thumbnail_url} alt="" />
+          ) : (
+            <div className={styles.posterFallback} aria-hidden />
+          )}
+          <video
+            ref={videoRef}
+            className={styles.videoEl}
+            src={url}
+            preload="metadata"
+            playsInline
+            tabIndex={-1}  /* chrome buttons own focus; keep <video> out of tab order */
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onEnded={handleEnded}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onSeeking={handleSeeking}
+          />
+          <div className={styles.scrim} aria-hidden />
+          {!playing && (
+            <button
+              type="button"
+              className={styles.playOverlay}
+              onClick={(e) => { e.stopPropagation(); toggle() }}
+              aria-label={hasPlayed ? 'Resume video' : 'Play video'}
+            >
+              <Play
+                size={20}
+                strokeWidth={2}
+                fill="currentColor"
+                className={styles.playOverlayGlyph}
+                aria-hidden
+              />
+            </button>
+          )}
+          {completed && (
+            <span className={styles.completionChip}>
+              <CircleCheck size={14} strokeWidth={2} aria-hidden />
+              Completed
+            </span>
+          )}
+        </div>
       </div>
 
       <div className={styles.controls}>
