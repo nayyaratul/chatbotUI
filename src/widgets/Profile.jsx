@@ -344,6 +344,8 @@ function PhotoAvatar({ photoUrl, initials, name }) {
       className={styles.photo}
       src={photoUrl}
       alt={name}
+      loading="lazy"
+      decoding="async"
       onError={() => setFailed(true)}
     />
   )
