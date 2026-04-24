@@ -20,7 +20,7 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 **22 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Comparison / Side-by-Side (#22) v2 rev — v1 gutter-rail shape shipped then redirected after UX review. v2 lands as an explainable table across `3429930` (Pass 2 timing fix) / `08105fe` (Pass 2 band + chip-settle elevation) / `b63ade1` (Pass 1 close) / `32345d1` (Pass 1 rewrite) / `196947f` (v2 spec).
+**Last shipped:** Comparison / Side-by-Side (#22) v2.1 reshape — horizontal-space UX feedback drove a criterion-as-row-header rework: `a4a14cb` (review fixes — fill-mode, note-rail alignment) / `2261717` (v2.1 code reshape) / `b3d49ae` (v2.1 spec rev). v2 history also preserved (gutter-rail v1 → explainable-table v2 → criterion-as-row v2.1).
 
 **Pending:** 8 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
 
@@ -54,7 +54,7 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 17 | Validated Input | `ValidatedInput.jsx` | Phone / email / Aadhaar / PAN / PIN / bank / custom; shake keyframe on error |
 | 19 | Carousel | `Carousel.jsx` | `data-widget-variant="wide"` opts the slot out of the 32rem cap (§3) |
 | 21 | Shift Calendar | `ShiftCalendar.jsx` | §6 segmented pills with hatched pattern for full-shift state |
-| 22 | Comparison / Side-by-Side | `Comparison.jsx` | Three variants (candidate_match / skills_gap / qc_spec). v2 shape: dual-item band (left cell = brand-60 6% tint + brand-ringed icon pod for "your side"; right cell = grey-10 tint + neutral pod for "the spec") + 4-column table (`Criterion · a_value · status chip · b_value`) with explicit column headers. Status chip is the signature — §7 pill with tiny glyph + short semantic copy ("Exceeds by 1yr" / "Close match" / "Needs work"), tone-specific settle after the springy pop (match chips glow, partial pulse, gap nudge). §6 summary pill fills after the last chip's full settle. Row-level single-open notes (§9 pull-quote). v1 gutter-rail shape superseded — see spec v2 for context. |
+| 22 | Comparison / Side-by-Side | `Comparison.jsx` | Three variants (candidate_match / skills_gap / qc_spec). v2.1 shape for narrow chat slots: inline item band (one line, brand-tinted left part + grey-tinted right part, each `[icon] [name]`) + vertical stack of per-criterion blocks. Each block carries the criterion name as an eyebrow header, a 3-part values row below (`a_value · tone dot · b_value`), and a tone-colored left-edge stripe (§8 ledger pattern) as the peripheral verdict signal. Tone dot is icon-only — no chip copy. Tone-specific settle after the springy pop (match glow, partial pulse, gap nudge) lives on the dot. §6 summary pill fills after the last dot settles; sheen + brightness settle land the "tally" cue. Row-level single-open notes (§9 pull-quote, rail aligned to the block stripe). v1 gutter-rail + v2 explainable-table specs preserved as superseded / iteration-history in the spec doc. |
 | 23 | Approval | `Approval.jsx` | Four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve 50/50 with Reject; destructive actions two-step with tone-striped inline notes. Eyebrow announces card type per variant |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
 
