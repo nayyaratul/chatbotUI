@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   ShieldCheck,
@@ -247,6 +247,10 @@ const TONE_CLASS = {
   error:   'card_error',
 }
 
+const SHORTCUT_KEY = {
+  approve: 'A', reject: 'R', more_info: 'M', escalate: 'E',
+}
+
 function formatClockTime(iso) {
   if (!iso) return ''
   const d = new Date(iso)
@@ -341,8 +345,53 @@ export function Approval({ payload }) {
     [],
   )
 
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (decision) return
+    const node = rootRef.current
+    if (!node) return
+    node.focus({ preventScroll: true })
+  }, [decision])
+
+  useEffect(() => {
+    if (decision) return
+    function onKey(e) {
+      // ignore if focus is inside a textarea (pending notes)
+      if (e.target?.tagName === 'TEXTAREA') {
+        if (e.key === 'Enter' && !e.shiftKey && pending) {
+          e.preventDefault()
+          confirmPending()
+        }
+        if (e.key === 'Escape' && pending) {
+          e.preventDefault()
+          cancelPending()
+        }
+        return
+      }
+      const key = e.key.toLowerCase()
+      if (key === 'a' && actions.includes('approve'))   { e.preventDefault(); handleClick('approve')   }
+      if (key === 'r' && actions.includes('reject'))    { e.preventDefault(); handleClick('reject')    }
+      if (key === 'm' && actions.includes('more_info')) { e.preventDefault(); handleClick('more_info') }
+      if (key === 'e' && actions.includes('escalate'))  { e.preventDefault(); handleClick('escalate')  }
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = Number(e.key) - 1
+        const item = evidence[idx]
+        if (item) { e.preventDefault(); togglePanel(item.id) }
+      }
+    }
+    const node = rootRef.current
+    if (!node) return
+    node.addEventListener('keydown', onKey)
+    return () => node.removeEventListener('keydown', onKey)
+  }, [decision, pending, actions, evidence, handleClick, togglePanel, confirmPending, cancelPending])
+
   return (
-    <div className={cx(styles.card, toneClass && styles[toneClass])}>
+    <div
+      ref={rootRef}
+      tabIndex={-1}
+      className={cx(styles.card, toneClass && styles[toneClass])}
+    >
       <header className={styles.header}>
         <div className={styles.headerStart}>
           <span className={styles.iconBadge} aria-hidden>
@@ -430,6 +479,7 @@ export function Approval({ payload }) {
                 >
                   <ActionIcon size={16} strokeWidth={2} />
                   <span>{meta.label}</span>
+                  <span className={styles.kbd} aria-hidden>{SHORTCUT_KEY[action]}</span>
                 </Button>
               )
             })}
