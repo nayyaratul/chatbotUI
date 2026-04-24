@@ -546,9 +546,16 @@
   to   { background-position: calc(-1 * (var(--size-04) + var(--border-width-300) + var(--border-width-300))) 0; }
 }
 
-/* Respect users with motion-sensitivity — freeze the drift. */
+/* Respect users with motion-sensitivity. Freeze the ambient hatch
+   drift and the decorative one-shot flourishes (sonar ping + media
+   pulse). The completion chip is also frozen so it mounts instantly
+   alongside its (now-frozen) synchronous outer pulse — keeping the
+   "chip + ring, acknowledged together" read even under reduced motion.
+   The informative poster→video reveal stays live since it carries
+   meaning, not decoration. */
 @media (prefers-reduced-motion: reduce) {
   .progressHatch { animation: none; }
   .playOverlay::after { animation: none !important; }
   .media_completed::after { animation: none !important; }
+  .completionChip { animation: none !important; }
 }
