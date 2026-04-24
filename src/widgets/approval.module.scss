@@ -1,0 +1,97 @@
+/* Approval Widget (#23) — admin decision card */
+
+.card {
+  /* Local tone variable — driven by recommendation.verdict. Child
+     elements (arc, pull-quote, banner, decided stripe) read from this. */
+  --tone-color: var(--brand-60);
+  --tone-tint:  color-mix(in srgb, var(--tone-color) 10%, var(--white));
+  --tone-border: color-mix(in srgb, var(--tone-color) 22%, transparent);
+
+  /* §5 — brand-60 accent for the primary button */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 24rem;  /* §4 mid-density floor */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: apvRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.card_success { --tone-color: var(--color-text-success); }
+.card_warning { --tone-color: var(--yellow-60); }
+.card_error   { --tone-color: var(--color-text-error); }
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  justify-content: space-between;
+}
+
+.headerStart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  min-width: 0;  /* so the text truncates before pushing the arc */
+  flex: 1;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+@keyframes apvRiseUp {
+  from { opacity: 0; transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
