@@ -15,7 +15,7 @@ Every widget is built in two passes. Do not skip the second pass.
 1. Name the files `WidgetName.jsx` + `widgetName.module.scss` (camelCase SCSS, PascalCase JSX — matches the existing 20-widget family).
 2. Build the card shell (§1), header chrome (§2), and primary CTA (§5) exactly as specified. No improvisation yet.
 3. Wire up the behavior: state machine, events, validation, submit. Use Nexus atoms (`Button`, `Input`, `Select`) and Lucide icons (§16).
-4. Register the widget in `src/chat/registry.js` and schema in `src/engine/widgetSchemas.js`. Add a mockBot trigger so it's testable in the playground.
+4. Register the widget in five places (all required, see §17 for details): `src/chat/registry.js` (component), `src/engine/widgetSchemas.js` (schema — new `{ label, category, variants }` shape), `src/engine/mockBot.js` (text trigger that reads from the schema via `getVariantPayload`), and `src/studio/WidgetPalette.jsx`'s `WIDGET_ICONS` map (Lucide icon for the Studio tile). Missing any one leaves the widget invisible to some part of the playground.
 5. Audit against the anti-patterns (§15). Everything on that list should be zero.
 6. Run the hardcoded-value check (§0.1 below). Zero tolerance.
 
@@ -418,6 +418,8 @@ Standard sizes:
 
 Never mix Lucide with another icon library (Heroicons, Material Icons, FontAwesome). Never inline SVGs unless the shape is genuinely bespoke (e.g., a corner bracket on a camera viewport — even then, prefer CSS `::before` with borders).
 
+The same Lucide-only rule applies to the Studio-side `WIDGET_ICONS` map in `src/studio/WidgetPalette.jsx` — every registered widget needs an icon there so its palette tile reads as something rather than a generic box (`Package` fallback). Pick an icon that semantically matches the widget's purpose (`Camera` for image capture, `Briefcase` for job card, `Gauge` for score card, `Milestone` for progress, `ScanSearch` for QC review).
+
 ---
 
 ## 16. Animation curves
@@ -445,13 +447,54 @@ Never use `transition: all`. List the properties explicitly — it keeps hover s
 
 ## 17. File naming + registration
 
-- `WidgetName.jsx` — PascalCase.
-- `widgetName.module.scss` — camelCase (Vite's CSS modules convention; matches the 20-widget family).
-- Schema entry: `src/engine/widgetSchemas.js`, key `widget_name` (snake_case — matches the CSV spec at `/Users/atulnayyar/Downloads/AI_Labs_Widget_Specification - Rich Chat Widgets.csv`).
-- Registry entry: `src/chat/registry.js`, key `widget_name`, value is the imported component.
-- Mock trigger: `src/engine/mockBot.js` — add a phrase that emits the widget so it's testable in the playground.
+A widget isn't "done" until all five touchpoints exist. Otherwise it's invisible to some surface of the playground — the chat stream, the Studio palette, or the text-trigger mock — even if the file compiles.
 
-A widget isn't "done" until all four touchpoints exist. Otherwise it's invisible to the chat stream even if the file compiles.
+**1. The widget files** — `WidgetName.jsx` (PascalCase) + `widgetName.module.scss` (camelCase, Vite's CSS-modules convention). Matches the 20-widget family.
+
+**2. Registry entry** — `src/chat/registry.js`, key `widget_name` (snake_case, matches the CSV spec at `/Users/atulnayyar/Downloads/AI_Labs_Widget_Specification - Rich Chat Widgets.csv`), value is the imported component. This is how `MessageRenderer` resolves a message's `type` to a rendered widget.
+
+**3. Schema entry** — `src/engine/widgetSchemas.js`, key `widget_name`. Shape:
+
+```js
+widget_name: {
+  label: 'Short Name',                   // 1–2 words; renders on the Studio palette tile
+  category: 'action',                    // one of: action | input | display | advanced | engine
+  variants: [
+    {
+      id: 'default',
+      label: 'Default',
+      payload: () => ({                  // FUNCTION, not object — so makeId() mints fresh ids per call
+        widget_id: makeId('wn'),
+        /* … */
+      }),
+    },
+    // each additional variant (e.g. `info` / `caution` / `danger`, or `admin` / `worker`) is
+    // another entry here. Widgets with only one variant still need the `default` entry — the
+    // Studio hides the Variant stage when the array has ≤1 item, so there's no UI cost.
+  ],
+}
+```
+
+Import `makeId` from `./ids.js` (not `./mockBot.js` — it moved during the Injector refactor).
+
+Keep the `label` short (1–2 words). Long descriptive strings like "Validated Input (OTP / PAN / phone / …)" do not fit inside the 155px palette tile and were moved into per-variant labels during the Injector redesign. The widget-level label is the identity, not the description.
+
+Pick the `category` so the widget lands in the right group in the Studio palette. When in doubt, grep the existing entries for the closest sibling.
+
+**4. Mock trigger** — `src/engine/mockBot.js`. Every variant that's reachable via the Studio palette should also be reachable via a text trigger, so `widgetSchemas.js` stays the single source of truth:
+
+```js
+registerRule({
+  match: /^(show )?widget[- ]?name/i,
+  build: () => ({ type: 'widget_name', payload: getVariantPayload('widget_name', 'default') }),
+})
+```
+
+Import `getVariantPayload` from `./widgetSchemas.js`. **No inline payloads** — the whole point of the refactor was to eliminate payload drift between this file and the schema. If you need a payload field only the mock has (e.g., a custom `widget_id` prefix), compose on top of `getVariantPayload(...)` rather than inlining the whole body.
+
+**5. Icon entry** — `src/studio/WidgetPalette.jsx`'s `WIDGET_ICONS` map. Add `widget_name: SomeLucideIcon`. Semantically pick (see §15). Omitting this falls back to the generic `Package` icon — functional, but reads as a missing entry. Don't ship without it.
+
+**Helper locations after the Injector refactor:** `makeId` → `src/engine/ids.js`. `richJobs()` → `src/engine/widgetSchemas.js`. Grep the old `mockBot.js` locations and you'll find nothing.
 
 ---
 
