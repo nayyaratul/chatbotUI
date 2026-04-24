@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import cx from 'classnames'
 import {
   ShieldCheck,
@@ -8,7 +8,13 @@ import {
   ChevronRight,
   Check,
   X as XIcon,
+  CircleCheck,
+  CircleX,
+  CircleHelp,
+  Flag,
 } from 'lucide-react'
+import { Button } from '@nexus/atoms'
+import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './approval.module.scss'
 
 /* ─── Approval Widget (#23) ────────────────────────────────────────
@@ -217,6 +223,24 @@ const VARIANT_ICONS = {
   offer: HandCoins,
 }
 
+const ACTION_META = {
+  approve:   { label: 'Approve',    Icon: CircleCheck, tone: 'success', destructive: false },
+  reject:    { label: 'Reject',     Icon: CircleX,     tone: 'error',   destructive: true  },
+  more_info: { label: 'More info',  Icon: CircleHelp,  tone: 'warning', destructive: true  },
+  escalate:  { label: 'Escalate',   Icon: Flag,        tone: 'brand',   destructive: true  },
+}
+
+/* Fixed render order: destructive on the left, constructive on the
+   right (thumb/eye lands on Approve). A subset of these is accepted
+   via payload.actions. */
+const ACTION_ORDER = ['escalate', 'more_info', 'reject', 'approve']
+
+const CONFIRM_COPY = {
+  reject:    { prompt: 'Reason for rejection (optional)',         confirm: 'Confirm reject'   },
+  more_info: { prompt: 'What information do you need? (optional)', confirm: 'Confirm request' },
+  escalate:  { prompt: 'Escalation note (optional)',              confirm: 'Confirm escalate' },
+}
+
 const TONE_CLASS = {
   success: 'card_success',
   warning: 'card_warning',
@@ -224,12 +248,73 @@ const TONE_CLASS = {
 }
 
 export function Approval({ payload }) {
-  const { variant = 'bgv', summary, recommendation, reasoning, evidence = [] } = payload ?? {}
+  const {
+    variant = 'bgv',
+    case_id,
+    summary,
+    recommendation,
+    reasoning,
+    evidence = [],
+    actions = ['approve', 'reject', 'more_info', 'escalate'],
+  } = payload ?? {}
   const Icon = VARIANT_ICONS[variant] ?? ShieldCheck
 
   const toneClass = TONE_CLASS[recommendation?.tone] ?? null
 
   const [openPanelId, setOpenPanelId] = useState(null)
+  const [pending, setPending] = useState(null)   // null | 'reject' | 'more_info' | 'escalate'
+  const [notes, setNotes] = useState('')
+  const [decision, setDecision] = useState(null) // null | { action, notes, at }
+
+  const { onReply } = useChatActions()
+
+  const visibleActions = useMemo(
+    () => ACTION_ORDER.filter((a) => actions.includes(a)),
+    [actions],
+  )
+
+  const commit = useCallback(
+    (action, noteText = '') => {
+      const decidedAt = new Date().toISOString()
+      setDecision({ action, notes: noteText, at: decidedAt })
+      onReply({
+        type: 'widget_response',
+        payload: {
+          widget_id: payload?.widget_id,
+          source_type: 'approval',
+          case_id,
+          decision: action,
+          notes: noteText || undefined,
+          decided_at: decidedAt,
+        },
+      })
+    },
+    [onReply, case_id, payload?.widget_id],
+  )
+
+  const handleClick = useCallback(
+    (action) => {
+      if (decision) return
+      if (!ACTION_META[action]?.destructive) {
+        commit(action)
+        return
+      }
+      setPending(action)
+      setNotes('')
+    },
+    [decision, commit],
+  )
+
+  const cancelPending = useCallback(() => {
+    setPending(null)
+    setNotes('')
+  }, [])
+
+  const confirmPending = useCallback(() => {
+    if (!pending) return
+    commit(pending, notes.trim())
+    setPending(null)
+  }, [pending, notes, commit])
 
   const togglePanel = useCallback(
     (id) => setOpenPanelId((prev) => (prev === id ? null : id)),
@@ -273,7 +358,62 @@ export function Approval({ payload }) {
           ))}
         </ul>
       )}
-      {/* Action bar follows in Task 6 */}
+      {!decision && (
+        <div className={styles.actionRegion}>
+          {pending && (
+            <div className={styles.pendingPrompt}>
+              <label className={styles.pendingLabel} htmlFor={`apv-notes-${payload?.widget_id}`}>
+                {CONFIRM_COPY[pending]?.prompt}
+              </label>
+              <textarea
+                id={`apv-notes-${payload?.widget_id}`}
+                className={styles.pendingTextarea}
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                autoFocus
+              />
+              <div className={styles.pendingActions}>
+                <Button type="button" variant="secondary" onClick={cancelPending}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={confirmPending}
+                  className={cx(styles.confirmButton, styles[`confirmButton_${ACTION_META[pending].tone}`])}
+                >
+                  {CONFIRM_COPY[pending]?.confirm}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className={cx(styles.actionBar, pending && styles.actionBar_locked)}>
+            {visibleActions.map((action) => {
+              const meta = ACTION_META[action]
+              const ActionIcon = meta.Icon
+              return (
+                <Button
+                  key={action}
+                  type="button"
+                  variant={action === 'approve' ? 'primary' : 'secondary'}
+                  onClick={() => handleClick(action)}
+                  disabled={!!pending && pending !== action}
+                  className={cx(
+                    styles.actionButton,
+                    styles[`actionButton_${action}`],
+                    pending === action && styles.actionButton_armed,
+                  )}
+                >
+                  <ActionIcon size={16} strokeWidth={2} />
+                  <span>{meta.label}</span>
+                </Button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

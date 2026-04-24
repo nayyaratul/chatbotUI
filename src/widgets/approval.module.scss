@@ -369,3 +369,105 @@
 /* ── unknown kind fallback ── */
 
 .evUnknown { margin: 0; font-size: var(--font-size-100); color: var(--grey-50); }
+
+/* ── Action bar + pending-confirm ──────────────────────────────── */
+
+.actionRegion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-125);
+  margin-top: auto;  /* §4 — sticks footer to the bottom */
+}
+
+.actionBar {
+  display: flex;
+  gap: var(--space-100);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.actionBar_locked .actionButton:not(.actionButton_armed) {
+  opacity: var(--opacity-040);
+  pointer-events: none;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
+/* Reject tone — secondary button whose tokens locally tilt error */
+.actionButton_reject {
+  --color-action-primary: var(--color-text-error);
+  --color-action-primary-hover: color-mix(in srgb, var(--color-text-error) 88%, black);
+  color: var(--color-text-error);
+}
+
+.pendingPrompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+  padding: var(--space-125);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--grey-10) 30%, var(--white));
+
+  animation: apvSlideDown 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.pendingLabel {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.pendingTextarea {
+  width: 100%;
+  resize: vertical;
+  padding: var(--space-075);
+  border: var(--border-width-100) solid var(--grey-30);
+  border-radius: var(--radius-100);
+  background: var(--white);
+  font-family: inherit;
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+
+  transition: border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.pendingTextarea:focus {
+  outline: none;
+  border-color: var(--brand-60);
+}
+
+.pendingActions {
+  display: flex;
+  gap: var(--space-100);
+  justify-content: flex-end;
+}
+
+.confirmButton_error {
+  --color-action-primary: var(--color-text-error);
+  --color-action-primary-hover: color-mix(in srgb, var(--color-text-error) 88%, black);
+}
+
+.confirmButton_warning {
+  --color-action-primary: var(--yellow-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--yellow-60) 88%, black);
+}
+
+.confirmButton_brand {
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+}
+
+@keyframes apvSlideDown {
+  from { opacity: var(--opacity-000); transform: translateY(calc(-1 * var(--space-100))); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
