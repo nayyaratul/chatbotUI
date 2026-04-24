@@ -368,7 +368,7 @@ export function DateTimePicker({ payload }) {
       {/* Timezone pill — small, inline caption with globe glyph */}
       {timezoneLabel && (
         <div className={styles.tzPill} role="note" aria-label={`Times shown in ${timezoneLabel}`}>
-          <Globe size={11} strokeWidth={2.25} aria-hidden="true" />
+          <Globe size={12} strokeWidth={2.25} aria-hidden="true" />
           <span className={styles.tzPrefix}>Shown in</span>
           <span className={styles.tzValue}>{timezoneLabel}</span>
         </div>
@@ -495,7 +495,7 @@ export function DateTimePicker({ payload }) {
                           <li
                             key={`${t.time}-${t.slot_id ?? 'free'}`}
                             className={styles.timeCell}
-                            style={{ '--time-delay': `${delayIdx * 40}ms` }}
+                            style={{ '--time-delay': `${delayIdx * 60}ms` }}
                           >
                             <button
                               type="button"
