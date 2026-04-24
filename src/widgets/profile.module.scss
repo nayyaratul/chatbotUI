@@ -29,7 +29,17 @@
      typical payloads; the floor was forcing extra white-space on
      light variants (few skills / no score) without adding structure. */
 
-  background: var(--white);
+  /* Atmospheric corner gradient — a very faint brand-60 warmth in
+     the top-left of the card, falling off to transparent. Adds depth
+     without texture noise; reads as "this card has weight" not
+     "this card has decoration". */
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      color-mix(in srgb, var(--brand-60) 4%, transparent) 0%,
+      transparent 40%
+    ),
+    var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-200);
 
@@ -40,9 +50,16 @@
   animation: pcdRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
+/* Hover border picks up the score's tone when a score is present —
+   the card signals its verdict mood on hover without being loud at
+   rest. Falls back to grey-30 for neutral. */
 .card:hover {
-  border-color: var(--grey-30);
+  border-color: color-mix(in srgb, var(--tone-color) 35%, var(--grey-20));
   box-shadow: var(--shadow-100);
+}
+
+.card_neutral:hover {
+  border-color: var(--grey-30);
 }
 
 .card:has(:focus-visible) {
@@ -317,11 +334,19 @@ img.photo {
   animation-delay: var(--pcd-stat-delay, 300ms);
 }
 
+/* Icon disc — 24×24 tinted circle behind each Lucide glyph. Gives
+   stats a composed "spec-sheet" feel (vs a loose icon + text row)
+   without introducing a new primitive. */
 .statIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  width: var(--size-24);
+  height: var(--size-24);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
+  border: var(--border-width-100) solid var(--grey-10);
   color: var(--grey-60);
 }
 
