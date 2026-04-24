@@ -20,6 +20,7 @@ import {
   Briefcase,
   GalleryHorizontal,
   Gavel,
+  GitCompare,
   FileText,
   BookOpen,
   ScanSearch,
@@ -55,6 +56,7 @@ const WIDGET_ICONS = {
   evidence_review:    FileCheck2,
   video:              PlaySquare,
   approval:           Gavel,
+  comparison:         GitCompare,
 }
 
 /**

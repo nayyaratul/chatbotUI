@@ -22,6 +22,7 @@ import { DateTimePicker } from '../widgets/DateTimePicker.jsx'
 import { TrainingScenario } from '../widgets/TrainingScenario.jsx'
 import { Approval } from '../widgets/Approval.jsx'
 import { VideoPlayer } from '../widgets/VideoPlayer.jsx'
+import { Comparison } from '../widgets/Comparison.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -48,4 +49,5 @@ export const registry = {
   training_scenario: TrainingScenario,
   approval: Approval,
   video: VideoPlayer,
+  comparison: Comparison,
 }

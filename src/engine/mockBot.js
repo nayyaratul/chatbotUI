@@ -147,6 +147,27 @@ registerRule({
   build: () => ({ type: 'approval', payload: getVariantPayload('approval', 'bgv') }),
 })
 
+// ─── Comparison — candidate match default ────────────────────────
+// Trigger: "comparison", "side by side", "match", "vs", "compare"
+registerRule({
+  match: /^(comparison|side[- ]?by[- ]?side|compare|vs|match)$/i,
+  build: () => ({ type: 'comparison', payload: getVariantPayload('comparison', 'candidate_match') }),
+})
+
+// ─── Comparison — skills gap variant ─────────────────────────────
+// Trigger: "skills gap", "gap analysis", "training gap"
+registerRule({
+  match: /^(skills? gap|gap analysis|training gap|skills? analysis)$/i,
+  build: () => ({ type: 'comparison', payload: getVariantPayload('comparison', 'skills_gap') }),
+})
+
+// ─── Comparison — QC spec variant ────────────────────────────────
+// Trigger: "qc spec", "spec check", "spec comparison"
+registerRule({
+  match: /^(qc spec( check)?|spec (check|comparison|audit)|submitted vs expected)$/i,
+  build: () => ({ type: 'comparison', payload: getVariantPayload('comparison', 'qc_spec') }),
+})
+
 // ─── Training Scenario — pre-practice brief ───────────────────────
 // Trigger: "training", "scenario", "practice", "role play", "brief"
 registerRule({
