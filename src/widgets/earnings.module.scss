@@ -106,9 +106,14 @@
   overflow: hidden;   /* clips the sheen — parks off-canvas invisibly. */
   display: flex;
   flex-direction: column;
-  gap: var(--space-150);    /* bumped from 100 so the three rows read as
-                               distinct zones, not a cramped stack. */
-  padding: var(--space-200) var(--space-175);
+  gap: var(--space-200);    /* 16px — three rows read as distinct zones. */
+  padding: var(--space-250);  /* 20px symmetric — generous breathing room
+                                 inside the tinted verdict panel. Note
+                                 `space-175` is NOT a Nexus token; the
+                                 prior horizontal padding was silently
+                                 collapsing to 0. Nexus scale is 100 (8px),
+                                 125 (10), 150 (12), 200 (16), 250 (20),
+                                 300 (24)… no 175. */
   border-radius: var(--radius-150);
   background: color-mix(in srgb, var(--tone-color) 8%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--tone-color) 22%, transparent);
