@@ -6,6 +6,8 @@ import {
   Pause,
   Maximize,
   CircleCheck,
+  ChevronDown,
+  Check,
 } from 'lucide-react'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './videoPlayer.module.scss'
@@ -69,6 +71,9 @@ export function VideoPlayer({ payload }) {
   const [maxWatched, setMaxWatched] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [completed, setCompleted] = useState(false)
+  const [speedMenuOpen, setSpeedMenuOpen] = useState(false)
+
+  const speedMenuRef = useRef(null)
 
   const { onReply } = useChatActions()
 
@@ -162,7 +167,26 @@ export function VideoPlayer({ payload }) {
     if (!vid) return
     vid.playbackRate = speed
     setPlaybackSpeed(speed)
+    setSpeedMenuOpen(false)
   }, [])
+
+  /* Close the speed dropdown on outside click + Escape. */
+  useEffect(() => {
+    if (!speedMenuOpen) return
+    function onDown(e) {
+      const node = speedMenuRef.current
+      if (node && !node.contains(e.target)) setSpeedMenuOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setSpeedMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [speedMenuOpen])
 
   const requestFullscreen = useCallback(() => {
     const vid = videoRef.current
@@ -291,22 +315,52 @@ export function VideoPlayer({ payload }) {
         {isEnforced ? (
           <span className={styles.speedLock} aria-label="Speed locked at 1×">1×</span>
         ) : (
-          <span className={styles.speedGroup} role="radiogroup" aria-label="Playback speed">
-            {playback_speeds.map((speed) => (
-              <button
-                key={speed}
-                type="button"
-                role="radio"
-                aria-checked={speed === playbackSpeed}
+          <span className={styles.speedMenuWrap} ref={speedMenuRef}>
+            <button
+              type="button"
+              className={styles.speedTrigger}
+              aria-haspopup="menu"
+              aria-expanded={speedMenuOpen}
+              aria-label={`Playback speed, currently ${playbackSpeed}×`}
+              onClick={() => setSpeedMenuOpen((o) => !o)}
+            >
+              <span className={styles.speedTriggerValue}>{playbackSpeed}×</span>
+              <ChevronDown
+                size={14}
+                strokeWidth={2}
+                aria-hidden
                 className={cx(
-                  styles.speedButton,
-                  speed === playbackSpeed && styles.speedButton_active,
+                  styles.speedTriggerChevron,
+                  speedMenuOpen && styles.speedTriggerChevron_open,
                 )}
-                onClick={() => setSpeed(speed)}
-              >
-                {speed}×
-              </button>
-            ))}
+              />
+            </button>
+            {speedMenuOpen && (
+              <ul className={styles.speedMenu} role="menu" aria-label="Playback speed">
+                {playback_speeds.map((speed) => {
+                  const active = speed === playbackSpeed
+                  return (
+                    <li key={speed} role="none">
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={active}
+                        className={cx(
+                          styles.speedMenuItem,
+                          active && styles.speedMenuItem_active,
+                        )}
+                        onClick={() => setSpeed(speed)}
+                      >
+                        <span className={styles.speedMenuCheck} aria-hidden>
+                          {active && <Check size={14} strokeWidth={2} />}
+                        </span>
+                        <span>{speed}×</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </span>
         )}
         <button

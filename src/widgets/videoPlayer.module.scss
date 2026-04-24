@@ -16,7 +16,10 @@
   gap: var(--space-150);
   padding: var(--space-200);
   width: 100%;
-  min-height: 24rem;  /* §4 mid-density floor */
+  /* No §4 floor: the widget's regions (header, 16:9 media, controls,
+     progress bar) have no state-transition height jumps — playing /
+     paused / completed all share identical layout. A min-height
+     produces visible bottom padding on narrow viewports. */
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -355,8 +358,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-125);
-  flex-wrap: wrap;  /* wrap to a second line at narrow widths; no icon-only chrome */
-  min-width: 0;
+  min-width: 0;  /* children can shrink rather than forcing overflow */
+  /* Single line always — speed picker collapses to a dropdown button
+     so the row fits even at narrow widget-slot widths. */
 }
 
 .playButton {
@@ -396,18 +400,24 @@
 
 .controlsSpacer { flex: 1; }
 
-.speedGroup {
+/* Speed picker — dropdown. The collapsed trigger shows the current
+   speed and a chevron; clicking opens a small popover above the
+   controls row with the available speeds. Mirrors YouTube / Vimeo
+   speed control, sized down to the family type scale. */
+.speedMenuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.speedTrigger {
   display: inline-flex;
   align-items: center;
   gap: var(--space-025);
-}
-
-.speedButton {
   padding: var(--space-025) var(--space-075);
   border-radius: var(--radius-100);
   border: var(--border-width-100) solid transparent;
   background: transparent;
-  color: var(--grey-60);
+  color: var(--grey-70);
 
   font-family: inherit;
   font-size: var(--font-size-100);
@@ -422,17 +432,93 @@
     border-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.speedButton:hover { color: var(--grey-90); }
+.speedTrigger:hover {
+  background: color-mix(in srgb, var(--grey-10) 60%, var(--white));
+  color: var(--grey-90);
+}
 
-.speedButton:focus-visible {
+.speedTrigger:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
   outline-offset: var(--size-02);
 }
 
-.speedButton_active {
-  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
-  border-color: color-mix(in srgb, var(--brand-60) 22%, transparent);
+.speedTriggerValue { line-height: 1; }
+
+.speedTriggerChevron {
+  color: var(--grey-50);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.speedTriggerChevron_open { transform: rotate(180deg); }
+
+.speedMenu {
+  position: absolute;
+  bottom: calc(100% + var(--space-075));
+  right: 0;
+  min-width: var(--size-72);
+  list-style: none;
+  margin: 0;
+  padding: var(--space-050);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  box-shadow: var(--shadow-200);
+  z-index: 2;
+
+  animation: vplSpeedMenuIn 180ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes vplSpeedMenuIn {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+.speedMenuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-075);
+  width: 100%;
+  padding: var(--space-050) var(--space-075);
+  border-radius: var(--radius-100);
+  border: none;
+  background: transparent;
+  color: var(--grey-80);
+
+  font-family: inherit;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.speedMenuItem:hover {
+  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
+  color: var(--grey-90);
+}
+
+.speedMenuItem:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: calc(-1 * var(--border-width-200));
+}
+
+.speedMenuItem_active {
   color: var(--brand-60);
+}
+
+.speedMenuCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-16);
+  height: var(--size-16);
+  color: var(--brand-60);
+  flex: 0 0 auto;
 }
 
 .speedLock {
