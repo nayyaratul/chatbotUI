@@ -494,9 +494,8 @@
 
 .actionBar {
   display: flex;
+  align-items: stretch;
   gap: var(--space-100);
-  flex-wrap: wrap;
-  justify-content: flex-end;
 
   transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -507,10 +506,14 @@
 }
 
 /* Marker class for the .actionBar_locked sibling-fade selector + for
-   the per-action tone override below. Layout (flex, gap, icon
-   alignment) is handled by Nexus Button internally via iconLeft — do
-   not re-apply flex here or it fights the Button's own .button rules. */
-.actionButton {}
+   the per-action tone override below. Nexus Button's internal layout
+   (icon-slot alignment, label alignment) is left alone — only the
+   outer sizing is set here so Reject + Approve split the row 50/50.
+   Pattern mirrors JobCard's .dismissBtn / .primaryBtn. */
+.actionButton {
+  flex: 1 1 0;
+  min-width: 0;
+}
 
 /* Reject tone — secondary button whose tokens locally tilt error */
 .actionButton_reject {
