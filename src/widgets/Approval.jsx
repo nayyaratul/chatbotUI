@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import cx from 'classnames'
 import {
   ShieldCheck,
   MessagesSquare,
   ScanSearch,
   HandCoins,
+  ChevronRight,
+  Check,
+  X as XIcon,
 } from 'lucide-react'
 import styles from './approval.module.scss'
 
@@ -72,6 +75,141 @@ function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = n
   )
 }
 
+/* ─── Evidence body renderers ───────────────────────────────────────
+   One helper per kind. EvidenceBody dispatches to the right one.
+   All sit above Approval so they close over styles but not widget state. */
+
+function EvidenceBodyDocument({ body }) {
+  return (
+    <div className={styles.evDocument}>
+      <div className={styles.evDocThumb} aria-hidden>
+        {body?.thumbnail_url ? (
+          <img src={body.thumbnail_url} alt="" />
+        ) : (
+          <span className={styles.evDocThumbEmpty}>
+            {(body?.name ?? 'doc').slice(0, 2).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <div className={styles.evDocText}>
+        <p className={styles.evDocName}>{body?.name}</p>
+        {body?.subtitle && <p className={styles.evDocSubtitle}>{body.subtitle}</p>}
+      </div>
+    </div>
+  )
+}
+
+function EvidenceBodyScore({ body }) {
+  const rows = body?.rows ?? []
+  return (
+    <ul className={styles.evScoreList}>
+      {rows.map((row, i) => {
+        const v = Math.max(0, Math.min(1, row.value ?? 0))
+        const band = v >= 0.85 ? 'strong' : v >= 0.6 ? 'okay' : 'weak'
+        return (
+          <li key={i} className={styles.evScoreRow}>
+            <span className={styles.evScoreLabel}>{row.label}</span>
+            <span className={styles.evScoreTrack}>
+              <span
+                className={cx(styles.evScoreFill, styles[`evScoreFill_${band}`])}
+                style={{ width: `${Math.round(v * 100)}%` }}
+              />
+            </span>
+            <span className={styles.evScoreValue}>{Math.round(v * 100)}%</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function EvidenceBodyTranscript({ body }) {
+  const excerpts = body?.excerpts ?? []
+  return (
+    <ul className={styles.evTranscriptList}>
+      {excerpts.map((x, i) => (
+        <li key={i} className={styles.evTranscriptRow}>
+          <span className={styles.evTranscriptTime}>{x.timestamp}</span>
+          <p className={styles.evTranscriptText}>{x.text}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function EvidenceBodyCriteria({ body }) {
+  const items = body?.items ?? []
+  return (
+    <ul className={styles.evCriteriaGrid}>
+      {items.map((it, i) => (
+        <li
+          key={i}
+          className={cx(
+            styles.evCriteriaChip,
+            it.pass ? styles.evCriteriaChip_pass : styles.evCriteriaChip_fail,
+          )}
+        >
+          {it.pass ? <Check size={14} strokeWidth={2} /> : <XIcon size={14} strokeWidth={2} />}
+          <span>{it.label}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function EvidenceBodyCompensation({ body }) {
+  const rows = body?.rows ?? []
+  return (
+    <ul className={styles.evCompList}>
+      {rows.map((row, i) => (
+        <li key={i} className={styles.evCompRow}>
+          <span className={styles.evCompLabel}>{row.label}</span>
+          <span className={styles.evCompValue}>{row.value}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function EvidenceBody({ kind, body }) {
+  switch (kind) {
+    case 'document':      return <EvidenceBodyDocument body={body} />
+    case 'score':         return <EvidenceBodyScore body={body} />
+    case 'transcript':    return <EvidenceBodyTranscript body={body} />
+    case 'criteria':      return <EvidenceBodyCriteria body={body} />
+    case 'compensation':  return <EvidenceBodyCompensation body={body} />
+    default:
+      if (import.meta.env.DEV) {
+        console.warn(`[Approval] unsupported evidence kind: ${kind}`)
+      }
+      return <p className={styles.evUnknown}>Unsupported evidence kind.</p>
+  }
+}
+
+function EvidencePanel({ item, open, committed, onToggle }) {
+  return (
+    <li className={cx(styles.evPanel, open && styles.evPanel_open, committed && styles.evPanel_done)}>
+      <button
+        type="button"
+        className={styles.evHeader}
+        onClick={() => onToggle(item.id)}
+        aria-expanded={open}
+      >
+        <span className={styles.evChevron} aria-hidden>
+          <ChevronRight size={16} strokeWidth={2} />
+        </span>
+        <span className={styles.evLabel}>{item.label}</span>
+        {item.meta && <span className={styles.evMeta}>{item.meta}</span>}
+      </button>
+      {open && (
+        <div className={styles.evBody}>
+          <EvidenceBody kind={item.kind} body={item.body} />
+        </div>
+      )}
+    </li>
+  )
+}
+
 const VARIANT_ICONS = {
   bgv: ShieldCheck,
   interview: MessagesSquare,
@@ -86,10 +224,17 @@ const TONE_CLASS = {
 }
 
 export function Approval({ payload }) {
-  const { variant = 'bgv', summary, recommendation, reasoning } = payload ?? {}
+  const { variant = 'bgv', summary, recommendation, reasoning, evidence = [] } = payload ?? {}
   const Icon = VARIANT_ICONS[variant] ?? ShieldCheck
 
   const toneClass = TONE_CLASS[recommendation?.tone] ?? null
+
+  const [openPanelId, setOpenPanelId] = useState(null)
+
+  const togglePanel = useCallback(
+    (id) => setOpenPanelId((prev) => (prev === id ? null : id)),
+    [],
+  )
 
   return (
     <div className={cx(styles.card, toneClass && styles[toneClass])}>
@@ -115,7 +260,20 @@ export function Approval({ payload }) {
           {reasoning}
         </blockquote>
       )}
-      {/* Accordion + action bar follow in later tasks */}
+      {evidence.length > 0 && (
+        <ul className={styles.evidenceList}>
+          {evidence.map((item) => (
+            <EvidencePanel
+              key={item.id}
+              item={item}
+              open={openPanelId === item.id}
+              committed={false}
+              onToggle={togglePanel}
+            />
+          ))}
+        </ul>
+      )}
+      {/* Action bar follows in Task 6 */}
     </div>
   )
 }
