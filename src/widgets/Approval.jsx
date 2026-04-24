@@ -43,9 +43,17 @@ const VERDICT_LABEL_DONE = {
 /* r=18 fits inside the 44×44 viewBox with gutter for the 3px stroke. */
 const ARC_CIRCUMFERENCE = 2 * Math.PI * 18
 
+const VERDICT_GLYPH = {
+  approve:    Check,
+  reject:     XIcon,
+  borderline: CircleHelp,
+}
+
 function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = null }) {
   const target = committed ? 1 : (confidence ?? 0)
   const [swept, setSwept] = useState(false)
+  const wasCommittedRef = useRef(committed)
+  const [morphing, setMorphing] = useState(false)
 
   // mount-only — Studio variant switches remount the widget, so no re-trigger needed here.
   useEffect(() => {
@@ -53,14 +61,29 @@ function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = n
     return () => cancelAnimationFrame(raf)
   }, [])
 
+  // Tone morph: when committed flips from false → true, run a short
+  // "through-neutral" animation on the fill stroke, timed to the
+  // success-banner's 280ms spring-in so the two feel like one motion.
+  useEffect(() => {
+    if (!wasCommittedRef.current && committed) {
+      setMorphing(true)
+      const t = setTimeout(() => setMorphing(false), 320)
+      wasCommittedRef.current = committed
+      return () => clearTimeout(t)
+    }
+    wasCommittedRef.current = committed
+  }, [committed])
+
   const dashOffset =
     ARC_CIRCUMFERENCE * (1 - (swept ? Math.max(0, Math.min(1, target)) : 0))
   const labelWord = committed
     ? (VERDICT_LABEL_DONE[decisionKey] ?? VERDICT_LABEL[verdict] ?? '')
     : (VERDICT_LABEL[verdict] ?? '')
 
+  const Glyph = !committed ? VERDICT_GLYPH[verdict] : null
+
   return (
-    <div className={styles.arcWrap}>
+    <div className={cx(styles.arcWrap, swept && styles.arcWrap_ready)}>
       <svg
         className={styles.arcSvg}
         viewBox="0 0 44 44"
@@ -69,14 +92,19 @@ function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = n
       >
         <circle className={styles.arcTrack} cx="22" cy="22" r="18" />
         <circle
-          className={styles.arcFill}
+          className={cx(styles.arcFill, morphing && styles.arcFill_morphing)}
           cx="22"
           cy="22"
           r="18"
           style={{ strokeDasharray: ARC_CIRCUMFERENCE, strokeDashoffset: dashOffset }}
         />
       </svg>
-      <span className={styles.arcVerdict}>{labelWord}</span>
+      <span className={styles.arcVerdict}>
+        {Glyph && (
+          <Glyph size={12} strokeWidth={2} className={styles.arcVerdictGlyph} aria-hidden />
+        )}
+        <span className={styles.arcVerdictWord}>{labelWord}</span>
+      </span>
     </div>
   )
 }
@@ -285,6 +313,10 @@ export function Approval({ payload }) {
   const [pending, setPending] = useState(null)   // null | 'reject' | 'more_info' | 'escalate'
   const [notes, setNotes] = useState('')
   const [decision, setDecision] = useState(null) // null | { action, notes, at }
+  // 'live' → action bar visible. 'exiting' → action bar slides out left
+  // while the committed banner has yet to appear. 'done' → banner visible.
+  // The exiting phase is ~180ms so it reads as a hand-off, not a pause.
+  const [phase, setPhase] = useState('live')
 
   // §9 tone: post-commit tracks the decision; pre-commit tracks the recommendation.
   const activeTone = decision
@@ -302,7 +334,10 @@ export function Approval({ payload }) {
   const commit = useCallback(
     (action, noteText = '') => {
       const decidedAt = new Date().toISOString()
-      setDecision({ action, notes: noteText, at: decidedAt })
+      // Start the action-bar exit first; swap to the banner one tick later
+      // so the two motions feel like one continuous hand-off (~180ms overlap
+      // with the arc's tone morph + banner spring-in).
+      setPhase('exiting')
       onReply({
         type: 'widget_response',
         payload: {
@@ -314,6 +349,10 @@ export function Approval({ payload }) {
           decided_at: decidedAt,
         },
       })
+      setTimeout(() => {
+        setDecision({ action, notes: noteText, at: decidedAt })
+        setPhase('done')
+      }, 180)
     },
     [onReply, case_id, payload?.widget_id],
   )
@@ -432,7 +471,7 @@ export function Approval({ payload }) {
         </ul>
       )}
       {!decision ? (
-        <div className={styles.actionRegion}>
+        <div className={cx(styles.actionRegion, phase === 'exiting' && styles.actionRegion_exiting)}>
           {pending && (
             <div className={styles.pendingPrompt}>
               <label className={styles.pendingLabel} htmlFor={`apv-notes-${payload?.widget_id}`}>
