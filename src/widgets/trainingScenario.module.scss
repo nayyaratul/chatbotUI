@@ -14,6 +14,7 @@
   gap: var(--space-150);
   padding: var(--space-200);
   width: 100%;
+  overflow: hidden;            /* so the dossier stripe :before is clipped to the radius */
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -30,6 +31,22 @@
   border-color: var(--grey-30);
   box-shadow: var(--shadow-100);
 }
+
+/* Dossier stripe — thin bar along the top edge. Signals "mission
+   brief" in pre mode (brand) and "after-action report" in post mode
+   (success). Flush with the border radius via card's overflow clip. */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--size-02);
+  background: var(--brand-60);
+  transition: background 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.card[data-mode="post"]::before { background: var(--color-text-success); }
 
 /* Per-mode floor. Pre mode is dense (context + role + persona +
    criteria + CTA); post mode is dense (score + breakdown + CTA). */
@@ -88,6 +105,7 @@
 /* ─── Mode pill — declares "brief" vs "results" context ─────────── */
 
 .modePill {
+  position: relative;
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -100,6 +118,19 @@
   line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Ghost-chip backdrop — a subtle stamped impression behind the pill,
+   amplifying the dossier aesthetic without adding chrome. */
+.modePill::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-025));
+  border-radius: var(--radius-full);
+  background: currentColor;
+  opacity: 0.06;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Pre = informational (brand); post = success (green). Both tones
@@ -144,7 +175,12 @@
   background: var(--grey-0);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-150);
+
+  animation: tsRowIn 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
+
+.briefCard:nth-of-type(1) { animation-delay: 60ms;  }
+.briefCard:nth-of-type(2) { animation-delay: 120ms; }
 
 .briefEyebrow {
   font-family: var(--sans);
@@ -191,7 +227,12 @@
   justify-content: center;
   border-radius: var(--radius-full);
 
-  background: color-mix(in srgb, var(--brand-60) 88%, var(--grey-90));
+  background:
+    linear-gradient(
+      135deg,
+      var(--brand-60) 0%,
+      color-mix(in srgb, var(--brand-60) 65%, var(--grey-90)) 100%
+    );
   color: var(--white);
 
   font-family: var(--sans);
@@ -270,7 +311,19 @@
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-150);
+
+  animation: tsRowIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
+
+/* Stagger cap at 8 per §11. After the 8th, rows appear together. */
+.criterionRow:nth-child(1) { animation-delay:  60ms; }
+.criterionRow:nth-child(2) { animation-delay: 120ms; }
+.criterionRow:nth-child(3) { animation-delay: 180ms; }
+.criterionRow:nth-child(4) { animation-delay: 240ms; }
+.criterionRow:nth-child(5) { animation-delay: 300ms; }
+.criterionRow:nth-child(6) { animation-delay: 360ms; }
+.criterionRow:nth-child(7) { animation-delay: 420ms; }
+.criterionRow:nth-child(8) { animation-delay: 480ms; }
 
 .criterionName {
   font-family: var(--sans);
@@ -370,7 +423,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-075);
+  animation: tsRowIn 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
+
+.scoreRow:nth-child(1) { animation-delay:  60ms; }
+.scoreRow:nth-child(2) { animation-delay: 120ms; }
+.scoreRow:nth-child(3) { animation-delay: 180ms; }
+.scoreRow:nth-child(4) { animation-delay: 240ms; }
+.scoreRow:nth-child(5) { animation-delay: 300ms; }
+.scoreRow:nth-child(6) { animation-delay: 360ms; }
+.scoreRow:nth-child(7) { animation-delay: 420ms; }
+.scoreRow:nth-child(8) { animation-delay: 480ms; }
 
 .scoreHead {
   display: flex;
@@ -414,7 +477,12 @@
   height: 100%;
   background: var(--brand-60);
   border-radius: var(--radius-full);
-  transition: width 360ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform-origin: left center;
+
+  /* Fill the bar from 0 → target width on mount. Runs alongside the
+     row rise-up so the number lands just as its bar arrives. */
+  animation: tsFillIn 720ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: 120ms;
 }
 
 .scoreBarFill_strong { background: var(--color-text-success); }
@@ -450,6 +518,11 @@
   width: var(--border-width-300);
   border-radius: var(--radius-full);
   background: var(--grey-30);
+
+  /* §8 decided-row spring — stripe scales up on mount using the
+     family springy curve. */
+  transform-origin: center;
+  animation: tsStripeSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
 }
 
 .scoreRow_strong .scoreFeedback::before { background: var(--color-text-success); }
@@ -534,6 +607,28 @@
 @keyframes tsRiseUp {
   from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
   to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* Per-row rise used by briefCard, criterionRow, scoreRow — smaller
+   offset than the card's own entry so rows feel like settling-in,
+   not a parade. */
+@keyframes tsRowIn {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* §8 ledger-stripe spring — scaleY(0.5) → scaleY(1) on the family
+   springy curve. Stripe announces itself, doesn't just appear. */
+@keyframes tsStripeSpring {
+  from { opacity: 0; transform: scaleY(0.5); }
+  to   { opacity: 1; transform: scaleY(1);   }
+}
+
+/* Linear fill bar grows from zero width. scaleX is cheaper to
+   animate than width and plays nice with the parent row's stagger. */
+@keyframes tsFillIn {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 @keyframes tsSuccessPop {
