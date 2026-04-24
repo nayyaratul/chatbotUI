@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   Check,
   X,
-  Eye,
+  ChevronRight,
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
@@ -54,7 +54,6 @@ const AVAILABILITY_LABEL = {
 const ACTION_GLYPH = {
   reject:      X,
   shortlist:   Check,
-  view_full:   Eye,
   update:      ArrowRight,
 }
 
@@ -162,10 +161,15 @@ export function Profile({ payload }) {
   const tone = score ? scoreTone(score.value, score.max ?? 100) : 'neutral'
 
   const handleAction = useCallback((action) => {
-    if (actedAt) return
+    /* `view_full` is navigational — fires widget_response (so the bot
+       can route to the full-profile view) but does NOT commit the
+       card to the terminal "Submitted" state, so the reviewer can
+       come back and still hit Reject / Shortlist. Only the two
+       decision actions commit. */
+    const isTerminal = action.id !== 'view_full'
+    if (isTerminal && actedAt) return
+
     const now = Date.now()
-    setActedAt(now)
-    setActedLabel(action.label)
     onReply?.({
       type: 'widget_response',
       payload: {
@@ -180,6 +184,11 @@ export function Profile({ payload }) {
         },
       },
     })
+
+    if (isTerminal) {
+      setActedAt(now)
+      setActedLabel(action.label)
+    }
   }, [actedAt, onReply, variant, widgetId, workerId])
 
   const totalSkillChips = visibleSkills.length + (skillOverflow > 0 ? 1 : 0)
@@ -249,7 +258,13 @@ export function Profile({ payload }) {
         </div>
       )}
 
-      {/* Footer — CTA / action bar / success banner. */}
+      {/* Footer — CTA / action bar / success banner.
+          Admin layout has two tiers:
+            (1) "View full profile" renders as a text link (JobCard's
+                "View details" pattern) — navigational, not terminal.
+            (2) Reject + Shortlist render as 50/50 buttons in a second
+                row — the two decision actions, tuned to read as a
+                balanced choice. */}
       {actedAt ? (
         <div className={styles.successBanner}>
           <span className={styles.successChip}>
@@ -261,17 +276,35 @@ export function Profile({ payload }) {
           </span>
         </div>
       ) : actions.length > 0 ? (
-        variant === 'admin' ? (
-          <div className={styles.actionBar}>
-            {actions.map((action) => (
-              <ActionButton
-                key={action.id}
-                action={action}
-                onClick={() => handleAction(action)}
-              />
-            ))}
-          </div>
-        ) : (
+        variant === 'admin' ? (() => {
+          const viewFullAction = actions.find((a) => a.id === 'view_full')
+          const decisionActions = actions.filter((a) => a.id !== 'view_full')
+          return (
+            <div className={styles.adminFooter}>
+              {viewFullAction && (
+                <button
+                  type="button"
+                  className={styles.viewFullLink}
+                  onClick={() => handleAction(viewFullAction)}
+                >
+                  {viewFullAction.label}
+                  <ChevronRight size={14} strokeWidth={2.25} aria-hidden="true" />
+                </button>
+              )}
+              {decisionActions.length > 0 && (
+                <div className={styles.actionBar}>
+                  {decisionActions.map((action) => (
+                    <ActionButton
+                      key={action.id}
+                      action={action}
+                      onClick={() => handleAction(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })() : (
           <Button
             variant={actions[0].intent === 'neutral' ? 'secondary' : 'primary'}
             size="md"
