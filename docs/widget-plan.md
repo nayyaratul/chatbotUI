@@ -18,11 +18,11 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 ## Status
 
-**21 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
+**22 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Video Player (#16) — landed in two passes, `e74350b` (Pass 2 review fix) on top of `f42262b` (Pass 2 elevation) on top of `4787844` (Pass 1 close).
+**Last shipped:** Comparison / Side-by-Side (#22) — landed in two passes, `4995cb3` (Pass 2 NIT cleanup) on top of `9de9d5a` (Pass 2 gutter-rail elevation) on top of `3e4befb` (Pass 1 close).
 
-**Pending:** 9 widgets — 1 P1 (Phase 1-2), 8 P2 (Phase 2+).
+**Pending:** 8 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
 
 ---
 
@@ -42,7 +42,7 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 18 | Score Card | `ScoreCard.jsx` | Overall + category breakdown; expandable reasoning |
 | 20 | QC Evidence Review | `QcEvidenceReview.jsx` (+ `EvidenceReview.jsx` worker-facing) | Bounding-box overlay is its signature moment |
 
-## Done — P1 / Phase 1–2 (10 / 11)
+## Done — P1 / Phase 1–2 (11 / 11)
 
 | # | Widget | File | Notes |
 |---|---|---|---|
@@ -54,14 +54,9 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 17 | Validated Input | `ValidatedInput.jsx` | Phone / email / Aadhaar / PAN / PIN / bank / custom; shake keyframe on error |
 | 19 | Carousel | `Carousel.jsx` | `data-widget-variant="wide"` opts the slot out of the 32rem cap (§3) |
 | 21 | Shift Calendar | `ShiftCalendar.jsx` | §6 segmented pills with hatched pattern for full-shift state |
+| 22 | Comparison / Side-by-Side | `Comparison.jsx` | Three variants (candidate_match / skills_gap / qc_spec); center gutter rail is the signature — each row's indicator chip springs in while a split-tint connector line draws outward (neutral grey left, `--status-tone` right) over a faint vertical spine. Tri-state match / partial / gap indicators per §7 tone vocabulary; §6 linear-fill summary pill lands 180ms after the final chip. Row-level single-open accordion for expandable notes (§9 pull-quote). |
 | 23 | Approval | `Approval.jsx` | Four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve 50/50 with Reject; destructive actions two-step with tone-striped inline notes. Eyebrow announces card type per variant |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
-
-## Pending — P1 / Phase 1–2 (0 / 1) — build next
-
-| # | Widget | Why it's up next | Signature-moment hint |
-|---|---|---|---|
-| 22 | Comparison / Side-by-Side | Explains job-match / skills-gap verdicts; reuses §9 tone system | Two-column layout with match indicators between columns (check / X / partial ~) |
 
 ## Pending — P2 / Phase 2+ (0 / 8)
 
