@@ -8,6 +8,12 @@
 
 ---
 
+### Iteration 2026-04-24 (evening)
+
+In-place reshape based on horizontal-space feedback. Criterion moves from a column to a row header — each criterion now renders as a vertical block with the criterion name as an eyebrow on top and a 3-part values row (`a_value · tone dot · b_value`) below. Status chip collapses to an icon-only tone dot (~`--size-20`) with a `border-width-300` left-edge tone stripe carrying the verdict peripherally; `status_copy` and the default-chip-copy table are removed. Dual-item band collapses to a single inline row (icon + name, both parties on one line, no eyebrow labels). Column-header row removed. Alternating-row tint removed. Everything else — variants, header, summary pill, CTA, success banner, note accordion, motion curves, registration, §18 anti-patterns — holds unchanged.
+
+---
+
 ## Purpose
 
 An admin / worker-facing display card that explains a verdict by placing two items side-by-side with semantic, per-criterion status. Covers the same three use cases as v1:
@@ -16,7 +22,7 @@ An admin / worker-facing display card that explains a verdict by placing two ite
 - **skills_gap** — current skills vs target level (training gap analysis).
 - **qc_spec** — submitted value vs expected specification (QC, text-based only).
 
-The v2 shape leads with **pairing clarity**: each item gets its own iconified header band, and every row lays out as a table (`Criterion · a_value · status chip · b_value`) with explicit column headers so the reader never has to infer which value belongs to which item. The status chip carries short copy ("Exceeds by 6mo", "Close match", "Missing") rather than a bare icon — the verdict is stated, not decoded.
+The v2 shape leads with **pairing clarity**: criterion is a row header (eyebrow on top of each block), and values sit below it as `a_value · tone dot · b_value`. A `border-width-300` left-edge tone stripe on each criterion block provides a peripheral verdict signal. The tone dot (icon-only, ~`--size-20`) replaces the pill-shaped status chip; the verdict is signaled by color + glyph alone, with semantic detail available in the optional `note`.
 
 ## Variants
 
@@ -50,7 +56,6 @@ Default variant for the mock-bot trigger stays `candidate_match`.
       a_value: string,                        // '3 yrs'
       b_value: string,                        // '2+ yrs'
       status: 'match' | 'gap' | 'partial',
-      status_copy?: string,                   // optional — overrides the default chip label
       note?: string,                          // optional — expandable detail
     },
   ],
@@ -61,15 +66,7 @@ Default variant for the mock-bot trigger stays `candidate_match`.
 }
 ```
 
-**Default status-chip copy** (used when `status_copy` is omitted):
-
-| status | default copy |
-|---|---|
-| `match` | "Matches" |
-| `partial` | "Close match" |
-| `gap` | "Missing" |
-
-Variant-specific payload builders supply richer copy in the mock fixtures (e.g., "Exceeds by 6mo" for experience overshoots, "No 2W licence" for a gap) so the Studio demo reads well.
+Variant-specific payload builders supply descriptive values in the mock fixtures (e.g., `a_value: "3 yrs"`, `b_value: "2+ yrs"`) so the Studio demo reads well. The verdict is communicated by the tone dot glyph + left stripe; `status_copy` is not part of the schema.
 
 Criteria cap is still **8** per §11 stagger rule.
 
@@ -80,18 +77,21 @@ Criteria cap is still **8** per §11 stagger rule.
 │  [icon]  Match for Shipping Assistant                        │   §2 header
 │          3 of 4 criteria met                                 │
 │                                                              │
-│  ┌──────────────────────────┬──────────────────────────┐    │   dual-item band
-│  │ [User]  CANDIDATE        │ [Briefcase] ROLE NEEDS   │    │   2-col, equal-width
-│  │         Ravi Kumar       │             Shipping A.  │    │
-│  └──────────────────────────┴──────────────────────────┘    │
+│  [User] Ravi Kumar  ·  [Briefcase] Shipping Assistant        │   dual-item band
+│                                                              │   single inline row
+│  ▌ EXPERIENCE                                                │   criterion block
+│  ▌ 3 yrs              [✓]              2+ yrs                │   ← left stripe (tone)
 │                                                              │
-│  CRITERION   YOU        MATCH               ROLE NEEDS       │   §12 eyebrow header
-│  ──────────────────────────────────────────────────────      │
-│  Experience  3 yrs      [✓ Exceeds by 6mo]  2+ yrs           │   data rows
-│  Languages   Hi, En     [~ Close match]     Hi + regional    │   (alternating tint)
-│  Shift       Evening    [✓ Matches]         Evening          │
-│  Own vehicle No         [✗ No 2W]           Yes (2-wheeler)  │
+│  ▌ LANGUAGES                                                 │   criterion block
+│  ▌ Hi, En             [~]              Hi + regional         │
 │                                                              │
+│  ▌ SHIFT                                                     │   criterion block
+│  ▌ Evening            [✓]              Evening               │
+│                                                              │
+│  ▌ OWN VEHICLE                                               │   criterion block
+│  ▌ No                 [✗]              Yes (2-wheeler)       │
+│                                                              │   ▌ = border-width-300
+│                                                              │     left-edge tone stripe
 │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │   summary pill
 │  OVERALL MATCH · 3 of 4 criteria met                         │
 │                                                              │
@@ -105,49 +105,49 @@ Criteria cap is still **8** per §11 stagger rule.
 
 **Dual-item band.**
 
-- 2-column grid, equal widths, inside a rounded container with `grey-10` border.
-- Each cell: variant-specific Lucide icon (size 16, strokeWidth 2) + eyebrow label + subtitle.
-- Cells share the same neutral `grey-10 @ 35%` tint so neither item feels "favored" — identity comes from the icon and the explicit column header below, not from color.
-- Internal divider between the two cells: `border-width-100` in `grey-10`.
-- Eyebrow label uses §12 eyebrow: `font-size-100` / semibold / `letter-spacing-wide` / uppercase / `grey-50`.
-- Subtitle uses `font-size-200` / regular / `grey-90`.
+- Single inline row (one line, no 2-column grid), full width.
+- Left part: brand-tinted pod — variant-specific Lucide icon (size 16, strokeWidth 2) + `item_a.subtitle` (e.g., "Ravi Kumar").
+- Right part: grey-tinted pod — variant-specific Lucide icon (size 16, strokeWidth 2) + `item_b.subtitle` (e.g., "Shipping Assistant").
+- Parts separated by a `·` mid-dot glyph in `grey-30`.
+- Left pod uses `brand-60 @ 12%` background tint; right pod uses `grey-10 @ 35%` — preserving the Pass-2 left-brand / right-neutral tint distinction.
+- Eyebrow labels (`CANDIDATE` / `ROLE NEEDS`) are dropped — icon + name carries the identity.
+- Each pod: `font-size-200` / `font-weight-medium` / `grey-90`.
 
-**Column-header row.**
+**Criteria grid (vertical stack).**
 
-- Four labels in §12 eyebrow style: `CRITERION · YOU · MATCH · ROLE NEEDS`.
-- Grid columns match the criteria grid below exactly (`minmax(6rem, 1.5fr) minmax(0, 1fr) auto minmax(0, 1fr)`) so headers sit over the correct data column.
-- Uses the same column gap as the criteria grid.
-- Bottom hairline `border-width-100 / grey-10` separates headers from data.
+- Vertical stack of per-criterion blocks (CSS flex-column or plain `display: block`). No 4-column grid. No alternating tint.
+- Each criterion block is a `<div>` (or `<button>` if the row has a `note`).
+- `border-bottom: border-width-100 solid grey-10` between blocks.
+- Card shell has `overflow: hidden` + `radius-150` on the stack container.
 
-**Criteria grid.**
+**Per-row left-edge tone stripe.**
 
-- 4-column CSS grid: `Criterion | a_value | chip | b_value`.
-- `grid-template-columns: minmax(6rem, 1.5fr) minmax(0, 1fr) auto minmax(0, 1fr);`
-- Column gap: `var(--space-125)`.
-- Row gap: 0 (rows bleed edge-to-edge for the alternating tint).
-- Card shell has `overflow: hidden` on the grid + `radius-150` for clean corners.
-- `border: border-width-100 solid grey-10` around the grid.
-- Alternating tint via an explicit `.criterionRow_tinted` class on odd-indexed rows (the v1 lesson — `:nth-of-type(even)` misfires under mixed `<button>`/`<div>` row tags).
+- A `border-left: var(--border-width-300) solid var(--status-tone)` on each criterion block (§8 ledger-stripe pattern, same as Checklist's decided rows).
+- `--status-tone` is set per-block: `--color-text-success` (match) / `--yellow-60` (partial) / `--color-text-error` (gap).
+- Provides a peripheral verdict signal that lets the tone dot stay quiet (icon-only, no copy).
+- Left padding on block content increased to `space-200` to clear the stripe.
 
-**Row contents.**
+**Row contents (per criterion block).**
 
-- **Criterion cell** (column 1): `name` in `font-size-200` / `font-weight-medium` / `grey-80`.
-- **a_value cell** (column 2): `a_value` in `font-size-200` / `grey-90` / regular.
-- **Chip cell** (column 3): the status chip (see below). Centered vertically.
-- **b_value cell** (column 4): `b_value` in `font-size-200` / `grey-90` / regular, right-aligned.
+- **Block top (criterion header):** `name` rendered as a §12 eyebrow — `font-size-100` / semibold / `letter-spacing-wide` / uppercase / `grey-60`. Full width inside the block.
+- **Block bottom (values row):** three inline parts, space-between:
+  - `a_value` — `font-size-200` / `grey-90` / regular, left-aligned.
+  - Tone dot — the circular chip centered between the two values (serves as the separator; no additional `·` glyph needed).
+  - `b_value` — `font-size-200` / `grey-90` / regular, right-aligned.
 
-**Status chip.**
+**Tone dot (replaces status chip).**
 
-- §7 chip geometry: pill (`radius-500`), inner padding `space-025` × `space-100`, `border-width-100` at 24% tone, background at 10% tone, text in tone color.
-- Content: tiny Lucide glyph (`size={12}`, `strokeWidth={2.25}`) + short copy (≤14 chars recommended, 18 max).
-- `font-size-100` / semibold / `letter-spacing-wide` / uppercase. Copy naturally compact in the reference ("Exceeds by 6mo", "Close match", "Missing").
-- Tone driven by `--status-tone` on the row (`--color-text-success` / `--yellow-60` / `--color-text-error`).
-- Center-aligned in its column; cell has `justify-content: center`.
+- Circle only — no pill, no padding, no border, no copy.
+- Size: ~`--size-20` (or `--size-24` if the glyph reads small).
+- Background: `--status-tone @ 12%`. Border: none. Shape: `border-radius: 9999px`.
+- Content: a single Lucide glyph (`size={12}`, `strokeWidth={2.25}`) in `--status-tone`.
+- Tone driven by `--status-tone` on the block (same variable as the left stripe).
+- Centered vertically in the values row.
 
 **Expandable note.**
 
-- Unchanged from v1. Rows with a `note` render as `<button>`; tapping toggles a collapsed detail region below the row with §9 pull-quote styling (tone-colored left bar, italic `grey-80` body). Single-open accordion.
-- The expanded note spans all 4 columns (`grid-column: 1 / -1`).
+- Unchanged from v1. Blocks with a `note` render as `<button>`; tapping toggles a collapsed detail region below the values row with §9 pull-quote styling (tone-colored left bar, italic `grey-80` body). Single-open accordion.
+- The expanded note is full-width inside the block (no column span needed — block is a vertical stack, not a grid row).
 
 **Summary pill.** Unchanged from v1 — §6 linear-fill tinted to overall-tone with width driven by weighted match ratio.
 
@@ -159,11 +159,11 @@ Criteria cap is still **8** per §11 stagger rule.
 
 Three states — same set as v1. Motion rhythm re-tuned for the new shape:
 
-1. **Idle (on mount).** Card `cmpRiseUp` (§16 entry, 320ms). Dual-item band rises first (60ms delay). Column-header row at 120ms. Criteria rows stagger at 60ms each (cap 8). On each row the status chip **springs in last** — its own `cmpChipPop` keyframe on §16 springy, delayed 120ms after the row cells settle. The chip is the new signature moment: the table lays down, then each verdict lands. Summary pill fills after the last chip settles via the same `--cmp-summary-delay` pattern Pass 1 v1 already established.
+1. **Idle (on mount).** Card `cmpRiseUp` (§16 entry, 320ms). Dual-item band rises first (60ms delay). Criterion blocks stagger in at 60ms steps each (cap 8). On each criterion block the tone dot **springs in last** — its own `cmpToneDotPop` keyframe on §16 springy, delayed 120ms after the block settles. The tone dot is the signature moment: the blocks lay down, then each verdict color lands. Summary pill fills after the last tone dot settles via the same `--cmp-summary-delay` pattern Pass 1 v1 already established.
 2. **Row-expanded.** Unchanged.
 3. **Acted (terminal).** Unchanged.
 
-Reduced-motion collapses stagger + chip pop to instant reveal.
+Reduced-motion collapses stagger + tone-dot pop to instant reveal.
 
 ## Interactions
 
@@ -178,10 +178,9 @@ Reduced-motion collapses stagger + chip pop to instant reveal.
 |---|---|---|
 | Card entry (`cmpRiseUp`) | `cubic-bezier(0.18, 0.9, 0.28, 1.04)` | 320ms |
 | Dual-item band entry | same | 280ms |
-| Column-header row entry | same | 240ms |
-| Row stagger entry | same | 60ms step, cap 8 |
-| Status chip pop | `cubic-bezier(0.18, 0.9, 0.28, 1.4)` | 280ms, delayed 120ms after row |
-| Summary pill fill | `cubic-bezier(0.18, 0.9, 0.28, 1.04)` | 540ms, delayed to land after last chip |
+| Criterion block stagger entry | same | 60ms step, cap 8 |
+| Tone-dot pop (`cmpToneDotPop`) | `cubic-bezier(0.18, 0.9, 0.28, 1.4)` | 280ms, delayed 120ms after block |
+| Summary pill fill | `cubic-bezier(0.18, 0.9, 0.28, 1.04)` | 540ms, delayed to land after last tone-dot |
 | Row-expand height / note opacity | `cubic-bezier(0.2, 0.8, 0.3, 1)` | 220ms |
 | Success banner replace | `cubic-bezier(0.18, 0.9, 0.28, 1.4)` | 280ms |
 
@@ -189,11 +188,11 @@ Only the three §16 curves. No `transition: all`.
 
 ## Registration (§17 five touchpoints)
 
-All five stay the same — only the payload builder updates to include `status_copy` in the mock fixtures.
+All five stay the same — the payload builder updates to use descriptive `a_value` / `b_value` strings in mock fixtures; `status_copy` is removed from the schema.
 
 1. `src/widgets/Comparison.jsx` + `src/widgets/comparison.module.scss`.
 2. `src/chat/registry.js` — `comparison: Comparison`. Unchanged.
-3. `src/engine/widgetSchemas.js` — `buildComparisonPayload(variant)` updated with `status_copy` + icon-aware fixtures. Schema entry unchanged.
+3. `src/engine/widgetSchemas.js` — `buildComparisonPayload(variant)` updated with icon-aware fixtures (no `status_copy`). Schema entry unchanged.
 4. `src/engine/mockBot.js` — unchanged.
 5. `src/studio/WidgetPalette.jsx` — unchanged.
 
@@ -203,18 +202,19 @@ All 17 items still in force. Same checklist as v1.
 
 ## Scope guard
 
-The **status chip with copy** is the v2 signature — the pairing clarity comes from the table structure, not from a decorative primitive. Pass 2 (`/frontend-design`) is permitted to elevate:
+The **criterion-as-row-header + tone-dot + left-stripe** is the v2.1 signature — pairing clarity comes from the stacked block structure and the peripheral tone stripe, not from a pill chip with copy. Pass 2 (`/frontend-design`) is permitted to elevate:
 
-1. **Dual-item band identity** — e.g., a subtle icon backdrop, a faint vertical divider that animates on mount, a gentle hover lift on each cell. The band's job is to make the pair legible; elevation here should reinforce that, not add a motif.
-2. **Status chip entry** — the springy pop is already in Pass 1; Pass 2 may refine timing, add a tone-specific settle (e.g., `match` chips getting a subtle inner glow on land), or adjust the glyph→label rhythm so the chip reads as one beat.
-3. **Summary pill fill** — same scope as v1 (tone-shift near end, "score tally" cue).
+1. **Dual-item band identity** — e.g., a subtle icon backdrop, a gentle hover lift on each pod. The band's job is to make the pair legible on one line; elevation here should reinforce that, not add a motif.
+2. **Tone-dot entry** — the springy pop is already in Pass 1; Pass 2 may refine timing, add a tone-specific settle (e.g., `match` dots getting a subtle inner glow on land), or adjust the pop curve so the dot reads as a decisive beat.
+3. **Left-edge tone stripe** — may animate in (grow from 0 height) as part of the block stagger; keep it subtle.
+4. **Summary pill fill** — same scope as v1 (tone-shift near end, "score tally" cue).
 
 Pass 2 is **not** permitted to:
 
 - Bring back the gutter rail. The whole reason v1 was redirected was that the between-column rail wasn't doing its job. Do not re-introduce it under any name.
 - Introduce a second new primitive (e.g., a candidate avatar composite, a trend sparkline, a score ring).
 - Override §1 / §3 / §12 / §13 / §16 / §17 / §18.
-- Replace the status-chip copy with numeric scores / percentages.
+- Replace the tone dot with a pill chip carrying copy. The tone dot (icon-only, ~`--size-20`) is the final shape — do not re-introduce the chip-as-pill shape with copy. The verdict is color + glyph; copy belongs in the optional `note`.
 - Turn the widget "wide".
 - Use brand-60 for per-row tone — brand-60 remains reserved for the header badge + primary CTA only.
 
