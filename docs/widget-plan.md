@@ -18,11 +18,11 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 ## Status
 
-**19 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
+**20 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Training Scenario (#24) — landed in two passes, `132f36c` (polish) on top of `9d4f968` (base).
+**Last shipped:** Approval (#23) — landed in two passes, `0124597` (Pass 2 review fixes) on top of `5dc086d` (Pass 2 elevation) on top of `3880a58` (Pass 1 close).
 
-**Pending:** 11 widgets — 3 P1 (Phase 1-2), 8 P2 (Phase 2+).
+**Pending:** 10 widgets — 2 P1 (Phase 1-2), 8 P2 (Phase 2+).
 
 ---
 
@@ -42,7 +42,7 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 18 | Score Card | `ScoreCard.jsx` | Overall + category breakdown; expandable reasoning |
 | 20 | QC Evidence Review | `QcEvidenceReview.jsx` (+ `EvidenceReview.jsx` worker-facing) | Bounding-box overlay is its signature moment |
 
-## Done — P1 / Phase 1–2 (8 / 11)
+## Done — P1 / Phase 1–2 (9 / 11)
 
 | # | Widget | File | Notes |
 |---|---|---|---|
@@ -53,15 +53,15 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 17 | Validated Input | `ValidatedInput.jsx` | Phone / email / Aadhaar / PAN / PIN / bank / custom; shake keyframe on error |
 | 19 | Carousel | `Carousel.jsx` | `data-widget-variant="wide"` opts the slot out of the 32rem cap (§3) |
 | 21 | Shift Calendar | `ShiftCalendar.jsx` | §6 segmented pills with hatched pattern for full-shift state |
+| 23 | Approval | `Approval.jsx` | Confidence arc (header-right SVG) is the signature moment; four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve one-tap, destructive two-step with inline notes |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
 
-## Pending — P1 / Phase 1–2 (0 / 3) — build next
+## Pending — P1 / Phase 1–2 (0 / 2) — build next
 
 | # | Widget | Why it's up next | Signature-moment hint |
 |---|---|---|---|
 | 16 | Video Player | Pairs with Training Scenario and Instruction Card for the training flow | Enforced-completion progress bar that fills only as the video is watched (no skip-ahead) |
 | 22 | Comparison / Side-by-Side | Explains job-match / skills-gap verdicts; reuses §9 tone system | Two-column layout with match indicators between columns (check / X / partial ~) |
-| 23 | Approval | Admin-side human-in-the-loop; pairs with QC Evidence Review and Document Preview | Stacked evidence panels that expand one-at-a-time; large recommendation badge |
 
 ## Pending — P2 / Phase 2+ (0 / 8)
 
