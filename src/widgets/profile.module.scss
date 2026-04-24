@@ -72,11 +72,14 @@
 .card_error   { --tone-color: var(--color-text-error); }
 .card_neutral { --tone-color: var(--grey-60); }
 
-/* ─── Header ────────────────────────────────────────────────── */
+/* ─── Header ──────────────────────────────────────────────────
+   Three cells: photo (48px) · text column (flex-1) · score ring
+   (64px). Align-items: flex-start so the ring anchors from the top
+   when the text column runs shorter than the ring's height. */
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-125);
   min-width: 0;
 }
@@ -114,7 +117,8 @@ img.photo {
 .headerText {
   display: flex;
   flex-direction: column;
-  gap: var(--space-025);
+  align-items: flex-start;   /* availability chip sits flush-left */
+  gap: var(--space-050);     /* 4px — tight rhythm name → headline → chip */
   min-width: 0;
   flex: 1;
 }
@@ -182,30 +186,18 @@ img.photo {
   animation-delay: 420ms;
 }
 
-/* ─── Body — ring + stats ──────────────────────────────────── */
-
-.body {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: var(--space-200);
-  align-items: start;
-
-  animation: pcdRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
-  animation-delay: 120ms;
-}
-
-.body_noRing {
-  grid-template-columns: 1fr;
-}
-
-/* ─── Score ring ───────────────────────────────────────────── */
+/* ─── Score ring ──────────────────────────────────────────────
+   Now lives in the header's right column — anchors the card's top
+   edge opposite the photo. Stays at 64px so the signature moment
+   reads at full strength; the verdict word sits below the ring on
+   the same column. */
 
 .ringWrap {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-075);
+  gap: var(--space-050);
   width: var(--size-64);
   flex: 0 0 auto;
 }
@@ -308,7 +300,8 @@ img.photo {
   text-align: center;
 }
 
-/* ─── Stats list ──────────────────────────────────────────── */
+/* ─── Stats list — full-width now that the ring lives in the header.
+   Gains its own entry animation (previously inherited from .body). */
 
 .statsList {
   list-style: none;
@@ -318,6 +311,9 @@ img.photo {
   flex-direction: column;
   gap: var(--space-050);
   min-width: 0;
+
+  animation: pcdRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 120ms;
 }
 
 .statRow {
@@ -403,33 +399,42 @@ img.photo {
   gap: var(--space-075);
 }
 
-/* Neutral §7 chip — grey-10 tint, grey-20 border, grey-80 text. */
+/* Skill tag — modern solid treatment. Sentence case, medium weight,
+   rounded-rect (not fully pilled), borderless. Differentiated from
+   the §7 status-chip vocabulary (which uses uppercase + pill +
+   border) because skills aren't terminal states — they're semantic
+   tags, and the family's chip vocabulary was reading as dated on a
+   profile card. Linear/Notion-style. */
 .skillChip {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  padding: var(--space-025) var(--space-100);
-  border-radius: var(--radius-500);
-  background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
-  border: var(--border-width-100) solid var(--grey-20);
+  padding: var(--space-075) var(--space-125);
+  border-radius: var(--radius-100);
+  background: color-mix(in srgb, var(--grey-10) 70%, var(--white));
+  border: 0;
   color: var(--grey-80);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1;
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050)) scale(0.96);
   animation: pcdChipRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
   animation-delay: var(--pcd-chip-delay, 540ms);
+
+  transition:
+    background 160ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-/* Overflow chip — dashed border signals "there's more under this". */
+/* Overflow chip — dashed outline signals "there's more under this". */
 .skillChip_overflow {
-  border-style: dashed;
+  background: transparent;
+  border: var(--border-width-100) dashed var(--grey-30);
   color: var(--grey-60);
-  background: var(--white);
 }
 
 /* ─── Footer — CTA / action bar / success banner ──────────── */
@@ -462,7 +467,7 @@ img.photo {
 .viewFullLink {
   display: inline-flex;
   align-items: center;
-  align-self: flex-end;
+  align-self: flex-start;
   gap: var(--space-050);
   padding: var(--space-100) var(--space-050);
   min-height: var(--size-44);
@@ -634,7 +639,7 @@ img.photo {
    stroke-dashoffset:full) frame before the media query lands. */
 @media (prefers-reduced-motion: reduce) {
   .card,
-  .body,
+  .statsList,
   .statRow,
   .skillsEyebrow,
   .skillChip,

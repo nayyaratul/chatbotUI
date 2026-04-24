@@ -202,18 +202,17 @@ export function Profile({ payload }) {
       aria-label={`${name} — profile`}
       style={{ '--pcd-cta-delay': `${ctaDelay}ms` }}
     >
-      {/* Header — photo/initials + name + headline + availability chip. */}
+      {/* Header — photo/initials + (name + headline + availability)
+          stacked + score ring on the right. Availability moved from
+          top-right to below the headline so the score ring can anchor
+          the header's right edge; stats below take full width. */}
       <header className={styles.header}>
         <PhotoAvatar photoUrl={payload?.photo_url} initials={initials} name={name} />
         <div className={styles.headerText}>
           <h3 className={styles.name}>{name}</h3>
           {headline && <p className={styles.headline}>{headline}</p>}
+          <AvailabilityChip availability={availability} />
         </div>
-        <AvailabilityChip availability={availability} />
-      </header>
-
-      {/* Body — score ring (optional) + stats grid. */}
-      <div className={cx(styles.body, !score && styles.body_noRing)}>
         {score && (
           <ScoreRing
             value={score.value}
@@ -223,14 +222,16 @@ export function Profile({ payload }) {
             tone={tone}
           />
         )}
-        {stats.length > 0 && (
-          <ul className={styles.statsList}>
-            {stats.map((s, idx) => (
-              <StatRow key={`${s.label ?? 'stat'}-${idx}`} idx={idx} stat={s} />
-            ))}
-          </ul>
-        )}
-      </div>
+      </header>
+
+      {/* Stats list — full-width now that the ring lives in the header. */}
+      {stats.length > 0 && (
+        <ul className={styles.statsList}>
+          {stats.map((s, idx) => (
+            <StatRow key={`${s.label ?? 'stat'}-${idx}`} idx={idx} stat={s} />
+          ))}
+        </ul>
+      )}
 
       {/* Skills. */}
       {(visibleSkills.length > 0 || skillOverflow > 0) && (
@@ -403,7 +404,9 @@ function ScoreRing({ value, max, displayValue, label, tone }) {
       </svg>
       <div className={styles.ringCenter} aria-label={`Score ${value} of ${max}`}>
         <span className={styles.ringValue}>{displayValue}</span>
-        <span className={styles.ringMax}>/ {max}</span>
+        {max !== 100 && (
+          <span className={styles.ringMax}>/ {max}</span>
+        )}
       </div>
       <div className={styles.ringVerdict}>{label}</div>
     </div>
