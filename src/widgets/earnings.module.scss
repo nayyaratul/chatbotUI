@@ -106,8 +106,9 @@
   overflow: hidden;   /* clips the sheen — parks off-canvas invisibly. */
   display: flex;
   flex-direction: column;
-  gap: var(--space-100);
-  padding: var(--space-175) var(--space-175) var(--space-150);
+  gap: var(--space-150);    /* bumped from 100 so the three rows read as
+                               distinct zones, not a cramped stack. */
+  padding: var(--space-200) var(--space-175);
   border-radius: var(--radius-150);
   background: color-mix(in srgb, var(--tone-color) 8%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--tone-color) 22%, transparent);
@@ -162,12 +163,14 @@
   animation-delay: 720ms;
 }
 
-/* Eyebrow row — variant label left, trend inline top-right. */
+/* Eyebrow row — variant label left, trend inline top-right.
+   Baseline alignment so the single-line eyebrow sits on the same
+   line as the trend's value row (caption hangs below). */
 .totalHead {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-125);
+  gap: var(--space-150);
   min-width: 0;
 }
 
@@ -187,7 +190,8 @@
 .totalAmount {
   display: inline-flex;
   align-items: baseline;
-  gap: var(--space-075);
+  gap: var(--space-100);    /* 16px between ₹ and digits — room for
+                               the two typographic weights to breathe. */
   color: var(--grey-90);
   min-width: 0;
 }
@@ -216,7 +220,7 @@
 .totalMeta {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-075);
+  gap: var(--space-100);    /* 16px — one beat between each fact. */
   flex-wrap: wrap;
   min-width: 0;
 
@@ -263,7 +267,8 @@
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--space-025);
+  gap: var(--space-050);    /* 8px between the value line and caption —
+                               the previous 4px read as cramped. */
   flex: 0 0 auto;
   --chip-tone: var(--grey-60);
 }
