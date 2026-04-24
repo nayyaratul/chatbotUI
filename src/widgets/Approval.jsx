@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import cx from 'classnames'
 import {
   ShieldCheck,
@@ -16,6 +17,47 @@ import styles from './approval.module.scss'
    Spec: docs/superpowers/specs/2026-04-24-approval-widget-design.md
    Rule book: docs/widget-conventions.md
    ──────────────────────────────────────────────────────────────── */
+
+const VERDICT_LABEL = {
+  approve:    'APPROVE',
+  reject:     'REJECT',
+  borderline: 'BORDERLINE',
+}
+
+const VERDICT_LABEL_DONE = {
+  approve:    'APPROVED',
+  reject:     'REJECTED',
+  more_info:  'INFO REQUESTED',
+  escalate:   'ESCALATED',
+}
+
+function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = null }) {
+  const C = 2 * Math.PI * 18
+  const target = committed ? 1 : (confidence ?? 0)
+  const [swept, setSwept] = useState(false)
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setSwept(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  const dashOffset = C * (1 - (swept ? Math.max(0, Math.min(1, target)) : 0))
+  const labelWord = committed
+    ? (VERDICT_LABEL_DONE[decisionKey] ?? VERDICT_LABEL[verdict] ?? '')
+    : (VERDICT_LABEL[verdict] ?? '')
+
+  return (
+    <div className={styles.arcWrap} aria-hidden>
+      <svg className={styles.arcSvg} viewBox="0 0 44 44" role="img"
+           aria-label={`Confidence ${Math.round((confidence ?? 0) * 100)} percent`}>
+        <circle className={styles.arcTrack} cx="22" cy="22" r="18" />
+        <circle className={styles.arcFill} cx="22" cy="22" r="18"
+                style={{ strokeDasharray: C, strokeDashoffset: dashOffset }} />
+      </svg>
+      <span className={styles.arcVerdict}>{labelWord}</span>
+    </div>
+  )
+}
 
 const VARIANT_ICONS = {
   bgv: ShieldCheck,
@@ -50,7 +92,10 @@ export function Approval({ payload }) {
             )}
           </div>
         </div>
-        {/* Confidence arc goes here in Task 3 */}
+        <ConfidenceArc
+          confidence={recommendation?.confidence}
+          verdict={recommendation?.verdict}
+        />
       </header>
       {/* Reasoning + accordion + action bar follow in later tasks */}
     </div>
