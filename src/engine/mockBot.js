@@ -108,7 +108,7 @@ registerRule({
 // ─── Carousel — composed widgets (job cards in a rail) ────────────
 // Trigger: "job picks", "recommended jobs", "pick a role"
 // Demonstrates the CSV-spec item composition (carousel of job_cards).
-// Uses the same richJobs() dataset as the standalone JobCard rule so
+// Uses the same richJobs() (defined in widgetSchemas.js) dataset as the standalone JobCard rule so
 // the two presentations show identical data.
 registerRule({
   match: /^(job picks|recommended jobs|pick a role|jobs for me|matching jobs)$/i,
@@ -287,7 +287,7 @@ registerRule({
 
 // ─── Job Card — carousel ───────────────────────────────────────────
 // Trigger: "jobs", "show jobs", "show carousel", "job carousel", etc.
-// Uses the shared richJobs() dataset so the standalone JobCard
+// Uses the shared richJobs() (defined in widgetSchemas.js) dataset so the standalone JobCard
 // carousel and the generic Carousel-of-job_cards show identical
 // data.
 registerRule({
