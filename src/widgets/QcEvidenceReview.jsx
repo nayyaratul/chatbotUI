@@ -120,7 +120,7 @@ export function QcEvidenceReview({ payload }) {
 
   return (
     <div className={styles.card} role="article" aria-label={title}>
-      {/* ─── Header — title + overall verdict badge ─────────────── */}
+      {/* ─── Header — title + description ────────────────────────── */}
       <div className={styles.header}>
         <div className={styles.iconBadge} aria-hidden="true">
           <ScanSearch size={18} strokeWidth={2} />
@@ -131,19 +131,9 @@ export function QcEvidenceReview({ payload }) {
             <p className={styles.description}>{description}</p>
           )}
         </div>
-        <span
-          className={cx(styles.overallBadge, styles[`overallBadge_${overall.tone}`])}
-        >
-          {overall.label}
-          {confidence != null && (
-            <span className={styles.confidence}>
-              {Math.round(confidence * 100)}%
-            </span>
-          )}
-        </span>
       </div>
 
-      {/* ─── Image with bounding-box overlays ───────────────────── */}
+      {/* ─── Image + overlays — hero of the widget ─────────────── */}
       <div className={styles.imageWrap}>
         {imageUrl ? (
           <img
@@ -158,9 +148,24 @@ export function QcEvidenceReview({ payload }) {
           </div>
         )}
 
-        {/* Bounding boxes — absolutely positioned overlays using the
-            region's normalised x/y/w/h (0..1 of image dimensions). */}
-        {annotations.map((a, i) => {
+        {/* Overall verdict — corner chip on the image itself. Places
+            the stamp on the primary subject, not in the header where
+            it competed with the title on narrow panels. */}
+        <span
+          className={cx(styles.overallBadge, styles[`overallBadge_${overall.tone}`])}
+        >
+          <span className={styles.overallLabel}>{overall.label}</span>
+          {confidence != null && (
+            <span className={styles.confidence}>
+              {Math.round(confidence * 100)}%
+            </span>
+          )}
+        </span>
+
+        {/* Bounding boxes — only rendered when there's a real image to
+            overlay. Without this guard, boxes would float over the
+            empty placeholder on rendered mock payloads. */}
+        {imageUrl && annotations.map((a, i) => {
           const meta = VERDICT_META[a.verdict] ?? VERDICT_META.partial
           const r = a.region ?? {}
           return (

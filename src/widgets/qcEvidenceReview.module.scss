@@ -80,15 +80,25 @@
   color: var(--grey-60);
 }
 
-/* ─── Overall verdict badge (top-right of header) ─────────────────── */
+/* ─── Overall verdict badge — corner chip on the image ──────────────
+   Positioned on top of the photo rather than in the header. Solid
+   colored fill across all tones (success/danger/warn) so the chip
+   reads strongly against any photo content; drop shadow gives it
+   lift off the image. Confidence pill uses a dark overlay that's
+   readable regardless of the badge tone. */
 
 .overallBadge {
-  flex-shrink: 0;
+  position: absolute;
+  top: var(--space-100);
+  right: var(--space-100);
+  z-index: 1;
+
   display: inline-flex;
   align-items: center;
   gap: var(--space-050);
-  padding: var(--space-050) var(--space-100);
+  padding: var(--space-050) var(--space-075) var(--space-050) var(--space-100);
   border-radius: var(--radius-full);
+  color: var(--white);
 
   font-family: var(--sans);
   font-size: var(--font-size-100);
@@ -96,31 +106,34 @@
   line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+
+  box-shadow:
+    0 var(--size-01) var(--size-02) color-mix(in srgb, var(--black) 20%, transparent),
+    0 var(--size-02) var(--size-08) color-mix(in srgb, var(--black) 14%, transparent);
+
+  animation: qcevBadgePop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
+  animation-delay: 200ms;
 }
 
-.overallBadge_success {
-  background: var(--color-text-success);
-  color: var(--white);
+.overallLabel {
+  flex-shrink: 0;
 }
 
-.overallBadge_danger {
-  background: var(--red-50);
-  color: var(--white);
-}
+.overallBadge_success { background: var(--color-text-success); }
+.overallBadge_danger  { background: var(--red-50); }
+.overallBadge_warn    { background: var(--yellow-60); }
 
-.overallBadge_warn {
-  background: color-mix(in srgb, var(--yellow-60) 14%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 36%, transparent);
-  color: var(--yellow-60);
-}
-
+/* Confidence pill inset inside the coloured badge. Dark overlay reads
+   well on every tone. Tabular nums keep width stable as the value
+   changes (78% → 100% → 9%). */
 .confidence {
   padding: var(--space-025) var(--space-075);
-  background: color-mix(in srgb, var(--grey-100) 14%, transparent);
+  background: color-mix(in srgb, var(--black) 28%, transparent);
   border-radius: var(--radius-full);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0;
+  color: var(--white);
 }
 
 /* ─── Image + bounding-box overlays ──────────────────────────────── */
@@ -175,14 +188,18 @@
 .annotation_danger  { color: var(--red-50); }
 .annotation_warn    { color: var(--yellow-60); }
 
+/* Label sits INSIDE the top-left of the bounding box. Previously it
+   floated above with translateY(-100%), which caused clipping for
+   any box near the top of the image (the wrap has overflow: hidden).
+   Inside-the-corner reads as an industry-standard annotation tag and
+   never clips. */
 .annotationLabel {
   position: absolute;
   left: 0;
   top: 0;
-  transform: translateY(-100%);
   padding: var(--space-025) var(--space-075);
   background: currentColor;
-  border-radius: var(--radius-050) var(--radius-050) 0 0;
+  border-radius: 0 0 var(--radius-050) 0;
   color: var(--white);
 
   font-family: var(--sans);
@@ -195,14 +212,9 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 
-/* The text inside annotationLabel inverts — container uses the tone
-   as background via `currentColor`, so we need the text to be white. */
-.annotationLabel,
-.annotation .annotationLabel {
-  /* using a descendant pseudo-inversion isn't needed since we set
-     background: currentColor; color: white above. */
+  /* Inner ::before is a visual note that the label text should stay
+     white — the container uses currentColor as background. */
 }
 
 /* ─── Criteria list ──────────────────────────────────────────────── */
@@ -335,9 +347,17 @@
   transform: rotate(180deg);
 }
 
+/* Indented so the reasoning text aligns under the criterion name —
+   left padding = criterionHead's own left padding (125) + icon width
+   (size-20) + gap after icon (100). Previously this was a margin-left
+   calc that was correct but separated from the padding rule, which
+   read as two independent intents. One consolidated rule now. */
 .criterionReasoning {
-  padding: 0 var(--space-125) var(--space-100);
-  margin-left: calc(var(--size-20) + var(--space-100) + var(--space-125));
+  padding:
+    0
+    var(--space-125)
+    var(--space-125)
+    calc(var(--space-125) + var(--size-20) + var(--space-100));
 
   font-family: var(--sans);
   font-size: var(--font-size-200);
@@ -587,4 +607,9 @@
   0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
   60%  { opacity: 1; transform: translateY(0) scale(1.02); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes qcevBadgePop {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-050))) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
