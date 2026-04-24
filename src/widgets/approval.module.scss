@@ -453,6 +453,61 @@
   to   { opacity: var(--opacity-000); transform: translateX(calc(var(--space-150) * -1)); }
 }
 
+/* Secondary actions row — Escalate + More info as text-link buttons.
+   Pattern mirrors JobCard's .viewDetailsLink: transparent background,
+   brand-60 text, small Lucide glyph, hover tint. Lower visual weight
+   keeps the primary Reject / Approve row as the decision focus. */
+.secondaryActionRow {
+  display: flex;
+  gap: var(--space-050);
+  flex-wrap: wrap;
+  margin-left: calc(-1 * var(--space-075));  /* align to card content edge */
+}
+
+.secondaryActionRow_locked .linkButton:not(.linkButton_armed) {
+  opacity: var(--opacity-040);
+  pointer-events: none;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  padding: var(--space-050) var(--space-075);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--brand-60);
+  border-radius: var(--radius-100);
+
+  transition:
+    background-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.linkButton:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+}
+
+.linkButton:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.linkButton:disabled {
+  cursor: default;
+}
+
+/* Armed — user has tapped; pending-confirm region is open for this action. */
+.linkButton_armed {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+}
+
 .actionBar {
   display: flex;
   gap: var(--space-100);

@@ -331,6 +331,19 @@ export function Approval({ payload }) {
     [actions],
   )
 
+  /* Primary row = the two-decision bar (Reject + Approve) that takes the
+     main visual weight. Secondary row = Escalate + More info as text-link
+     buttons above, lower chrome. Mirrors JobCard's "View full details" /
+     actions split. */
+  const primaryActions = useMemo(
+    () => visibleActions.filter((a) => a === 'reject' || a === 'approve'),
+    [visibleActions],
+  )
+  const secondaryActions = useMemo(
+    () => visibleActions.filter((a) => a === 'escalate' || a === 'more_info'),
+    [visibleActions],
+  )
+
   // Holds the decision payload during the ~180ms 'exiting' phase,
   // between `onReply` firing and the committed banner appearing.
   const pendingDecisionRef = useRef(null)
@@ -517,8 +530,32 @@ export function Approval({ payload }) {
             </div>
           )}
 
+          {secondaryActions.length > 0 && (
+            <div className={cx(styles.secondaryActionRow, pending && styles.secondaryActionRow_locked)}>
+              {secondaryActions.map((action) => {
+                const meta = ACTION_META[action]
+                const ActionIcon = meta.Icon
+                return (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() => handleClick(action)}
+                    disabled={!!pending && pending !== action}
+                    className={cx(
+                      styles.linkButton,
+                      pending === action && styles.linkButton_armed,
+                    )}
+                  >
+                    <ActionIcon size={14} strokeWidth={2} aria-hidden />
+                    <span>{meta.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           <div className={cx(styles.actionBar, pending && styles.actionBar_locked)}>
-            {visibleActions.map((action) => {
+            {primaryActions.map((action) => {
               const meta = ACTION_META[action]
               const ActionIcon = meta.Icon
               return (
