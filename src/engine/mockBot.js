@@ -126,6 +126,20 @@ registerRule({
   build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'datetime') }),
 })
 
+// ─── Video Player — standard default ─────────────────────────────
+// Trigger: "video", "play video", "show video", "training video", "watch"
+registerRule({
+  match: /^(video|play video|show video|training video|watch(\s+video)?)$/i,
+  build: () => ({ type: 'video', payload: getVariantPayload('video', 'standard') }),
+})
+
+// ─── Video Player — enforced (compliance) ────────────────────────
+// Trigger: "compliance", "compliance video", "annual training"
+registerRule({
+  match: /^(compliance( video)?|annual training|mandatory video|enforced video)$/i,
+  build: () => ({ type: 'video', payload: getVariantPayload('video', 'enforced') }),
+})
+
 // ─── Approval — BGV default ──────────────────────────────────────
 // Trigger: "approval", "approve", "review case", "bgv review", "admin review"
 registerRule({

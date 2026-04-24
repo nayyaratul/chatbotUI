@@ -24,6 +24,7 @@ import {
   BookOpen,
   ScanSearch,
   FileCheck2,
+  PlaySquare,
   Package,
   Pencil,
 } from 'lucide-react'
@@ -52,6 +53,7 @@ const WIDGET_ICONS = {
   instruction_card:   BookOpen,
   qc_evidence_review: ScanSearch,
   evidence_review:    FileCheck2,
+  video:              PlaySquare,
   approval:           Gavel,
 }
 

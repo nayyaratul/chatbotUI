@@ -281,6 +281,44 @@ function buildApprovalPayload(variant) {
   throw new Error(`buildApprovalPayload: unknown variant "${variant}"`)
 }
 
+/* ─── Shared video payload builder ────────────────────────────────
+   Returns a representative payload per variant for the Video Player
+   widget (#16). Both variants point at the Blender Foundation's
+   publicly-hosted Big Buck Bunny sample — CORS-friendly and stable.
+   The `enforced` variant differs from `standard` only in (a) the
+   subtitle copy, (b) the absence of a speed picker at render time
+   (driven by the variant flag in the component, not payload). */
+function buildVideoPayload(variant) {
+  const base = {
+    widget_id: makeId('vid'),
+    variant,
+    video_id: `vid-${variant === 'enforced' ? 'harass-2026' : 'onboard-welcome'}`,
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    thumbnail_url: null,
+    duration_seconds: 596,
+    playback_speeds: [0.5, 1, 1.5, 2],
+    silent: false,
+  }
+
+  if (variant === 'enforced') {
+    return {
+      ...base,
+      title: 'Harassment prevention — annual',
+      subtitle: 'Required viewing · 10 min',
+    }
+  }
+
+  if (variant === 'standard') {
+    return {
+      ...base,
+      title: 'Welcome to the platform',
+      subtitle: 'Onboarding · 10 min',
+    }
+  }
+
+  throw new Error(`buildVideoPayload: unknown variant "${variant}"`)
+}
+
 export const widgetSchemas = {
 
   // ─── engine ──────────────────────────────────────────────────────
@@ -1489,6 +1527,15 @@ export const widgetSchemas = {
           silent: false,
         }),
       },
+    ],
+  },
+
+  video: {
+    label: 'Video Player',
+    category: 'display',
+    variants: [
+      { id: 'standard', label: 'Standard', payload: () => buildVideoPayload('standard') },
+      { id: 'enforced', label: 'Enforced', payload: () => buildVideoPayload('enforced') },
     ],
   },
 
