@@ -234,14 +234,21 @@
   transition: background 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.criterionRow_clickable:hover > *,
-.criterionRow_clickable:focus-visible > * {
+.criterionRow_clickable:hover > * {
   background: color-mix(in srgb, var(--status-tone) 6%, var(--white));
 }
 
+/* Focus state — stronger background tint across all row cells plus a
+   left-edge brand accent on the first cell. A per-cell outline would
+   fragment across column-gaps (display:contents rows have no single
+   box to carry an outline); tint + left stripe reads as one coherent
+   row-level affordance for keyboard Tab. */
+.criterionRow_clickable:focus-visible > * {
+  background: color-mix(in srgb, var(--status-tone) 14%, var(--white));
+}
+
 .criterionRow_clickable:focus-visible > *:first-child {
-  outline: var(--border-width-300) solid var(--brand-60);
-  outline-offset: calc(-1 * var(--border-width-300));
+  box-shadow: inset var(--border-width-300) 0 0 0 var(--brand-60);
 }
 
 /* Strip native button chrome so <button> rows match <div> rows. */
@@ -349,7 +356,10 @@
 }
 
 .noteRow_open {
-  max-height: var(--size-96);
+  /* 192px covers realistic note lengths (~6 lines at font-size-100 /
+     line-height-300 in family width); shorter notes simply settle to
+     their natural height inside the cap. */
+  max-height: calc(var(--size-96) * 2);
   opacity: var(--opacity-100);
 }
 

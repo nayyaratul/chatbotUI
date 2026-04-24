@@ -314,7 +314,10 @@ function CriterionRow({
         {...rowProps}
         className={rowClass}
         data-status={criterion.status}
-        style={{ '--cmp-row-delay': `${Math.min(idx, 7) * 60}ms` }}
+        /* +120ms floor so row 0 lands after the band (60ms) + headers
+           (120ms) finish. Matches the summaryDelay formula which adds
+           the same 120ms. */
+        style={{ '--cmp-row-delay': `${120 + Math.min(idx, 7) * 60}ms` }}
       >
         <div className={styles.cellCriterion}>
           <span className={styles.criterionName}>{criterion.name}</span>
