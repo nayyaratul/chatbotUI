@@ -203,13 +203,17 @@
   min-width: 0;
 }
 
-/* Currency symbol — bold like the digits so "₹ 12,450" reads as one
-   weighted unit, but one size rung smaller (200 vs 400) and one tone
-   rung lighter (grey-80 vs grey-90) so hierarchy is preserved via
-   size + color, not weight. */
+/* Currency symbol — semibold like the digits so "₹ 12,450" reads as
+   one weighted unit. Size one rung up from body (300 = 14px, between
+   200 and 400) so the symbol has real presence without dominating
+   the digits. Color one rung lighter (grey-80 vs grey-90) preserves
+   hierarchy via size + color, not weight.
+   Note: Nexus font-weight scale tops out at `semibold` (600). There
+   is no `--font-weight-bold`; prior usage was silently falling back
+   to initial (400/normal). */
 .totalCurrency {
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   letter-spacing: var(--letter-spacing-normal);
   color: var(--grey-80);
@@ -218,7 +222,7 @@
 
 .totalAmountValue {
   font-size: var(--font-size-400);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-300);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
@@ -238,9 +242,12 @@
   animation-delay: 1020ms;   /* lands ~120ms after count-up finishes */
 }
 
+/* align-items: baseline (not center) so the glyph + "Completed" text
+   sit on the same baseline as the divider and count — prior center-
+   alignment was pushing the chip off the meta row's shared baseline. */
 .statusInline {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-050);
   flex: 0 0 auto;
   font-size: var(--font-size-200);
@@ -248,6 +255,15 @@
   line-height: 1;
   --chip-tone: var(--grey-60);
   color: var(--chip-tone);
+}
+
+/* The glyph (Lucide SVG) needs help hitting the text baseline. Without
+   vertical-align, SVG inlines sit on the text bottom not the baseline;
+   align-items: baseline on the parent then cascades the SVG to somewhere
+   between. vertical-align: text-bottom pulls the icon's bottom edge to
+   the text's bottom, which visually matches the descender-less chip copy. */
+.statusInline svg {
+  vertical-align: text-bottom;
 }
 
 .statusInline_completed  { --chip-tone: var(--color-text-success); }
