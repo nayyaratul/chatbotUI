@@ -1,22 +1,125 @@
+/* ─── Payload Editor — instrument-panel treatment ────────────────
+   Header strip reads like a control-board channel label: monospace
+   "PAYLOAD" on the left, dashed rule, live parse-status dot on the
+   right with a character count. Textarea uses a true monospace stack
+   so JSON structure lines up predictably. */
+
 .editor {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
+}
+
+/* ─── Header strip ────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--grey-55, var(--grey-60));
+  line-height: 1;
 }
 
 .label {
-  font-family: var(--sans);
-  font-size: 12px;
-  color: var(--grey-60);
+  flex-shrink: 0;
+  color: var(--grey-70);
 }
+
+.rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--grey-20) 0 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.9;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Live parse-status indicator. Green dot + "parseable" when JSON
+   parses. Amber (not red) + "unparseable" while mid-edit — red is
+   reserved for actual inject failures below. */
+.validity {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.08em;
+}
+
+.validity::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.validityOk {
+  color: var(--green-50);
+}
+.validityOk::before {
+  background: var(--green-40);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--green-40) 22%, transparent);
+}
+
+.validityWarn {
+  color: var(--yellow-50);
+}
+.validityWarn::before {
+  background: var(--yellow-30);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--yellow-30) 22%, transparent);
+}
+
+.chars {
+  font-variant-numeric: tabular-nums;
+  color: var(--grey-50);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Textarea ───────────────────────────────────────────────── */
 
 .textarea {
-  font-family: var(--sans);
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
   font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-variant-ligatures: none;
+  tab-size: 2;
 }
 
+/* ─── Inject-attempt error (distinct from live validity) ─────── */
+
 .error {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
   font-family: var(--sans);
   font-size: 11px;
-  color: var(--red-60, #d04a3a);
+  line-height: 1.4;
+  color: var(--red-70);
+  padding: 6px 9px;
+  background: var(--red-0);
+  border-radius: 4px;
+  border: 1px solid var(--red-10);
+}
+
+.errorMark {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--red-50);
 }

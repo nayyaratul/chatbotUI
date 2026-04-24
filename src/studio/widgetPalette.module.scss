@@ -1,62 +1,286 @@
+/* ─── Widget Palette — dual render modes ─────────────────────────
+   open=true  → 2-column icon+label tile grid, grouped by category.
+   open=false → compact selected-preview bar (one row, current pick).
+
+   The tile-grid mode is for picking. The preview mode is for
+   confirming + re-opening. */
+
 .palette {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 14px;
 }
+
+/* ─── Collapsed: selected preview ─────────────────────────────── */
+
+.selectedPreview {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--brand-60) 28%, var(--grey-15, var(--grey-20)));
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--brand-60) 6%, var(--white)) 0%,
+      var(--white) 65%
+    );
+  color: var(--grey-90);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 100ms ease,
+    box-shadow 160ms ease;
+}
+
+/* Left accent strip — matches the active-tile brand-fill language. */
+.selectedPreview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--brand-60);
+  border-radius: 8px 0 0 8px;
+}
+
+.selectedPreview:hover {
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--brand-60) 10%, var(--white)) 0%,
+      color-mix(in srgb, var(--brand-60) 2%, var(--white)) 65%
+    );
+  border-color: color-mix(in srgb, var(--brand-60) 42%, var(--grey-20));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--brand-60) 18%, transparent);
+}
+
+.selectedPreview:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.selectedPreview:focus-visible {
+  outline: 2px solid var(--brand-40);
+  outline-offset: 1px;
+}
+
+.previewIconWrap {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
+  color: var(--brand-60);
+  border: 1px solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+}
+
+.previewLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewCount {
+  flex: 0 0 auto;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--brand-60);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: 1px solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+
+.previewChangeHint {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--grey-50);
+  transition: color 120ms ease;
+}
+
+.selectedPreview:hover .previewChangeHint {
+  color: var(--brand-60);
+}
+
+/* ─── Expanded: category groups + tile grid ───────────────────── */
 
 .group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
 .groupLabel {
-  font-family: var(--sans);
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--grey-50);
-  margin: 0;
-}
-
-.row {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--grey-55, var(--grey-60));
+  margin: 0 0 2px;
+  line-height: 1;
 }
 
-.chip {
+.groupName {
+  flex-shrink: 0;
+}
+
+.groupRule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--grey-20) 0 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.9;
+}
+
+.groupCount {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  color: var(--grey-70);
+  background: var(--grey-05);
+  border: 1px solid var(--grey-10);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+/* ─── Tile grid ───────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 8px 7px 10px;
+  border: 1px solid var(--grey-15, var(--grey-20));
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--grey-80);
   font-family: var(--sans);
   font-size: 12px;
-  line-height: 1.3;
-  padding: var(--space-2) var(--space-3);
-  min-height: 28px;
-  border: 1px solid var(--grey-20);
-  border-radius: var(--radius-sm);
-  background: var(--grey-05);
-  color: var(--grey-80);
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-  white-space: normal;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 100ms ease,
+    box-shadow 140ms ease;
   text-align: left;
+  min-width: 0;
 }
 
-.chip:hover {
-  background: var(--grey-10);
+.tile:hover {
+  background: var(--grey-05);
+  border-color: var(--grey-25, var(--grey-30));
+  color: var(--grey-95, var(--grey-90));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--grey-100, var(--black)) 6%, transparent);
 }
 
-.chip:focus-visible {
-  outline: 2px solid var(--brand-400);
-  outline-offset: 2px;
+.tile:hover .tileIcon {
+  color: var(--grey-80);
 }
 
-.chip.active {
-  background: var(--brand-600);
+.tile:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--brand-40);
+  outline-offset: 1px;
+}
+
+.tileIcon {
+  flex: 0 0 auto;
+  color: var(--grey-55, var(--grey-60));
+  transition: color 120ms ease;
+}
+
+.tileLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.005em;
+}
+
+.tileCount {
+  flex: 0 0 auto;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--grey-60);
+  background: color-mix(in srgb, var(--grey-30) 42%, transparent);
+  padding: 2px 5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+
+/* Active tile — brand fill (matches Inject-as-bot button). */
+.tile.active {
+  background: var(--brand-60);
+  border-color: var(--brand-60);
   color: #fff;
-  border-color: transparent;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--brand-60) 28%, transparent);
 }
 
-.chip.active:hover {
-  background: var(--brand-600);
+.tile.active:hover {
+  background: color-mix(in srgb, var(--brand-60) 92%, var(--black));
+  border-color: color-mix(in srgb, var(--brand-60) 92%, var(--black));
+  color: #fff;
+}
+
+.tile.active .tileIcon {
+  color: #fff;
+}
+
+.tile.active .tileCount {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.2);
 }

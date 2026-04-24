@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Button } from '@nexus/atoms'
+import cx from 'classnames'
+import { Bot, User, ChevronDown } from 'lucide-react'
 import { registry } from '../chat/registry.js'
 import { widgetSchemas } from '../engine/widgetSchemas.js'
 import { WidgetPalette } from './WidgetPalette.jsx'
@@ -28,7 +29,11 @@ function buildGroups() {
       console.warn(`[Injector] widget '${type}' has unknown category '${category}' — skipping`)
       continue
     }
-    buckets.get(category).push({ type, label: schema.label })
+    buckets.get(category).push({
+      type,
+      label: schema.label,
+      variantCount: schema.variants?.length ?? 0,
+    })
   }
   return CATEGORY_ORDER
     .map((category) => ({
@@ -59,10 +64,24 @@ function initialSelection(groups) {
   }
 }
 
+const isMac =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPod|iPad/.test(navigator.platform)
+const MOD_GLYPH = isMac ? '⌘' : 'Ctrl'
+
 export function Injector({ bot }) {
   const groups = useMemo(buildGroups, [])
+  const totalWidgets = useMemo(
+    () => groups.reduce((n, g) => n + g.widgets.length, 0),
+    [groups],
+  )
   const [state, setState] = useState(() => initialSelection(groups))
   const [error, setError] = useState(null)
+  // Palette starts open so a fresh user sees what's available. It
+  // auto-collapses after the first widget pick — subsequent iterations
+  // (switching variants, editing the payload) don't need the picker
+  // visible, so this reclaims ~200px of vertical space.
+  const [paletteOpen, setPaletteOpen] = useState(true)
 
   const activeVariants = useMemo(
     () => (state.type ? widgetSchemas[state.type].variants : []),
@@ -82,6 +101,7 @@ export function Injector({ bot }) {
       payloadText: stringifyPayload(firstVariant.payload),
     })
     setError(null)
+    setPaletteOpen(false)
   }
 
   const selectVariant = (variantId) => {
@@ -118,35 +138,96 @@ export function Injector({ bot }) {
     bot.injectUserWidgetResponse({ type: state.type, payload: result.value })
   }
 
+  const onPayloadKeyDown = (e) => {
+    if (!(e.metaKey || e.ctrlKey)) return
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    if (e.shiftKey) injectAsUser()
+    else injectAsBot()
+  }
+
   if (!state.type) {
     return <div className={styles.empty}>No widgets registered.</div>
   }
 
   return (
     <div className={styles.injector}>
-      <WidgetPalette
-        groups={groups}
-        selected={state.type}
-        onSelect={selectWidget}
-      />
-      <VariantRow
-        variants={activeVariants}
-        selected={state.variantId}
-        onSelect={selectVariant}
-      />
-      <PayloadEditor
-        value={state.payloadText}
-        error={error}
-        onChange={onPayloadChange}
-      />
-      <div className={styles.actions}>
-        <Button variant="primary" size="sm" onClick={injectAsBot}>
-          Inject as bot
-        </Button>
-        <Button variant="secondary" size="sm" onClick={injectAsUser}>
-          Inject as user
-        </Button>
-      </div>
+
+      {/* ─── STAGE 1: WIDGET ─────────────────────────────────── */}
+      <section className={styles.stage}>
+        <div className={styles.stageHeader}>
+          <span className={styles.stageLabel}>Widget</span>
+          <span className={styles.stageRule} aria-hidden />
+          <button
+            type="button"
+            className={styles.stageToggle}
+            onClick={() => setPaletteOpen((v) => !v)}
+            aria-expanded={paletteOpen}
+            aria-label={paletteOpen ? 'Collapse widget picker' : 'Expand widget picker'}
+          >
+            <span className={styles.stageToggleCount}>{totalWidgets}</span>
+            <ChevronDown
+              size={11}
+              className={cx(styles.toggleIcon, paletteOpen && styles.toggleIconOpen)}
+              aria-hidden
+            />
+          </button>
+        </div>
+        <WidgetPalette
+          groups={groups}
+          selected={state.type}
+          onSelect={selectWidget}
+          open={paletteOpen}
+          onOpen={() => setPaletteOpen(true)}
+        />
+      </section>
+
+      {/* ─── STAGE 2: VARIANT (only shown if >1) ─────────────── */}
+      {activeVariants.length > 1 && (
+        <section className={styles.stage}>
+          <div className={styles.stageHeader}>
+            <span className={styles.stageLabel}>Variant</span>
+            <span className={styles.stageRule} aria-hidden />
+            <span className={styles.stageCount}>{activeVariants.length}</span>
+          </div>
+          <VariantRow
+            variants={activeVariants}
+            selected={state.variantId}
+            onSelect={selectVariant}
+          />
+        </section>
+      )}
+
+      {/* ─── STAGE 3: PAYLOAD + ACTIONS ──────────────────────── */}
+      <section className={styles.stage}>
+        <PayloadEditor
+          value={state.payloadText}
+          error={error}
+          onChange={onPayloadChange}
+          onKeyDown={onPayloadKeyDown}
+        />
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={cx(styles.actionButton, styles.actionBot)}
+            onClick={injectAsBot}
+          >
+            <Bot size={13} aria-hidden />
+            <span className={styles.actionLabel}>Inject as bot</span>
+            <kbd className={styles.kbd}>{MOD_GLYPH}↵</kbd>
+          </button>
+          <button
+            type="button"
+            className={cx(styles.actionButton, styles.actionUser)}
+            onClick={injectAsUser}
+          >
+            <User size={13} aria-hidden />
+            <span className={styles.actionLabel}>Inject as user</span>
+            <kbd className={styles.kbd}>{MOD_GLYPH}⇧↵</kbd>
+          </button>
+        </div>
+      </section>
+
     </div>
   )
 }

@@ -182,7 +182,7 @@ export const widgetSchemas = {
   // ─── engine ──────────────────────────────────────────────────────
 
   text: {
-    label: 'Text message',
+    label: 'Text',
     category: 'engine',
     variants: [
       {
@@ -196,7 +196,7 @@ export const widgetSchemas = {
   },
 
   widget_response: {
-    label: 'Widget response (user tap/submit)',
+    label: 'Widget Response',
     category: 'engine',
     variants: [
       {
@@ -214,7 +214,7 @@ export const widgetSchemas = {
   // ─── action ──────────────────────────────────────────────────────
 
   quick_reply: {
-    label: 'Quick Reply Buttons',
+    label: 'Quick Reply',
     category: 'action',
     variants: [
       {
@@ -234,7 +234,7 @@ export const widgetSchemas = {
   },
 
   confirmation: {
-    label: 'Confirmation Card',
+    label: 'Confirmation',
     category: 'action',
     variants: [
       {
@@ -298,7 +298,7 @@ export const widgetSchemas = {
   },
 
   checklist: {
-    label: 'Checklist (interactive + read-only)',
+    label: 'Checklist',
     category: 'action',
     variants: [
       {
@@ -345,7 +345,7 @@ export const widgetSchemas = {
   },
 
   shift_calendar: {
-    label: 'Shift Calendar',
+    label: 'Shifts',
     category: 'action',
     variants: [
       {
@@ -397,7 +397,7 @@ export const widgetSchemas = {
   // ─── input ───────────────────────────────────────────────────────
 
   mcq: {
-    label: 'MCQ / Quiz',
+    label: 'MCQ',
     category: 'input',
     variants: [
       {
@@ -463,7 +463,7 @@ export const widgetSchemas = {
   },
 
   form: {
-    label: 'Form (multi-field)',
+    label: 'Form',
     category: 'input',
     variants: [
       {
@@ -677,7 +677,7 @@ export const widgetSchemas = {
   },
 
   validated_input: {
-    label: 'Validated Input (OTP / PAN / phone / …)',
+    label: 'Validated Input',
     category: 'input',
     variants: [
       {
@@ -792,7 +792,7 @@ export const widgetSchemas = {
   },
 
   image_capture: {
-    label: 'Image Capture (live camera)',
+    label: 'Image Capture',
     category: 'input',
     variants: [
       {
@@ -888,7 +888,7 @@ export const widgetSchemas = {
   // ─── display ─────────────────────────────────────────────────────
 
   progress: {
-    label: 'Progress Tracker',
+    label: 'Progress',
     category: 'display',
     variants: [
       {
@@ -910,7 +910,7 @@ export const widgetSchemas = {
   },
 
   score_card: {
-    label: 'Score / Result Card',
+    label: 'Score Card',
     category: 'display',
     variants: [
       {
@@ -942,7 +942,7 @@ export const widgetSchemas = {
   },
 
   job_card: {
-    label: 'Job Card (carousel)',
+    label: 'Job Card',
     category: 'display',
     variants: [
       {
@@ -1042,7 +1042,7 @@ export const widgetSchemas = {
   },
 
   carousel: {
-    label: 'Carousel (tile + widget composition)',
+    label: 'Carousel',
     category: 'display',
     variants: [
       {
@@ -1210,7 +1210,7 @@ export const widgetSchemas = {
   // ─── advanced ────────────────────────────────────────────────────
 
   qc_evidence_review: {
-    label: 'QC Evidence Review (task photo + AI annotations)',
+    label: 'QC Review',
     category: 'advanced',
     variants: [
       {
@@ -1270,7 +1270,7 @@ export const widgetSchemas = {
   },
 
   evidence_review: {
-    label: 'Evidence Review (candidate onboarding)',
+    label: 'Evidence Review',
     category: 'advanced',
     variants: [
       {
