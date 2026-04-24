@@ -200,6 +200,20 @@ registerRule({
   build: () => ({ type: 'rating', payload: getVariantPayload('rating', 'nps') }),
 })
 
+// ─── Instruction Card — warn tone ────────────────────────────────
+// Trigger: "helmet safety", "safety warning", "warn instruction"
+registerRule({
+  match: /^(helmet safety|safety warning|warn instruction)$/i,
+  build: () => ({ type: 'instruction_card', payload: getVariantPayload('instruction_card', 'warn') }),
+})
+
+// ─── Instruction Card — success tone ─────────────────────────────
+// Trigger: "first payout", "payout info", "success instruction"
+registerRule({
+  match: /^(first payout|payout info|success instruction)$/i,
+  build: () => ({ type: 'instruction_card', payload: getVariantPayload('instruction_card', 'success') }),
+})
+
 // ─── Instruction Card ─────────────────────────────────────────────
 // Trigger: "how to", "guide", "instructions", "how to capture"
 registerRule({
@@ -228,6 +242,13 @@ registerRule({
 registerRule({
   match: /^(qc|qc review|shelf photo|task photo|task qc)$/i,
   build: () => ({ type: 'qc_evidence_review', payload: getVariantPayload('qc_evidence_review', 'admin') }),
+})
+
+// ─── QC Evidence Review — worker variant (read-only feedback) ─────
+// Trigger: "qc worker", "worker qc", "qc feedback"
+registerRule({
+  match: /^(qc worker|worker qc|qc feedback|task feedback)$/i,
+  build: () => ({ type: 'qc_evidence_review', payload: getVariantPayload('qc_evidence_review', 'worker') }),
 })
 
 // ─── Evidence Review (candidate onboarding — multi-item) ─────────
