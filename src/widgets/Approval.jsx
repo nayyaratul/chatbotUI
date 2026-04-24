@@ -331,12 +331,19 @@ export function Approval({ payload }) {
     [actions],
   )
 
+  // Holds the decision payload during the ~180ms 'exiting' phase,
+  // between `onReply` firing and the committed banner appearing.
+  const pendingDecisionRef = useRef(null)
+
   const commit = useCallback(
     (action, noteText = '') => {
+      if (phase !== 'live') return  // idempotent — guards re-entry during the exiting window
       const decidedAt = new Date().toISOString()
-      // Start the action-bar exit first; swap to the banner one tick later
-      // so the two motions feel like one continuous hand-off (~180ms overlap
-      // with the arc's tone morph + banner spring-in).
+      pendingDecisionRef.current = { action, notes: noteText, at: decidedAt }
+      // Start the action-bar exit first; the useEffect below swaps to the
+      // banner one tick later (~180ms) so the two motions feel like one
+      // continuous hand-off. onReply fires synchronously so the chat
+      // stream doesn't observe the animation delay.
       setPhase('exiting')
       onReply({
         type: 'widget_response',
@@ -349,17 +356,26 @@ export function Approval({ payload }) {
           decided_at: decidedAt,
         },
       })
-      setTimeout(() => {
-        setDecision({ action, notes: noteText, at: decidedAt })
-        setPhase('done')
-      }, 180)
     },
-    [onReply, case_id, payload?.widget_id],
+    [phase, onReply, case_id, payload?.widget_id],
   )
+
+  // Hand-off: once the action bar is exiting, wait the animation's
+  // duration, then swap to the banner. Cleanup on unmount prevents the
+  // timer from touching state after the widget has gone away.
+  useEffect(() => {
+    if (phase !== 'exiting') return
+    const t = setTimeout(() => {
+      const d = pendingDecisionRef.current
+      if (d) setDecision(d)
+      setPhase('done')
+    }, 180)
+    return () => clearTimeout(t)
+  }, [phase])
 
   const handleClick = useCallback(
     (action) => {
-      if (decision) return
+      if (decision || phase !== 'live') return
       if (!ACTION_META[action]?.destructive) {
         commit(action)
         return
@@ -367,7 +383,7 @@ export function Approval({ payload }) {
       setPending(action)
       setNotes('')
     },
-    [decision, commit],
+    [decision, phase, commit],
   )
 
   const cancelPending = useCallback(() => {
