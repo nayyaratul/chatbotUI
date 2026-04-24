@@ -122,13 +122,18 @@ export function Comparison({ payload }) {
   const ratio = metRatio(criteria)
   const pct   = Math.round(ratio * 100)
 
-  /* Pill starts filling 180ms after the last row's chip settles.
-     chip settle = row_delay + 120 + 280 = row_delay + 400.
-     summaryDelay = (lastRowIdx * 60) + 400 + 180.
-     Add 120ms floor because the dual-item band + column headers land
-     before the first row. */
+  /* Pill starts filling 180ms after the last row's chip FULLY settles.
+     Pass 1 chip pop ends at row_delay + 400ms. Pass 2 layered a
+     tone-specific settle (match glow / partial pulse / gap nudge) that
+     fires at row_delay + 400 and runs up to 640ms more for the match
+     glow — so the effective settle-inclusive landing is row_delay +
+     1040ms. Summary then starts 180ms after that to chain cleanly with
+     the last chip rather than racing its tail.
+       offset: 120ms band+headers floor
+       last row delay: lastRowIdx * 60
+       chip stack: 120 (pop offset) + 280 (pop) + 640 (match glow) + 180 (gap) = 1220 */
   const lastRowIdx = Math.max(0, Math.min(criteria.length - 1, MAX_CRITERIA - 1))
-  const summaryDelay = 120 + lastRowIdx * 60 + 580
+  const summaryDelay = 120 + lastRowIdx * 60 + 1220
 
   const toggleRow = useCallback((idx) => {
     setOpenIdx((prev) => (prev === idx ? null : idx))
