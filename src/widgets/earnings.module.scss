@@ -1,0 +1,409 @@
+/* Earnings Widget (#28) — period total + breakdown + trend */
+
+.card {
+  /* Card-level tone — drives the total block's container tint. Per-row
+     tones in the breakdown live on the row itself via data-tone. */
+  --tone-color: var(--color-text-success);
+
+  /* §5 — brand-60 accent for the primary button (advance variant). */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 24rem;   /* §4 mid-density floor */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: earnRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+/* Focus-within halo — keyboard nav anywhere in the card reads as
+   "active". Outline composes cleanly with the hover shadow. */
+.card:has(:focus-visible) {
+  outline: var(--border-width-300) solid color-mix(in srgb, var(--brand-60) 40%, transparent);
+  outline-offset: var(--size-02);
+}
+
+.card_success { --tone-color: var(--color-text-success); }
+.card_warning { --tone-color: var(--yellow-60); }
+.card_error   { --tone-color: var(--color-text-error); }
+.card_brand   { --tone-color: var(--brand-60); }
+.card_neutral { --tone-color: var(--grey-60); }
+
+/* ─── Header — §2 ───────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Total block — tone-tinted container around the big number ─
+   The signature moment. Tint comes from --tone-color (derived from
+   widget status OR from the advance variant's brand override). The
+   amount itself stays at font-size-400 per §12 — prominence is
+   carried by weight + letter-spacing + the count-up animation + the
+   tinted container, not by breaking the type ladder. */
+
+.totalBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding: var(--space-150) var(--space-175);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--tone-color) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--tone-color) 22%, transparent);
+
+  animation: earnRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 60ms;
+}
+
+.totalAmount {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.totalMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-125);
+  flex-wrap: wrap;
+}
+
+.totalMetaLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-100);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.totalCount {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+}
+
+/* §7 status chip — tone driven by status class (not --tone-color,
+   because the chip should always read its own row-specific tone). */
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+  --chip-tone: var(--grey-60);
+  background: color-mix(in srgb, var(--chip-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--chip-tone) 24%, transparent);
+  color: var(--chip-tone);
+
+  animation: earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: calc(180ms + 720ms + 120ms);  /* after count-up lands */
+}
+
+.statusChip_completed  { --chip-tone: var(--color-text-success); }
+.statusChip_processing { --chip-tone: var(--yellow-60); }
+.statusChip_failed     { --chip-tone: var(--color-text-error); }
+
+/* Trend chip — same geometry as status chip, tone from direction. */
+.trendChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: 1;
+  --chip-tone: var(--grey-60);
+  background: color-mix(in srgb, var(--chip-tone) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--chip-tone) 24%, transparent);
+  color: var(--chip-tone);
+
+  animation: earnChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: calc(180ms + 720ms + 180ms);  /* 60ms after status chip */
+}
+
+.trendChip_up   { --chip-tone: var(--color-text-success); }
+.trendChip_down { --chip-tone: var(--color-text-error); }
+.trendChip_flat { --chip-tone: var(--grey-60); }
+
+.trendChipValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.trendChipLabel {
+  text-transform: none;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-normal);
+  color: color-mix(in srgb, var(--chip-tone) 70%, var(--grey-80));
+  padding-left: var(--space-050);
+}
+
+/* ─── Breakdown list ──────────────────────────────────────────── */
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.breakdownEyebrow {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  padding-bottom: var(--space-050);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+}
+
+.breakdownList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+/* Row grid: dot · label+meta · amount. */
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: var(--space-125);
+  align-items: center;
+  padding: var(--space-075) 0;
+  min-width: 0;
+
+  --row-tone: var(--grey-60);
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-100));
+  animation: earnRowRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--earn-row-delay, 300ms);
+}
+
+.row[data-tone="success"] { --row-tone: var(--color-text-success); }
+.row[data-tone="warning"] { --row-tone: var(--yellow-60); }
+.row[data-tone="error"]   { --row-tone: var(--color-text-error); }
+.row[data-tone="neutral"] { --row-tone: var(--grey-60); }
+
+/* §8 status dot — small solid circle, tone-colored. Spring-in on
+   mount so the verdict arrives as a tiny beat per row. */
+.rowDot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--size-06);
+  height: var(--size-06);
+  border-radius: var(--radius-full);
+  background: var(--row-tone);
+
+  animation: earnDotSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation-delay: calc(var(--earn-row-delay, 300ms) + 60ms);
+  transform-origin: center center;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--grey-90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowAmount {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+/* ─── Footer — CTA / success banner ──────────────────────────── */
+
+.submitBtn {
+  width: 100%;
+  margin-top: auto;
+
+  animation: earnRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--earn-cta-delay, 1500ms);
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  flex-wrap: wrap;
+  margin-top: auto;
+
+  animation: earnBannerPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.successChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--color-text-success);
+
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.successMeta {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────── */
+
+@keyframes earnRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes earnRowRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes earnChipPop {
+  from { opacity: var(--opacity-000); transform: scale(0.6); }
+  to   { opacity: var(--opacity-100); transform: scale(1); }
+}
+
+@keyframes earnDotSpring {
+  from { opacity: var(--opacity-000); transform: scale(0.4); }
+  to   { opacity: var(--opacity-100); transform: scale(1); }
+}
+
+@keyframes earnBannerPop {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)) scale(0.98); }
+  to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+
+/* !important defeats the entry animations' `both` fill-mode
+   backwards-fill frames so reduced-motion users see the final state
+   from frame one. The count-up itself is JS-driven and skips
+   animation in useCountUp when prefers-reduced-motion is set. */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .totalBlock,
+  .statusChip,
+  .trendChip,
+  .row,
+  .rowDot,
+  .submitBtn,
+  .successBanner {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transition: none !important;
+    opacity: var(--opacity-100);
+    transform: none;
+  }
+}

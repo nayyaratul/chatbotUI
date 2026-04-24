@@ -147,6 +147,27 @@ registerRule({
   build: () => ({ type: 'approval', payload: getVariantPayload('approval', 'bgv') }),
 })
 
+// ─── Earnings — paycheck default ─────────────────────────────────
+// Trigger: "earnings", "paycheck", "payout", "my earnings"
+registerRule({
+  match: /^(earnings|paycheck|payout|my earnings|week(ly)? earnings)$/i,
+  build: () => ({ type: 'earnings', payload: getVariantPayload('earnings', 'paycheck') }),
+})
+
+// ─── Earnings — incentive variant ────────────────────────────────
+// Trigger: "incentive", "bonus", "incentives"
+registerRule({
+  match: /^(incentives?|bonus(es)?|my bonus|incentive tracker)$/i,
+  build: () => ({ type: 'earnings', payload: getVariantPayload('earnings', 'incentive') }),
+})
+
+// ─── Earnings — advance variant ──────────────────────────────────
+// Trigger: "advance", "withdraw", "salary advance"
+registerRule({
+  match: /^(advance|withdraw|salary advance|cash advance|earned advance)$/i,
+  build: () => ({ type: 'earnings', payload: getVariantPayload('earnings', 'advance') }),
+})
+
 // ─── Comparison — candidate match default ────────────────────────
 // Trigger: "comparison", "side by side", "match", "vs", "compare"
 registerRule({

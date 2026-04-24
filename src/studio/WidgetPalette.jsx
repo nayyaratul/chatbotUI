@@ -21,6 +21,7 @@ import {
   GalleryHorizontal,
   Gavel,
   GitCompare,
+  Wallet,
   FileText,
   BookOpen,
   ScanSearch,
@@ -57,6 +58,7 @@ const WIDGET_ICONS = {
   video:              PlaySquare,
   approval:           Gavel,
   comparison:         GitCompare,
+  earnings:           Wallet,
 }
 
 /**

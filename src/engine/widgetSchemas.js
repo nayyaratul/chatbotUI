@@ -342,6 +342,71 @@ function buildComparisonPayload(variant) {
   throw new Error(`buildComparisonPayload: unknown variant "${variant}"`)
 }
 
+/* ─── Shared earnings payload builder ──────────────────────────────
+   Three variants for the Earnings widget (#28). paycheck = completed
+   weekly payout; incentive = bonus tracker with processing rows;
+   advance = brand-tinted available-to-withdraw balance with a primary
+   CTA. */
+function buildEarningsPayload(variant) {
+  const base = {
+    widget_id: makeId('pay'),
+    variant,
+  }
+
+  if (variant === 'paycheck') {
+    return {
+      ...base,
+      period: { start: '2026-04-19', end: '2026-04-25', label: "This week's earnings" },
+      total:  { amount: 12450, currency: 'INR' },
+      status: 'completed',
+      breakdown: [
+        { label: 'Mon · Morning',   meta: '4 hrs',             amount: 1800, status: 'completed' },
+        { label: 'Tue · Evening',   meta: '6 hrs · overtime',  amount: 2450, status: 'completed' },
+        { label: 'Wed · Morning',   meta: '4 hrs',             amount: 1800, status: 'completed' },
+        { label: 'Thu · Full day',  meta: '8 hrs',             amount: 2200, status: 'completed' },
+        { label: 'Fri · Evening',   meta: '6 hrs',             amount: 2000, status: 'completed' },
+        { label: 'Sat · Morning',   meta: '4 hrs',             amount: 1200, status: 'completed' },
+        { label: 'Sun · Evening',   meta: '4 hrs · holiday',   amount: 1000, status: 'completed' },
+      ],
+      trend: { percent: 8, direction: 'up', label: 'vs last week' },
+    }
+  }
+
+  if (variant === 'incentive') {
+    return {
+      ...base,
+      period: { start: '2026-04-01', end: '2026-04-30', label: "April incentives" },
+      total:  { amount: 2800, currency: 'INR' },
+      status: 'processing',
+      breakdown: [
+        { label: 'Attendance bonus',     meta: '26 of 30 days',       amount: 1500, status: 'completed' },
+        { label: 'Volume target',        meta: 'Target 80%, hit 92%', amount:  800, status: 'completed' },
+        { label: 'Quality bonus',        meta: 'Pending review',      amount:  400, status: 'processing' },
+        { label: 'Peer referral',        meta: '1 hire',              amount:  100, status: 'processing' },
+      ],
+      trend: { percent: 12, direction: 'up', label: 'vs last month' },
+    }
+  }
+
+  if (variant === 'advance') {
+    return {
+      ...base,
+      period: { start: '2026-04-19', end: '2026-04-25', label: "Available advance" },
+      total:  { amount: 8200, currency: 'INR' },
+      status: 'completed',
+      breakdown: [
+        { label: 'Shifts worked',   meta: '5 shifts · cleared',        amount: 8200, status: 'completed' },
+        { label: 'In progress',     meta: '2 shifts · clears Fri',     amount: 3100, status: 'processing' },
+        { label: 'Advance fee',     meta: '1% processing',             amount:  -82, status: 'completed' },
+      ],
+      trend: { percent: 3, direction: 'down', label: 'vs last period' },
+      action: { label: 'Request advance', intent: 'primary' },
+    }
+  }
+
+  throw new Error(`buildEarningsPayload: unknown variant "${variant}"`)
+}
+
 /* ─── Shared video payload builder ────────────────────────────────
    Returns a representative payload per variant for the Video Player
    widget (#16). Both variants point at the Blender Foundation's
@@ -1618,6 +1683,16 @@ export const widgetSchemas = {
       { id: 'candidate_match', label: 'Candidate',  payload: () => buildComparisonPayload('candidate_match') },
       { id: 'skills_gap',      label: 'Skills gap', payload: () => buildComparisonPayload('skills_gap') },
       { id: 'qc_spec',         label: 'QC spec',    payload: () => buildComparisonPayload('qc_spec') },
+    ],
+  },
+
+  earnings: {
+    label: 'Earnings',
+    category: 'display',
+    variants: [
+      { id: 'paycheck',  label: 'Paycheck',  payload: () => buildEarningsPayload('paycheck') },
+      { id: 'incentive', label: 'Incentive', payload: () => buildEarningsPayload('incentive') },
+      { id: 'advance',   label: 'Advance',   payload: () => buildEarningsPayload('advance') },
     ],
   },
 
