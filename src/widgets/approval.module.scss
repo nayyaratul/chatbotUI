@@ -138,3 +138,16 @@
   color: var(--tone-color);
   transition: color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
+
+.reasoning {
+  margin: 0;
+  padding: var(--space-025) 0 var(--space-025) var(--space-125);
+  border-left: var(--border-width-300) solid var(--tone-color);
+
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+
+  transition: border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}

@@ -86,7 +86,7 @@ const TONE_CLASS = {
 }
 
 export function Approval({ payload }) {
-  const { variant = 'bgv', summary, recommendation } = payload ?? {}
+  const { variant = 'bgv', summary, recommendation, reasoning } = payload ?? {}
   const Icon = VARIANT_ICONS[variant] ?? ShieldCheck
 
   const toneClass = TONE_CLASS[recommendation?.tone] ?? null
@@ -110,7 +110,12 @@ export function Approval({ payload }) {
           verdict={recommendation?.verdict}
         />
       </header>
-      {/* Reasoning + accordion + action bar follow in later tasks */}
+      {reasoning && (
+        <blockquote className={styles.reasoning}>
+          {reasoning}
+        </blockquote>
+      )}
+      {/* Accordion + action bar follow in later tasks */}
     </div>
   )
 }
