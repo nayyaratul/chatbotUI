@@ -177,6 +177,110 @@ function richJobs() {
   ]
 }
 
+/* ─── Shared approval payload builder ─────────────────────────────
+   Returns a representative payload per variant for the Approval
+   widget (#23). Used by both widgetSchemas variants and any mockBot
+   rule, so a single call site keeps the fixtures in one place. */
+function buildApprovalPayload(variant) {
+  const base = {
+    widget_id: makeId('ap'),
+    variant,
+    actions: ['approve', 'reject', 'more_info', 'escalate'],
+  }
+
+  if (variant === 'bgv') {
+    return {
+      ...base,
+      case_id: 'case-bgv-4821',
+      summary: { title: 'Priya Sharma',    subtitle: 'Aadhaar verification' },
+      recommendation: { verdict: 'approve', confidence: 0.87, tone: 'success' },
+      reasoning:
+        'Cross-match between submitted Aadhaar and PAN fields passed on name, DOB, and address. Phone verification succeeded on the first attempt. No discrepancies flagged.',
+      evidence: [
+        { id: 'ev-aadhaar', kind: 'document',  label: 'Aadhaar front', meta: '92% match', body: { thumbnail_url: '', name: 'aadhaar-front.jpg', subtitle: 'Captured 2 min ago · 2.1 MB' } },
+        { id: 'ev-pan',     kind: 'document',  label: 'PAN card',       meta: '98% match', body: { thumbnail_url: '', name: 'pan-front.jpg',     subtitle: 'Captured 2 min ago · 1.8 MB' } },
+        { id: 'ev-score',   kind: 'score',     label: 'Cross-match score', meta: '4 of 4 checks', body: { rows: [
+          { label: 'Name match',    value: 1.00 },
+          { label: 'DOB match',     value: 1.00 },
+          { label: 'Address match', value: 0.88 },
+          { label: 'Phone verified', value: 1.00 },
+        ] } },
+      ],
+    }
+  }
+
+  if (variant === 'interview') {
+    return {
+      ...base,
+      case_id: 'case-iv-2039',
+      summary: { title: 'Rahul Kumar', subtitle: 'Interview — Ops Lead' },
+      recommendation: { verdict: 'borderline', confidence: 0.62, tone: 'warning' },
+      reasoning:
+        'Strong domain answers but weak on stakeholder-management scenarios. Communication is clear; culture fit is acceptable. Panel split — this is a borderline call that warrants a second round.',
+      evidence: [
+        { id: 'ev-transcript', kind: 'transcript', label: 'Key excerpts',       meta: '3 moments', body: { excerpts: [
+          { timestamp: '04:12', text: 'When the merchandiser pushed back on the SLA, I told him the target was non-negotiable. The conversation got tense but he agreed eventually.' },
+          { timestamp: '12:47', text: 'I have not personally run a P0 outage post-mortem — I have only shadowed one.' },
+          { timestamp: '23:05', text: 'I think the hardest part of this role is going to be the cross-team coordination, honestly.' },
+        ] } },
+        { id: 'ev-scores',     kind: 'score',      label: 'Panel scorecard',     meta: '62% overall',  body: { rows: [
+          { label: 'Domain depth',          value: 0.78 },
+          { label: 'Stakeholder handling',  value: 0.45 },
+          { label: 'Communication clarity', value: 0.72 },
+          { label: 'Culture fit',           value: 0.66 },
+        ] } },
+      ],
+    }
+  }
+
+  if (variant === 'qc_flagged') {
+    return {
+      ...base,
+      case_id: 'case-qc-4812',
+      summary: { title: 'Audit #4812', subtitle: 'Shelf layout — Reliance Fresh, Indiranagar' },
+      recommendation: { verdict: 'reject', confidence: 0.78, tone: 'error' },
+      reasoning:
+        'Two of five criteria failed. Shelf products are not aligned to the planogram; front-facing signage is obscured by a stack of cartons on aisle 4. Recommend resubmission with corrections.',
+      evidence: [
+        { id: 'ev-photo',    kind: 'document', label: 'Submitted photo', meta: '4.2 MB', body: { thumbnail_url: '', name: 'audit-4812.jpg', subtitle: 'Captured 18 min ago · GPS verified' } },
+        { id: 'ev-criteria', kind: 'criteria', label: 'Criteria checklist', meta: '2 / 5 failed', body: { items: [
+          { label: 'Location verified',         pass: true },
+          { label: 'Product alignment',         pass: false },
+          { label: 'Price tags visible',        pass: true },
+          { label: 'Signage unobstructed',      pass: false },
+          { label: 'Aisle clear of obstructions', pass: true },
+        ] } },
+      ],
+    }
+  }
+
+  if (variant === 'offer') {
+    return {
+      ...base,
+      case_id: 'case-off-7701',
+      summary: { title: 'Priya Sharma', subtitle: 'Offer — Ops Lead, Bangalore' },
+      recommendation: { verdict: 'approve', confidence: 0.94, tone: 'success' },
+      reasoning:
+        'Panel scored 88% overall. Compensation package is within the approved band for this role + location. All references cleared. Recommended to send offer.',
+      evidence: [
+        { id: 'ev-comp',   kind: 'compensation', label: 'Compensation', meta: 'Within band', body: { rows: [
+          { label: 'Base',           value: '₹ 18,00,000 / year' },
+          { label: 'Variable',       value: '₹ 3,00,000 / year (20%)' },
+          { label: 'Joining bonus',  value: '₹ 2,00,000' },
+          { label: 'Notice period',  value: '60 days' },
+        ] } },
+        { id: 'ev-scores', kind: 'score',        label: 'Panel summary',  meta: '88% overall', body: { rows: [
+          { label: 'Interview panel',     value: 0.88 },
+          { label: 'Reference check',     value: 0.92 },
+          { label: 'Assessment score',    value: 0.85 },
+        ] } },
+      ],
+    }
+  }
+
+  return base
+}
+
 export const widgetSchemas = {
 
   // ─── engine ──────────────────────────────────────────────────────
@@ -1385,6 +1489,17 @@ export const widgetSchemas = {
           silent: false,
         }),
       },
+    ],
+  },
+
+  approval: {
+    label: 'Approval',
+    category: 'advanced',
+    variants: [
+      { id: 'bgv',        label: 'BGV',       payload: () => buildApprovalPayload('bgv') },
+      { id: 'interview',  label: 'Interview', payload: () => buildApprovalPayload('interview') },
+      { id: 'qc_flagged', label: 'QC',        payload: () => buildApprovalPayload('qc_flagged') },
+      { id: 'offer',      label: 'Offer',     payload: () => buildApprovalPayload('offer') },
     ],
   },
 

@@ -19,6 +19,7 @@ import {
   Gauge,
   Briefcase,
   GalleryHorizontal,
+  Gavel,
   FileText,
   BookOpen,
   ScanSearch,
@@ -51,6 +52,7 @@ const WIDGET_ICONS = {
   instruction_card:   BookOpen,
   qc_evidence_review: ScanSearch,
   evidence_review:    FileCheck2,
+  approval:           Gavel,
 }
 
 /**

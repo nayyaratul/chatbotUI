@@ -126,6 +126,13 @@ registerRule({
   build: () => ({ type: 'datetime_picker', payload: getVariantPayload('datetime_picker', 'datetime') }),
 })
 
+// ─── Approval — BGV default ──────────────────────────────────────
+// Trigger: "approval", "approve", "review case", "bgv review"
+registerRule({
+  match: /^(approval|approve|review case|bgv review|admin review)$/i,
+  build: () => ({ type: 'approval', payload: getVariantPayload('approval', 'bgv') }),
+})
+
 // ─── Training Scenario — pre-practice brief ───────────────────────
 // Trigger: "training", "scenario", "practice", "role play", "brief"
 registerRule({
