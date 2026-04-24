@@ -31,28 +31,41 @@ const VERDICT_LABEL_DONE = {
   escalate:   'ESCALATED',
 }
 
+/* r=18 fits inside the 44×44 viewBox with gutter for the 3px stroke. */
+const ARC_CIRCUMFERENCE = 2 * Math.PI * 18
+
 function ConfidenceArc({ confidence, verdict, committed = false, decisionKey = null }) {
-  const C = 2 * Math.PI * 18
   const target = committed ? 1 : (confidence ?? 0)
   const [swept, setSwept] = useState(false)
 
+  // mount-only — Studio variant switches remount the widget, so no re-trigger needed here.
   useEffect(() => {
     const raf = requestAnimationFrame(() => setSwept(true))
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  const dashOffset = C * (1 - (swept ? Math.max(0, Math.min(1, target)) : 0))
+  const dashOffset =
+    ARC_CIRCUMFERENCE * (1 - (swept ? Math.max(0, Math.min(1, target)) : 0))
   const labelWord = committed
     ? (VERDICT_LABEL_DONE[decisionKey] ?? VERDICT_LABEL[verdict] ?? '')
     : (VERDICT_LABEL[verdict] ?? '')
 
   return (
-    <div className={styles.arcWrap} aria-hidden>
-      <svg className={styles.arcSvg} viewBox="0 0 44 44" role="img"
-           aria-label={`Confidence ${Math.round((confidence ?? 0) * 100)} percent`}>
+    <div className={styles.arcWrap}>
+      <svg
+        className={styles.arcSvg}
+        viewBox="0 0 44 44"
+        role="img"
+        aria-label={`Confidence ${Math.round((confidence ?? 0) * 100)} percent`}
+      >
         <circle className={styles.arcTrack} cx="22" cy="22" r="18" />
-        <circle className={styles.arcFill} cx="22" cy="22" r="18"
-                style={{ strokeDasharray: C, strokeDashoffset: dashOffset }} />
+        <circle
+          className={styles.arcFill}
+          cx="22"
+          cy="22"
+          r="18"
+          style={{ strokeDasharray: ARC_CIRCUMFERENCE, strokeDashoffset: dashOffset }}
+        />
       </svg>
       <span className={styles.arcVerdict}>{labelWord}</span>
     </div>
