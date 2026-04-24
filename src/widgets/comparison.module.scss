@@ -261,7 +261,7 @@
 }
 
 /* ─── Gutter-rail connector line ─────────────────────────────
-   Two thin 1px strokes that draw outward from the indicator chip:
+   Two thin border-width-100 strokes that draw outward from the indicator chip:
      ::before → left stroke, neutral grey-30, scales from the chip
                 edge out toward the a_value cell. The left side is
                 "the given" — neutral is honest.
@@ -295,7 +295,7 @@
 /* Left stroke — neutral side ("the given") */
 .cellIndicator::before {
   right: 50%;
-  background: color-mix(in srgb, var(--grey-60) 45%, var(--white));
+  background: var(--grey-30);
   transform-origin: right center;
 }
 
@@ -335,14 +335,6 @@
   background: color-mix(in srgb, var(--status-tone) 10%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--status-tone) 28%, transparent);
   color: var(--status-tone);
-  /* Solid white fill behind the tinted background so the rail lines
-     terminate cleanly at the chip edge rather than bleeding through
-     the translucent tint. Two-layer background: tint on top, white
-     underneath. */
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--status-tone) 10%, var(--white)),
-                    color-mix(in srgb, var(--status-tone) 10%, var(--white))),
-    linear-gradient(var(--white), var(--white));
 
   /* Springy scale-in lands after the row content settles. Override
      the shared `.criterionRow > *` rise animation on just this chip
