@@ -282,13 +282,17 @@
   transform-origin: center center;
 }
 
-/* Tone-specific settle — fires at row_delay + 400ms, chains cleanly
-   after cmpDotPop. Each status class drives its own keyframe on top
-   of the same transform channel so the base pop still lands first. */
+/* Tone-specific settle — fires at row_delay + 400ms, chains after
+   cmpDotPop. Settle animations use fill-mode: forwards (NOT `both`)
+   so their backwards-fill doesn't clobber cmpDotPop's transform
+   animation during its active window. Later-in-list wins on shared
+   properties, so if a settle were `both` its backwards-fill of
+   `transform: scale(1)` / `translateX(0)` would silently suppress
+   the pop scale(0.6) → scale(1) during t = row_delay..row_delay+400. */
 .criterionBlock[data-status="match"] .toneDot {
   animation:
     cmpDotPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
-    cmpDotMatchGlow 640ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+    cmpDotMatchGlow 640ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
   animation-delay:
     calc(var(--cmp-row-delay, 0ms) + 120ms),
     calc(var(--cmp-row-delay, 0ms) + 400ms);
@@ -297,7 +301,7 @@
 .criterionBlock[data-status="partial"] .toneDot {
   animation:
     cmpDotPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
-    cmpDotPartialPulse 520ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+    cmpDotPartialPulse 520ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
   animation-delay:
     calc(var(--cmp-row-delay, 0ms) + 120ms),
     calc(var(--cmp-row-delay, 0ms) + 400ms);
@@ -306,7 +310,7 @@
 .criterionBlock[data-status="gap"] .toneDot {
   animation:
     cmpDotPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both,
-    cmpDotGapNudge 360ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+    cmpDotGapNudge 360ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
   animation-delay:
     calc(var(--cmp-row-delay, 0ms) + 120ms),
     calc(var(--cmp-row-delay, 0ms) + 400ms);
@@ -347,10 +351,13 @@
   opacity: var(--opacity-100);
 }
 
+/* Left rail aligned to the block stripe's x-position — both sit at
+   `left: var(--space-050)` from their container's left edge so the
+   note reads as a continuation of the block above it. */
 .noteInner {
   padding: var(--space-075) var(--space-125) var(--space-100) calc(var(--space-125) + var(--space-075));
   border-left: var(--border-width-300) solid var(--status-tone);
-  margin-left: var(--space-125);
+  margin-left: var(--space-050);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-regular);
   font-style: italic;
