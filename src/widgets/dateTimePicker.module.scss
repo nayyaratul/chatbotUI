@@ -84,25 +84,40 @@
   color: var(--grey-60);
 }
 
-/* ─── Timezone strip — subtle eyebrow above the calendar ─────────── */
+/* ─── Timezone pill — small, inline caption above the calendar ────
+   A neutral pill with a globe glyph. Sits self-start so it feels
+   like a quiet annotation rather than a header. */
 
-.tzStrip {
+.tzPill {
+  align-self: flex-start;
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-050);
+  padding: var(--space-025) var(--space-075);
+
+  background: var(--grey-0);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-full);
 
   font-family: var(--sans);
   font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
   line-height: 1;
-  letter-spacing: 0.08em;
+
+  > svg { color: var(--grey-50); }
+}
+
+.tzPrefix {
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-50);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.tzPrefix { color: var(--grey-50); }
-
 .tzValue {
+  font-weight: var(--font-weight-semibold);
   color: var(--grey-80);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
 
@@ -196,11 +211,20 @@
   gap: var(--space-050);
 }
 
+/* Directional grid entry — set via `key` remount on month nav so the
+   fresh grid slides in from the direction of travel. Uses the family
+   rise-up curve, horizontal offset instead of vertical. */
+.dayGridFromLeft  { animation: dtpGridInLeft  280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both; }
+.dayGridFromRight { animation: dtpGridInRight 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both; }
+
 .dayCell {
+  position: relative;
   aspect-ratio: 1 / 1;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-025);
 
   background: var(--white);
   border: var(--border-width-100) solid transparent;
@@ -218,12 +242,16 @@
     background 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
+    box-shadow 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
     transform 100ms ease;
 }
+
+.dayCellNum { line-height: 1; }
 
 .dayCell:hover:not(:disabled) {
   background: var(--grey-0);
   border-color: var(--grey-20);
+  transform: scale(1.04);
 }
 
 .dayCell:active:not(:disabled) {
@@ -243,31 +271,74 @@
 .dayCell:disabled:hover {
   background: var(--white);
   border-color: transparent;
+  transform: none;
 }
 
 .dayCellMuted:not(:disabled) { color: var(--grey-30); }
 .dayCellMuted:disabled       { color: var(--grey-20); }
 
-/* Today — outlined brand ring, text stays brand. Overridden by
+/* Today — outlined brand ring that breathes slowly. Overridden by
    dayCellSelected below when the user picks today as their date. */
-.dayCellToday {
+.dayCellToday:not(.dayCellSelected) {
   border-color: color-mix(in srgb, var(--brand-60) 40%, transparent);
   color: var(--brand-60);
   font-weight: var(--font-weight-semibold);
+  animation: dtpTodayBreathe 3200ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
 }
 
+/* Selected — filled brand circle sitting on a soft brand shadow.
+   Reads as "decision made" without shouting. */
 .dayCellSelected,
 .dayCellSelected.dayCellToday {
   background: var(--brand-60);
   border-color: var(--brand-60);
   color: var(--white);
   font-weight: var(--font-weight-semibold);
+  box-shadow: 0 var(--size-04) var(--size-12) 0
+    color-mix(in srgb, var(--brand-60) 32%, transparent);
 }
 
 .dayCellSelected:hover:not(:disabled) {
   background: var(--brand-60);
   border-color: var(--brand-60);
+  transform: scale(1);    /* selected cell is already "elevated" — no grow on hover */
 }
+
+/* ─── Density dot — signature moment.
+   Three tiers show, at a glance, how many slots remain on a given
+   day. Dot sits under the date number inside the circle. Omitted
+   entirely when there is no availability_slots payload (free-time
+   mode), so the calendar stays clean in that case. */
+
+.dayDot {
+  width: var(--size-04);
+  height: var(--size-04);
+  border-radius: var(--radius-full);
+
+  background: var(--grey-20);
+  box-shadow: 0 0 0 var(--border-width-100) transparent;
+
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.dayDot_high { background: var(--brand-60); }
+
+.dayDot_mid  { background: color-mix(in srgb, var(--brand-60) 50%, var(--grey-10)); }
+
+/* Low = last spot. Hollow warning ring to feel "proceed with intent." */
+.dayDot_low {
+  background: var(--white);
+  box-shadow: 0 0 0 var(--border-width-150) var(--yellow-60);
+}
+
+/* On selected cell, the dot inverts to white so it stays readable on
+   the brand fill. */
+.dayCellSelected .dayDot {
+  background: var(--white);
+  box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--white) 60%, transparent);
+}
+
+.dayCell:hover:not(:disabled) .dayDot { transform: scale(1.2); }
 
 /* ─── Time section — reveals when a date is selected ─────────────── */
 
@@ -309,6 +380,31 @@
   text-transform: none;
 }
 
+/* ─── Time groups — Morning / Afternoon / Evening sections ──────── */
+
+.timeGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-125);
+}
+
+.timeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
+
+.timeGroupLabel {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-50);
+  padding-left: var(--space-025);
+}
+
 .timeList {
   margin: 0;
   padding: 0;
@@ -317,6 +413,11 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-075);
+}
+
+.timeCell {
+  /* Per-item stagger — capped at 8 children (§11) upstream. */
+  animation: dtpTimeCellIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--time-delay, 0ms) both;
 }
 
 .timeBtn {
@@ -496,4 +597,31 @@
   0%   { opacity: 0; transform: translateY(var(--space-050)) scale(0.96); }
   60%  { opacity: 1; transform: translateY(0) scale(1.02); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Directional month transitions — the new grid slides in from the
+   direction of travel. Horizontal offset is a single token step so
+   the movement reads as spatial orientation, not theatrical. */
+@keyframes dtpGridInLeft {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--space-150))); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dtpGridInRight {
+  from { opacity: 0; transform: translateX(var(--space-150)); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Today ring breathes — very faint opacity cycle on the brand-tinted
+   border so the anchor stays visible without ever becoming loud. */
+@keyframes dtpTodayBreathe {
+  0%, 100% { border-color: color-mix(in srgb, var(--brand-60) 40%, transparent); }
+  50%      { border-color: color-mix(in srgb, var(--brand-60) 16%, transparent); }
+}
+
+/* Per-time-pill entry — slight rise + opacity fade, staggered via the
+   --time-delay custom property set inline on each cell. */
+@keyframes dtpTimeCellIn {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: 1; transform: translateY(0); }
 }

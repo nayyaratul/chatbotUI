@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   CalendarDays,
   Clock,
+  Globe,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -114,6 +115,36 @@ function generateFreeTimes(window) {
   return times
 }
 
+/* Signature moment: encode a day's total remaining capacity as a small
+   dot under the date number. Three tiers — plenty / moderate / scarce —
+   so the calendar reads as an availability map, not just a picker. */
+function densityTier(totalRemaining) {
+  if (totalRemaining == null) return null
+  if (totalRemaining >= 5) return 'high'
+  if (totalRemaining >= 2) return 'mid'
+  if (totalRemaining >= 1) return 'low'
+  return null
+}
+
+/* Bucket a list of times into Morning / Afternoon / Evening so the
+   time list is scannable at a glance instead of one long column. */
+function groupTimesByPeriod(times) {
+  const morning = []
+  const afternoon = []
+  const evening = []
+  for (const t of times) {
+    const h = parseInt(t.time.split(':')[0], 10)
+    if (h < 12) morning.push(t)
+    else if (h < 17) afternoon.push(t)
+    else evening.push(t)
+  }
+  const out = []
+  if (morning.length)   out.push({ key: 'morning',   label: 'Morning',   items: morning })
+  if (afternoon.length) out.push({ key: 'afternoon', label: 'Afternoon', items: afternoon })
+  if (evening.length)   out.push({ key: 'evening',   label: 'Evening',   items: evening })
+  return out
+}
+
 /* ─── Root ─────────────────────────────────────────────────────────── */
 
 export function DateTimePicker({ payload }) {
@@ -141,6 +172,22 @@ export function DateTimePicker({ payload }) {
     return m
   }, [availableSlots])
 
+  /* Per-date "how busy" tier for the signature dots. Sums `remaining`
+     across the day's slots; a slot without a `remaining` field is
+     treated as plentiful (contributes 5). */
+  const densityByDate = useMemo(() => {
+    if (!slotsByDate) return null
+    const m = new Map()
+    for (const [ymd, times] of slotsByDate) {
+      const total = times.reduce(
+        (sum, t) => sum + (typeof t.remaining === 'number' ? t.remaining : 5),
+        0,
+      )
+      m.set(ymd, total)
+    }
+    return m
+  }, [slotsByDate])
+
   const today = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d
   }, [])
@@ -151,10 +198,12 @@ export function DateTimePicker({ payload }) {
   }, [minDate, today])
 
   const [view, setView]                     = useState(initialMonth)
+  const [navDir, setNavDir]                 = useState('none')  // 'prev' | 'next' | 'none'
   const [selectedDate, setSelectedDate]     = useState(null)
   const [selectedTime, setSelectedTime]     = useState(null)
   const [selectedSlotId, setSelectedSlotId] = useState(null)
   const [submitted, setSubmitted]           = useState(false)
+  const gridKey = useRef(0)
 
   const cells = useMemo(
     () => monthGrid(view.year, view.month),
@@ -182,6 +231,8 @@ export function DateTimePicker({ payload }) {
   }, [maxDate, view.year, view.month])
 
   const shiftMonth = useCallback((delta) => {
+    setNavDir(delta < 0 ? 'prev' : 'next')
+    gridKey.current += 1
     setView((v) => {
       const d = new Date(v.year, v.month + delta, 1)
       return { year: d.getFullYear(), month: d.getMonth() }
@@ -204,6 +255,11 @@ export function DateTimePicker({ payload }) {
     if (slotsByDate) return slotsByDate.get(toYMD(selectedDate)) ?? []
     return generateFreeTimes(timeWindow)
   }, [mode, selectedDate, slotsByDate, timeWindow])
+
+  const timeGroups = useMemo(
+    () => groupTimesByPeriod(timesForSelectedDate),
+    [timesForSelectedDate],
+  )
 
   const handleTimeClick = useCallback((timeObj) => {
     if (submitted) return
@@ -272,10 +328,11 @@ export function DateTimePicker({ payload }) {
         </div>
       </div>
 
-      {/* Timezone strip */}
+      {/* Timezone pill — small, inline caption with globe glyph */}
       {timezoneLabel && (
-        <div className={styles.tzStrip}>
-          <span className={styles.tzPrefix}>Times shown in</span>
+        <div className={styles.tzPill} role="note" aria-label={`Times shown in ${timezoneLabel}`}>
+          <Globe size={11} strokeWidth={2.25} aria-hidden="true" />
+          <span className={styles.tzPrefix}>Shown in</span>
           <span className={styles.tzValue}>{timezoneLabel}</span>
         </div>
       )}
@@ -312,11 +369,22 @@ export function DateTimePicker({ payload }) {
           ))}
         </div>
 
-        <div className={styles.dayGrid} role="grid" aria-label="Calendar">
+        <div
+          key={gridKey.current}
+          className={cx(
+            styles.dayGrid,
+            navDir === 'prev' && styles.dayGridFromLeft,
+            navDir === 'next' && styles.dayGridFromRight,
+          )}
+          role="grid"
+          aria-label="Calendar"
+        >
           {cells.map((cell, i) => {
             const disabled = isDateDisabled(cell.date)
             const selected = sameDay(cell.date, selectedDate)
             const isToday  = sameDay(cell.date, today)
+            const ymd      = toYMD(cell.date)
+            const tier     = densityByDate ? densityTier(densityByDate.get(ymd)) : null
             return (
               <button
                 key={i}
@@ -333,16 +401,27 @@ export function DateTimePicker({ payload }) {
                 )}
                 onClick={() => handleDateClick(cell.date)}
               >
-                {cell.date.getDate()}
+                <span className={styles.dayCellNum}>{cell.date.getDate()}</span>
+                {tier && cell.inMonth && !disabled && (
+                  <span
+                    aria-hidden="true"
+                    className={cx(styles.dayDot, styles[`dayDot_${tier}`])}
+                  />
+                )}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Time list — only when mode:datetime and a date is selected */}
+      {/* Time list — reveals when mode:datetime and a date is selected.
+          Times bucket into Morning / Afternoon / Evening so a long free
+          window still reads at a glance. Stagger cap at 8 per §11. */}
       {mode === 'datetime' && selectedDate && !submitted && (
-        <div className={styles.timeSection}>
+        <div
+          className={styles.timeSection}
+          key={toYMD(selectedDate)}                      /* re-trigger entry animation per date */
+        >
           <div className={styles.timeHead}>
             <Clock size={12} strokeWidth={2} aria-hidden="true" />
             <span className={styles.timeHeadLabel}>Times</span>
@@ -356,36 +435,52 @@ export function DateTimePicker({ payload }) {
               No times available for this date.
             </div>
           ) : (
-            <ul className={styles.timeList}>
-              {timesForSelectedDate.map((t) => {
-                const isSelectedTime = t.time === selectedTime
-                const low = typeof t.remaining === 'number' && t.remaining > 0 && t.remaining <= 2
+            <div className={styles.timeGroups}>
+              {timeGroups.map((group) => {
+                let runningIdx = 0  /* stagger index across all groups, capped at 8 */
                 return (
-                  <li key={`${t.time}-${t.slot_id ?? 'free'}`}>
-                    <button
-                      type="button"
-                      className={cx(
-                        styles.timeBtn,
-                        isSelectedTime && styles.timeBtnSelected,
-                      )}
-                      onClick={() => handleTimeClick(t)}
-                    >
-                      <span className={styles.timeBtnLabel}>
-                        {formatTime(t.time)}
-                      </span>
-                      {typeof t.remaining === 'number' && (
-                        <span className={cx(
-                          styles.timeBtnMeta,
-                          low && styles.timeBtnMetaLow,
-                        )}>
-                          {t.remaining} left
-                        </span>
-                      )}
-                    </button>
-                  </li>
+                  <div key={group.key} className={styles.timeGroup}>
+                    <div className={styles.timeGroupLabel}>{group.label}</div>
+                    <ul className={styles.timeList}>
+                      {group.items.map((t) => {
+                        const isSelectedTime = t.time === selectedTime
+                        const low = typeof t.remaining === 'number'
+                          && t.remaining > 0 && t.remaining <= 2
+                        const delayIdx = Math.min(runningIdx++, 7)
+                        return (
+                          <li
+                            key={`${t.time}-${t.slot_id ?? 'free'}`}
+                            className={styles.timeCell}
+                            style={{ '--time-delay': `${delayIdx * 40}ms` }}
+                          >
+                            <button
+                              type="button"
+                              className={cx(
+                                styles.timeBtn,
+                                isSelectedTime && styles.timeBtnSelected,
+                              )}
+                              onClick={() => handleTimeClick(t)}
+                            >
+                              <span className={styles.timeBtnLabel}>
+                                {formatTime(t.time)}
+                              </span>
+                              {typeof t.remaining === 'number' && (
+                                <span className={cx(
+                                  styles.timeBtnMeta,
+                                  low && styles.timeBtnMetaLow,
+                                )}>
+                                  {t.remaining} left
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
                 )
               })}
-            </ul>
+            </div>
           )}
         </div>
       )}
