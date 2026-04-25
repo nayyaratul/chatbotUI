@@ -268,7 +268,11 @@ export function Profile({ payload }) {
                 row — the two decision actions, tuned to read as a
                 balanced choice. */}
       {actedAt ? (
-        <div className={styles.successBanner}>
+        <div
+          className={styles.successBanner}
+          role="status"
+          aria-live="polite"
+        >
           <span className={styles.successChip}>
             <CheckCircle2 size={14} strokeWidth={2.5} aria-hidden="true" />
             Submitted

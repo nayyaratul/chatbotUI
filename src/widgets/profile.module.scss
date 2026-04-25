@@ -489,12 +489,14 @@ img.photo {
   animation-delay: var(--pcd-cta-delay, 1500ms);
 }
 
-/* Matches JobCard's .viewDetailsLink exactly — brand-60 medium-
-   weight tappable text link with a brand-tint hover wash and a
-   small chevron-style arrow that nudges right on hover. Negative
-   margin-left of var(--space-075) pulls the visible text flush
-   with the column's left edge despite the inner padding (so the
-   tap area is generous but the optical alignment is tight). */
+/* Matches JobCard's .viewDetailsLink visual treatment — brand-60
+   medium-weight tappable text link with brand-tint hover wash +
+   right-nudging arrow. Negative margin-left pulls the visible text
+   flush with the column's left edge despite the inner padding.
+   Adds min-height: var(--size-44) on top of JobCard's pattern to
+   meet the 44pt tap-target floor (pro-max touch-target-size rule);
+   visible text stays compact, tap area meets the WCAG / HIG / MD
+   standard. */
 .viewFullLink {
   align-self: flex-start;
   display: inline-flex;
@@ -502,6 +504,7 @@ img.photo {
   gap: var(--space-050);
   margin-left: calc(-1 * var(--space-075));
   padding: var(--space-050) var(--space-075);
+  min-height: var(--size-44);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -522,6 +525,13 @@ img.photo {
     transform: translateX(var(--space-025));
     transition: transform 160ms ease;
   }
+}
+
+/* Active state — deeper brand wash + brand-70 text. Sub-100ms tap
+   feedback on mobile (pro-max tap-feedback-speed rule). */
+.viewFullLink:active {
+  background: color-mix(in srgb, var(--brand-60) 18%, transparent);
+  color: var(--brand-70);
 }
 
 .viewFullLink:focus-visible {
