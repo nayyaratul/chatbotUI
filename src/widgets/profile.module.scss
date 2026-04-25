@@ -406,9 +406,9 @@ img.photo {
   display: flex;
   flex-direction: column;
   gap: var(--space-075);
-  padding-block: var(--space-100);   /* 8px top + bottom — extra breathing
-                                         room around the skills section
-                                         on top of the card-level gap. */
+  padding-top: var(--space-050);      /* 4px above eyebrow — tighter
+                                          gap from the stats list. */
+  padding-bottom: var(--space-100);   /* 8px below chips — kept as-is. */
 }
 
 .skillsEyebrow {
