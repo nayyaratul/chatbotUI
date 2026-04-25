@@ -129,36 +129,49 @@ export function VoiceRecording({ payload }) {
     analyserRef.current = null
   }, [])
 
-  /* Encode the captured chunks into a data URL, freeze the bar
-     history, and transition to PREVIEW. Shared between the normal
-     `mr.onstop` path and the defensive fallback timer. Idempotent
-     against unmount; safe to call multiple times (the second call
-     just re-runs FileReader on the same data — no state change). */
+  /* Freeze the bar history and transition to PREVIEW. Synchronous —
+     uses URL.createObjectURL (instant) for playback rather than
+     FileReader.readAsDataURL (async, was hanging in some browsers
+     and never resolving onloadend). The base64 data URL needed for
+     the widget_response is generated at submit time instead.
+     Idempotent against unmount and against double-firing (e.g.,
+     onstop + fallback timer racing — the second call hits an
+     already-set capturedRef and re-runs the same setPhase no-op). */
   const finalizeRecording = useCallback((blob) => {
+    /* eslint-disable no-console */
+    console.log('[VoiceRecording] finalizeRecording, blob size:', blob.size, 'type:', blob.type)
     if (!mountedRef.current) {
+      console.log('[VoiceRecording] not mounted — bailing')
       teardownCapture()
+      return
+    }
+    /* If we've already finalised once, don't redo it. */
+    if (capturedRef.current) {
+      console.log('[VoiceRecording] already finalised — skipping')
       return
     }
     const durationSec = (Date.now() - recordStartRef.current) / 1000
     const finalBars = [...ringBufferRef.current]
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      if (!mountedRef.current) {
-        teardownCapture()
-        return
-      }
-      capturedRef.current = {
-        dataUrl: typeof reader.result === 'string' ? reader.result : '',
-        durationSec,
-        mimeType: blob.type,
-        sizeBytes: blob.size,
-        bars: finalBars,
-      }
-      teardownCapture()
-      setPhase('preview')
+    let objectUrl = ''
+    try {
+      objectUrl = URL.createObjectURL(blob)
+    } catch (err) {
+      console.warn('[VoiceRecording] createObjectURL threw:', err)
     }
-    reader.readAsDataURL(blob)
+
+    capturedRef.current = {
+      blob,
+      objectUrl,
+      durationSec,
+      mimeType: blob.type,
+      sizeBytes: blob.size,
+      bars: finalBars,
+    }
+    console.log('[VoiceRecording] capturedRef set, transitioning to preview')
+    teardownCapture()
+    setPhase('preview')
+    /* eslint-enable no-console */
   }, [teardownCapture])
 
   const handleStopRecording = useCallback(() => {
@@ -355,6 +368,10 @@ export function VoiceRecording({ payload }) {
     setPlayProgress(0)
     setBars(new Array(BAR_COUNT).fill(0))
     setElapsedMs(0)
+    /* Release the previous Object URL so the browser can GC the blob. */
+    if (capturedRef.current?.objectUrl) {
+      try { URL.revokeObjectURL(capturedRef.current.objectUrl) } catch { /* ignore */ }
+    }
     capturedRef.current = null
     setPhase('idle')
   }, [stopPlayRaf])
@@ -375,10 +392,15 @@ export function VoiceRecording({ payload }) {
       if (mr) {
         mr.onstop = null
         mr.ondataavailable = null
+        mr.onerror = null
         if (mr.state !== 'inactive') {
           try { mr.stop() } catch { /* ignore */ }
         }
         mediaRecorderRef.current = null
+      }
+      /* Release the captured-blob's Object URL on unmount. */
+      if (capturedRef.current?.objectUrl) {
+        try { URL.revokeObjectURL(capturedRef.current.objectUrl) } catch { /* ignore */ }
       }
       teardownCapture()
       stopPlayRaf()
@@ -414,7 +436,14 @@ export function VoiceRecording({ payload }) {
        sweep is success-on-success, so visually it stays frozen. */
     setPlayProgress(1)
     setPhase('submitted')
-    onReply?.(
+
+    /* Encode the blob to a base64 data URL for the widget_response
+       payload (parallel to ImageCapture's image_data_url). This is
+       async — done at submit time rather than capture time so the
+       PREVIEW transition doesn't block on the encode. If the reader
+       fails, fall back to the Object URL so the bot still receives
+       a playable handle to the audio. */
+    const fireReply = (audioUrl) => onReply?.(
       {
         type: 'widget_response',
         payload: {
@@ -423,7 +452,7 @@ export function VoiceRecording({ payload }) {
           data: {
             label: title,
             prompt_id: promptId,
-            audio_data_url: captured.dataUrl,
+            audio_data_url: audioUrl,
             duration_seconds: captured.durationSec,
             mime_type: captured.mimeType,
             recorded_at: recordedAt,
@@ -432,6 +461,18 @@ export function VoiceRecording({ payload }) {
       },
       { silent: isSilent },
     )
+
+    try {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = typeof reader.result === 'string' ? reader.result : captured.objectUrl
+        fireReply(result)
+      }
+      reader.onerror = () => fireReply(captured.objectUrl)
+      reader.readAsDataURL(captured.blob)
+    } catch {
+      fireReply(captured.objectUrl)
+    }
   }, [onReply, widgetId, title, promptId, isSilent])
 
   /* Derived recording values. */
@@ -555,7 +596,7 @@ export function VoiceRecording({ payload }) {
         <div className={styles.previewBlock}>
           <audio
             ref={audioElRef}
-            src={captured.dataUrl}
+            src={captured.objectUrl}
             onPlay={handleAudioPlay}
             onPause={handleAudioPause}
             onEnded={handleAudioEnded}
@@ -668,7 +709,7 @@ export function VoiceRecording({ payload }) {
 
           <audio
             ref={audioElRef}
-            src={captured.dataUrl}
+            src={captured.objectUrl}
             onPlay={handleAudioPlay}
             onPause={handleAudioPause}
             onEnded={handleAudioEnded}
