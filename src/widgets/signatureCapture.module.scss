@@ -1012,20 +1012,18 @@
   stroke-linejoin: round;
   pointer-events: none;
   transform-origin: center;
-  animation: sgInkLift 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  /* No wrapper entrance animation. Pass 2 added a scale-fade
+     (`sgInkLift`) that was leaving the captured signature stuck at
+     opacity:0 in some flow combinations. The per-path stroke-dasharray
+     "writes itself" animation is the signature's reveal moment; the
+     wrapper just appears. */
 }
 
-@keyframes sgInkLift {
-  from {
-    opacity: var(--opacity-000);
-    transform: scale(0.96);
-  }
-  to {
-    opacity: var(--opacity-100);
-    transform: scale(1);
-  }
-}
-
+/* Per-path stroke-dasharray draw-in. Inline style on each <path>
+   sets stroke-dasharray = path-length, stroke-dashoffset = path-length,
+   then this keyframe animates dashoffset → 0 (full path visible).
+   `forwards` fill mode preserves the visible state after animation
+   ends. */
 @keyframes sgInkDraw {
   to { stroke-dashoffset: 0; }
 }
@@ -1110,17 +1108,11 @@
 }
 
 .preview_submitted .signatureSvg {
-  /* Re-anchor the SVG inboard of the inset frame so the hatched border
-     and corner brackets read around the ink. The strokes draw-in has
-     already finished by submit time; the settle runs as part of the
-     same beat as the seal arriving. */
-  inset: var(--space-150);
-  width: auto;
-  height: auto;
-  /* No fill-mode delay — sgInkLift has already settled the ink at
-     scale(1) by the time submit runs. Starting from scale(1), nudging
-     to 1.04, returning to 1 reads as a small overshoot-settle, not a
-     contraction snap. */
+  /* Keep the SVG at its base size (inset: 0; width/height: 100%) — the
+     stamp frame, corners and watermark sit ON TOP via their own
+     position: absolute layers, so the SVG does not need to be
+     re-anchored inboard. The settle is just a small scale beat to
+     mark the seal-arrives moment. */
   animation: sgInkSettle 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
 }
 
