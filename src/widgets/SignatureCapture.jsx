@@ -921,6 +921,19 @@ export function SignatureCapture({ payload }) {
     return subtitle
   }, [variant, documentRef, agreementText, subtitle])
 
+  /* Two-step wayfinding. Step 1 (review) is active until the gate
+     clears; Step 2 (sign) is gated until step 1 is done, active once
+     captured-but-not-submitted, and done on submit. Makes the
+     review-then-sign sequence legible at a glance without inventing
+     a progress primitive. */
+  const stepOneState = gateMet ? 'done' : 'active'
+  const stepTwoState = submitted
+    ? 'done'
+    : gateMet
+      ? 'active'
+      : 'gated'
+  const stepOneLabel = variant === 'document' ? 'Review the document' : 'Read the agreement'
+
   return (
     <div className={cx(styles.card, gateMet && styles.card_gateMet)}>
       <header className={styles.header}>
@@ -932,6 +945,11 @@ export function SignatureCapture({ payload }) {
           {subtitle && <p className={styles.description}>{subtitle}</p>}
         </div>
       </header>
+
+      <p className={cx(styles.stepRow, styles[`stepRow_${stepOneState}`])}>
+        <span className={styles.stepBadge}>Step 1</span>
+        <span className={styles.stepText}>{stepOneLabel}</span>
+      </p>
 
       {variant === 'document' ? (
         <DocumentBody
@@ -966,6 +984,11 @@ export function SignatureCapture({ payload }) {
         <span className={styles.srOnly} aria-live="polite">
           {gateMet ? `${gateMetCopy(variant)} at ${timeLabel(gateAt)}` : ''}
         </span>
+      </p>
+
+      <p className={cx(styles.stepRow, styles[`stepRow_${stepTwoState}`])}>
+        <span className={styles.stepBadge}>Step 2</span>
+        <span className={styles.stepText}>Sign your name</span>
       </p>
 
       <div
