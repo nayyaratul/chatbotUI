@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import cx from 'classnames'
 import {
@@ -8,6 +8,8 @@ import {
   FileText,
   ChevronRight,
   Check,
+  Undo2,
+  Eraser,
   X as XIcon,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
@@ -23,23 +25,30 @@ import styles from './signatureCapture.module.scss'
      • 'text'     — inline scrollable agreement body. Gate clears on
                     scroll-to-end.
 
-   Use-case (offer / contract / completion) is a payload field that
-   drives header icon + default copy only — not a separate variant.
+   Capture surface: SignatureSheet (portaled bottom-sheet) owns the
+   <canvas>. Strokes are stored as normalized 0..1 coordinates so the
+   capture surface and the inline preview render the same point arrays
+   at different physical sizes. Quadratic smoothing through midpoints
+   produces curves vs jagged polylines.
 
-   Capture surface (region 3+): bottom-sheet (mobile) / modal (desktop).
    The card itself is a non-interactive preview that holds 4 states:
      idle (gate-pending) → reviewed (gate met) → captured → submitted
 
-   Region 2 wires the gate logic — DocumentViewerSheet for the
-   `document` variant, scroll-to-end detection for the `text` variant,
-   caption swap with timestamp, preview region opacity ramp. Capture
-   surface lands in region 3.
+   Region 3 wires the capture surface (canvas + Undo/Clear/Cancel/Use
+   signature + discard-confirm) and the captured state on the card
+   (SVG render with stroke-dasharray draw-in). Submit handler arrives
+   in region 4.
 
    Spec: docs/superpowers/specs/2026-04-25-signature-capture-widget-design.md
    Rule book: docs/widget-conventions.md
    ─────────────────────────────────────────────────────────────────── */
 
 const SHEET_ANIM_DURATION = 280
+const STROKE_DRAW_DURATION_MS = 280
+const STROKE_DRAW_STAGGER_MS  = 60
+const STROKE_DRAW_CAP         = 8
+const SVG_VIEWBOX_W           = 500
+const SVG_VIEWBOX_H           = 200
 
 const USE_CASE_ICON = {
   offer:      HandCoins,
@@ -82,12 +91,416 @@ function timeLabel(ms) {
   return `${hh}:${mm}`
 }
 
-/* ─── Document viewer — portaled modal/sheet ────────────────────────
-   Reuses the chat-frame portal target (#chat-modal-root) used by
-   JobDetailsModal so the doc-viewer respects the device-frame
-   metaphor instead of escaping to the browser window. Tap-to-close
-   on scrim + Esc + close × all converge through requestClose with a
-   single in-flight guard so onClose only fires once. */
+/* ─── Stroke geometry helpers ────────────────────────────────────────
+   Strokes are stored as Array<Array<{x, y}>> in normalized 0..1
+   coordinates relative to the drawing area's bounding rect. */
+
+function strokeToPathD(stroke, viewW, viewH) {
+  if (!stroke || stroke.length === 0) return ''
+  if (stroke.length === 1) {
+    const x = stroke[0].x * viewW
+    const y = stroke[0].y * viewH
+    return `M ${x} ${y} L ${x + 0.1} ${y + 0.1}`
+  }
+  if (stroke.length === 2) {
+    return `M ${stroke[0].x * viewW} ${stroke[0].y * viewH} L ${stroke[1].x * viewW} ${stroke[1].y * viewH}`
+  }
+  let d = `M ${stroke[0].x * viewW} ${stroke[0].y * viewH}`
+  for (let i = 1; i < stroke.length - 1; i++) {
+    const x1 = stroke[i].x * viewW
+    const y1 = stroke[i].y * viewH
+    const x2 = stroke[i + 1].x * viewW
+    const y2 = stroke[i + 1].y * viewH
+    const xc = (x1 + x2) / 2
+    const yc = (y1 + y2) / 2
+    d += ` Q ${x1} ${y1} ${xc} ${yc}`
+  }
+  const last = stroke[stroke.length - 1]
+  d += ` L ${last.x * viewW} ${last.y * viewH}`
+  return d
+}
+
+function approxStrokeLength(stroke, viewW, viewH) {
+  if (!stroke || stroke.length < 2) return 1
+  let len = 0
+  for (let i = 1; i < stroke.length; i++) {
+    const dx = (stroke[i].x - stroke[i - 1].x) * viewW
+    const dy = (stroke[i].y - stroke[i - 1].y) * viewH
+    len += Math.sqrt(dx * dx + dy * dy)
+  }
+  return Math.max(len, 1)
+}
+
+/* ─── SignatureSheet — portaled capture surface ─────────────────────
+   Owns the <canvas>. Pointer events with setPointerCapture so the
+   gesture stays locked even if the finger leaves the canvas bounds.
+   touch-action: none on the canvas suppresses scroll/zoom. Quadratic
+   smoothing through midpoints renders curves vs jagged polylines. */
+
+function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) {
+  const [phase, setPhase]     = useState('entering')
+  const [strokes, setStrokes] = useState(initialStrokes ?? [])
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const canvasRef             = useRef(null)
+  const containerRef          = useRef(null)
+  const closingRef            = useRef(false)
+  const drawingRef            = useRef(false)
+  const currentStrokeRef      = useRef(null)
+  const inkColorRef           = useRef('rgb(15, 23, 42)') /* fallback; resolved from --grey-90 on mount */
+
+  const portalTarget = typeof document !== 'undefined'
+    ? document.getElementById('chat-modal-root')
+    : null
+
+  /* Two-frame settle + body scroll lock. */
+  useEffect(() => {
+    const r = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPhase('open'))
+    })
+    return () => cancelAnimationFrame(r)
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'open') return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prevOverflow }
+  }, [phase])
+
+  /* Resolve --grey-90 to its computed colour so the canvas ink stays in
+     sync with the design tokens — never hardcode the hex. */
+  useEffect(() => {
+    if (!containerRef.current) return
+    const computed = getComputedStyle(containerRef.current)
+      .getPropertyValue('--grey-90')
+      .trim()
+    if (computed) inkColorRef.current = computed
+  }, [])
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return
+    closingRef.current = true
+    setPhase('exiting')
+    window.setTimeout(onClose, SHEET_ANIM_DURATION)
+  }, [onClose])
+
+  /* Esc closes; if mid-draw, ignore so an accidental key tap doesn't
+     drop the gesture. */
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        if (drawingRef.current) return
+        if (strokes.length > 0 && !confirmDiscard) {
+          setConfirmDiscard(true)
+        } else {
+          requestClose()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [requestClose, strokes.length, confirmDiscard])
+
+  /* ─── Canvas draw routine ─────────────────────────────────────────
+     Redraws everything on every change; the cap of ~10 strokes makes
+     this trivially cheap and keeps Undo / Clear logic simple. */
+  const redraw = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const dpr  = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+
+    /* Re-set intrinsic dimensions every redraw so the canvas survives
+       resize without losing crispness. */
+    if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+      canvas.width  = rect.width * dpr
+      canvas.height = rect.height * dpr
+    }
+    const ctx = canvas.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, rect.width, rect.height)
+    ctx.lineCap   = 'round'
+    ctx.lineJoin  = 'round'
+    ctx.lineWidth = 2.5
+    ctx.strokeStyle = inkColorRef.current
+    ctx.fillStyle   = inkColorRef.current
+
+    function drawOne(stroke) {
+      if (!stroke || stroke.length === 0) return
+      if (stroke.length === 1) {
+        ctx.beginPath()
+        ctx.arc(stroke[0].x * rect.width, stroke[0].y * rect.height, 1.25, 0, Math.PI * 2)
+        ctx.fill()
+        return
+      }
+      ctx.beginPath()
+      ctx.moveTo(stroke[0].x * rect.width, stroke[0].y * rect.height)
+      if (stroke.length === 2) {
+        ctx.lineTo(stroke[1].x * rect.width, stroke[1].y * rect.height)
+      } else {
+        for (let i = 1; i < stroke.length - 1; i++) {
+          const x1 = stroke[i].x * rect.width
+          const y1 = stroke[i].y * rect.height
+          const x2 = stroke[i + 1].x * rect.width
+          const y2 = stroke[i + 1].y * rect.height
+          const xc = (x1 + x2) / 2
+          const yc = (y1 + y2) / 2
+          ctx.quadraticCurveTo(x1, y1, xc, yc)
+        }
+        const last = stroke[stroke.length - 1]
+        ctx.lineTo(last.x * rect.width, last.y * rect.height)
+      }
+      ctx.stroke()
+    }
+
+    strokes.forEach(drawOne)
+    if (currentStrokeRef.current) drawOne(currentStrokeRef.current)
+  }, [strokes])
+
+  /* Redraw whenever strokes change; resize observer for viewport
+     changes (rotation / soft-keyboard). */
+  useEffect(() => { redraw() }, [redraw])
+  useEffect(() => {
+    if (!canvasRef.current) return
+    const ro = new ResizeObserver(() => redraw())
+    ro.observe(canvasRef.current)
+    return () => ro.disconnect()
+  }, [redraw])
+
+  function getNormalizedPoint(e) {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width
+    const y = (e.clientY - rect.top) / rect.height
+    return {
+      x: Math.max(0, Math.min(1, x)),
+      y: Math.max(0, Math.min(1, y)),
+    }
+  }
+
+  function handlePointerDown(e) {
+    e.preventDefault()
+    try { e.target.setPointerCapture(e.pointerId) } catch { /* not supported */ }
+    drawingRef.current = true
+    currentStrokeRef.current = [getNormalizedPoint(e)]
+    redraw()
+  }
+
+  function handlePointerMove(e) {
+    if (!drawingRef.current) return
+    e.preventDefault()
+    currentStrokeRef.current.push(getNormalizedPoint(e))
+    redraw()
+  }
+
+  function handlePointerEnd(e) {
+    if (!drawingRef.current) return
+    drawingRef.current = false
+    const finished = currentStrokeRef.current
+    currentStrokeRef.current = null
+    if (finished && finished.length > 0) {
+      setStrokes((prev) => [...prev, finished])
+    }
+  }
+
+  function handleUndo() {
+    setStrokes((prev) => prev.slice(0, -1))
+  }
+
+  function handleClear() {
+    setStrokes([])
+  }
+
+  function handleCancel() {
+    if (strokes.length > 0) {
+      setConfirmDiscard(true)
+    } else {
+      requestClose()
+    }
+  }
+
+  function handleDiscard() {
+    setStrokes([])
+    setConfirmDiscard(false)
+    requestClose()
+  }
+
+  function handleKeepDrawing() {
+    setConfirmDiscard(false)
+  }
+
+  function handleUse() {
+    if (strokes.length === 0) return
+    onCommit(strokes)
+    requestClose()
+  }
+
+  if (!portalTarget) return null
+
+  const hasStrokes = strokes.length > 0
+
+  return createPortal(
+    <div
+      ref={containerRef}
+      className={cx(styles.shLayer, styles[`shLayer_${phase}`])}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sign your name"
+    >
+      <div
+        className={styles.shScrim}
+        onClick={handleCancel}
+        aria-hidden="true"
+      />
+      <div className={styles.shSheet}>
+        <header className={styles.shHeader}>
+          <div className={styles.shHeaderText}>
+            <p className={styles.shEyebrow}>Signature</p>
+            <h4 className={styles.shTitle}>Sign your name</h4>
+            {subtitleContext && (
+              <p className={styles.shSubtitle}>{subtitleContext}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            className={styles.shClose}
+            onClick={handleCancel}
+            aria-label="Close signing surface"
+          >
+            <XIcon size={18} strokeWidth={2} aria-hidden />
+          </button>
+        </header>
+
+        <div className={styles.shCanvasWrap}>
+          <div
+            className={cx(styles.shCanvasFrame, hasStrokes && styles.shCanvasFrame_inked)}
+          >
+            <div className={styles.shBaseline} aria-hidden />
+            <span className={styles.shMark} aria-hidden>×</span>
+            {!hasStrokes && (
+              <span className={styles.shPlaceholder} aria-hidden>Sign here</span>
+            )}
+            <canvas
+              ref={canvasRef}
+              className={styles.shCanvas}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerEnd}
+              onPointerCancel={handlePointerEnd}
+              onPointerLeave={handlePointerEnd}
+              aria-label="Signature drawing surface"
+            />
+          </div>
+
+          <div className={styles.shFloatingTools} aria-hidden={!hasStrokes || undefined}>
+            <button
+              type="button"
+              className={styles.shToolBtn}
+              onClick={handleUndo}
+              disabled={!hasStrokes}
+              aria-label="Undo last stroke"
+            >
+              <Undo2 size={16} strokeWidth={2} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={styles.shToolBtn}
+              onClick={handleClear}
+              disabled={!hasStrokes}
+              aria-label="Clear signature"
+            >
+              <Eraser size={16} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        </div>
+
+        <p className={styles.shHint}>Use finger or stylus.</p>
+
+        {confirmDiscard ? (
+          <div className={styles.shConfirm} role="alertdialog" aria-label="Discard signature?">
+            <p className={styles.shConfirmTitle}>Discard signature?</p>
+            <div className={styles.shConfirmActions}>
+              <Button variant="secondary" onClick={handleKeepDrawing}>
+                Keep drawing
+              </Button>
+              <button
+                type="button"
+                className={styles.shDiscardBtn}
+                onClick={handleDiscard}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        ) : (
+          <footer className={styles.shFooter}>
+            <Button variant="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleUse}
+              disabled={!hasStrokes}
+            >
+              Use signature
+            </Button>
+          </footer>
+        )}
+      </div>
+    </div>,
+    portalTarget,
+  )
+}
+
+/* ─── Captured signature SVG render ─────────────────────────────────
+   Renders an Array<Stroke> as inline SVG paths with stroke-dasharray
+   draw-in animation. Caps the per-stroke stagger at 8 (§11). */
+
+function SignatureSvg({ strokes, drawIn, ariaLabel }) {
+  const paths = useMemo(() => {
+    return (strokes ?? []).map((stroke) => ({
+      d:      strokeToPathD(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H),
+      length: approxStrokeLength(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H),
+    }))
+  }, [strokes])
+
+  return (
+    <svg
+      className={styles.signatureSvg}
+      viewBox={`0 0 ${SVG_VIEWBOX_W} ${SVG_VIEWBOX_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={ariaLabel}
+    >
+      {paths.map((p, i) => {
+        const stagger = drawIn
+          ? Math.min(i, STROKE_DRAW_CAP - 1) * STROKE_DRAW_STAGGER_MS
+          : 0
+        const style = drawIn
+          ? {
+              strokeDasharray: p.length,
+              strokeDashoffset: p.length,
+              animation: `sgInkDraw ${STROKE_DRAW_DURATION_MS}ms cubic-bezier(0.18, 0.9, 0.28, 1.04) ${stagger}ms forwards`,
+            }
+          : undefined
+        return (
+          <path
+            key={i}
+            d={p.d}
+            style={style}
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
+/* ─── Document viewer — portaled bottom-sheet ───────────────────────
+   Mirrors JobDetailsModal's containment pattern (portal into
+   #chat-modal-root, three-phase animation, scrim click + Esc + close
+   ×, single in-flight close guard). */
 
 function DocumentViewerSheet({ documentRef, onClose }) {
   const [phase, setPhase] = useState('entering')
@@ -97,8 +510,6 @@ function DocumentViewerSheet({ documentRef, onClose }) {
     ? document.getElementById('chat-modal-root')
     : null
 
-  /* Two-frame settle so the entering styles paint before the open
-     transition kicks in — same pattern as JobDetailsModal. */
   useEffect(() => {
     const r = requestAnimationFrame(() => {
       requestAnimationFrame(() => setPhase('open'))
@@ -106,7 +517,6 @@ function DocumentViewerSheet({ documentRef, onClose }) {
     return () => cancelAnimationFrame(r)
   }, [])
 
-  /* Focus close button on open + lock body scroll under the modal. */
   useEffect(() => {
     if (phase !== 'open') return
     closeBtnRef.current?.focus()
@@ -247,10 +657,6 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
     .map((p) => p.trim())
     .filter(Boolean)
 
-  /* On mount, if the body is short enough that no scrolling is required,
-     fire onScrollEnd immediately — the user can't scroll-to-end content
-     that already fits. Without this, short agreements would leave the
-     gate permanently pending. */
   useEffect(() => {
     if (gateMet) return
     const el = scrollRef.current
@@ -264,8 +670,6 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
     if (gateMet) return
     const el = scrollRef.current
     if (!el) return
-    /* 4px tolerance — matches var(--size-04) in spirit; tracks the
-       "almost-at-bottom" rung in the design token scale. */
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
       onScrollEnd()
     }
@@ -305,11 +709,15 @@ export function SignatureCapture({ payload }) {
   const documentRef  = payload?.document_ref
   const agreementText = payload?.agreement_text
 
-  const [gateMet, setGateMet]   = useState(false)
-  const [gateAt, setGateAt]     = useState(null)
-  const [docOpen, setDocOpen]   = useState(false)
-  const [captured]              = useState(false)
-  const scrollRef               = useRef(null)
+  const [gateMet, setGateMet]       = useState(false)
+  const [gateAt, setGateAt]         = useState(null)
+  const [docOpen, setDocOpen]       = useState(false)
+  const [signOpen, setSignOpen]     = useState(false)
+  const [strokes, setStrokes]       = useState([])
+  const [drawInKey, setDrawInKey]   = useState(0)
+  const scrollRef                   = useRef(null)
+
+  const captured = strokes.length > 0
 
   const handleGateClear = useCallback(() => {
     setGateMet((prev) => {
@@ -327,6 +735,40 @@ export function SignatureCapture({ payload }) {
     setDocOpen(false)
     handleGateClear()
   }, [handleGateClear])
+
+  const handlePreviewTap = useCallback(() => {
+    if (!gateMet) return
+    setSignOpen(true)
+  }, [gateMet])
+
+  const handlePreviewKey = useCallback((e) => {
+    if (!gateMet) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setSignOpen(true)
+    }
+  }, [gateMet])
+
+  const handleSheetClose = useCallback(() => {
+    setSignOpen(false)
+  }, [])
+
+  const handleSheetCommit = useCallback((nextStrokes) => {
+    setStrokes(nextStrokes)
+    /* Bump key so the SVG remounts and re-runs its draw-in animation
+       on every commit (including re-signs). */
+    setDrawInKey((k) => k + 1)
+  }, [])
+
+  const previewSubtitle = useMemo(() => {
+    if (variant === 'document') {
+      const parts = []
+      if (documentRef?.label)   parts.push(documentRef.label)
+      if (documentRef?.version) parts.push(documentRef.version)
+      return parts.join(' · ')
+    }
+    return subtitle
+  }, [variant, documentRef, subtitle])
 
   return (
     <div className={cx(styles.card, gateMet && styles.card_gateMet)}>
@@ -372,11 +814,31 @@ export function SignatureCapture({ payload }) {
           !gateMet && styles.preview_gated,
           captured && styles.preview_captured,
         )}
+        role="button"
+        tabIndex={gateMet ? 0 : -1}
         aria-disabled={!gateMet || undefined}
+        aria-label={
+          captured ? 'Tap to re-sign' : 'Tap to sign'
+        }
+        onClick={handlePreviewTap}
+        onKeyDown={handlePreviewKey}
       >
-        <div className={styles.previewBaseline} aria-hidden />
-        <span className={styles.previewMark} aria-hidden>×</span>
-        <span className={styles.previewCaption}>Tap to sign</span>
+        {captured ? (
+          <SignatureSvg
+            key={drawInKey}
+            strokes={strokes}
+            drawIn
+            ariaLabel="Captured signature"
+          />
+        ) : (
+          <>
+            <div className={styles.previewBaseline} aria-hidden />
+            <span className={styles.previewMark} aria-hidden>×</span>
+          </>
+        )}
+        <span className={styles.previewCaption}>
+          {captured ? 'Tap to re-sign' : 'Tap to sign'}
+        </span>
       </div>
 
       {showDisclaimer && (
@@ -397,6 +859,15 @@ export function SignatureCapture({ payload }) {
         <DocumentViewerSheet
           documentRef={documentRef}
           onClose={handleDocumentClose}
+        />
+      )}
+
+      {signOpen && (
+        <SignatureSheet
+          subtitleContext={previewSubtitle}
+          initialStrokes={strokes}
+          onClose={handleSheetClose}
+          onCommit={handleSheetCommit}
         />
       )}
     </div>

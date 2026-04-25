@@ -506,3 +506,376 @@
   flex-direction: column;
   gap: var(--space-100);
 }
+
+/* ─── Signature capture sheet — portaled bottom-sheet ──────────────
+   Same containment pattern as the document viewer (absolute inside
+   #chat-modal-root, flex-end alignment, slide-up). Owns the <canvas>;
+   touch-action: none on the canvas suppresses scroll/zoom so the
+   gesture goes to the drawing logic, not the browser. */
+
+.shLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.shScrim {
+  position: absolute;
+  inset: 0;
+  background: var(--grey-90);
+  opacity: var(--opacity-000);
+  transition: opacity 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+}
+
+.shSheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  width: 100%;
+  max-height: 92%;
+  padding: var(--space-200);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-300) var(--radius-300) 0 0;
+  box-shadow: 0 calc(-1 * var(--size-12)) var(--size-32) color-mix(in srgb, var(--grey-90) 22%, transparent);
+  transform: translateY(100%);
+  opacity: var(--opacity-000);
+  transition:
+    transform 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shLayer_open .shScrim    { opacity: var(--opacity-064); }
+.shLayer_open .shSheet    { transform: translateY(0); opacity: var(--opacity-100); }
+.shLayer_exiting .shScrim { opacity: var(--opacity-000); }
+.shLayer_exiting .shSheet { transform: translateY(100%); opacity: var(--opacity-000); }
+
+.shHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-150);
+}
+
+.shHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.shEyebrow {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+}
+
+.shTitle {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.shSubtitle {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.shClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-32);
+  height: var(--size-32);
+  padding: 0;
+  background: transparent;
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  color: var(--grey-60);
+  cursor: pointer;
+  transition:
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  &:hover {
+    color: var(--grey-80);
+    border-color: var(--grey-30);
+    background: var(--grey-10);
+  }
+
+  &:focus-visible {
+    outline: var(--border-width-150) solid var(--brand-60);
+    outline-offset: var(--size-02);
+  }
+}
+
+.shCanvasWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.shCanvasFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: var(--white);
+  overflow: hidden;
+  transition: border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shCanvasFrame_inked {
+  border-color: var(--grey-30);
+}
+
+.shBaseline {
+  position: absolute;
+  left: var(--space-200);
+  right: var(--space-200);
+  bottom: 38%;
+  height: 0;
+  border-top: var(--border-width-100) dashed var(--grey-30);
+  pointer-events: none;
+  opacity: var(--opacity-100);
+  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shMark {
+  position: absolute;
+  left: var(--space-200);
+  bottom: calc(38% - var(--space-025));
+  font-size: var(--font-size-500);
+  line-height: 1;
+  color: var(--grey-30);
+  user-select: none;
+  pointer-events: none;
+  opacity: var(--opacity-100);
+  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shPlaceholder {
+  position: absolute;
+  bottom: var(--space-100);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  pointer-events: none;
+  opacity: var(--opacity-088);
+}
+
+.shCanvasFrame_inked .shBaseline,
+.shCanvasFrame_inked .shMark,
+.shCanvasFrame_inked .shPlaceholder {
+  opacity: var(--opacity-000);
+}
+
+.shCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.shFloatingTools {
+  position: absolute;
+  top: var(--space-100);
+  right: var(--space-100);
+  display: flex;
+  gap: var(--space-050);
+  pointer-events: auto;
+}
+
+.shToolBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-32);
+  height: var(--size-32);
+  padding: 0;
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-full);
+  color: var(--grey-80);
+  cursor: pointer;
+  transition:
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  box-shadow: 0 var(--size-02) var(--size-04) color-mix(in srgb, var(--grey-90) 12%, transparent);
+
+  &:hover:not(:disabled) {
+    color: var(--brand-60);
+    border-color: var(--brand-60);
+  }
+
+  &:focus-visible {
+    outline: var(--border-width-150) solid var(--brand-60);
+    outline-offset: var(--size-02);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--opacity-048);
+    box-shadow: none;
+  }
+}
+
+.shHint {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: center;
+}
+
+.shFooter {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-100);
+
+  > * {
+    flex: 1;
+  }
+}
+
+.shConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding: var(--space-150);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-error) 24%, transparent);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--color-text-error) 6%, var(--white));
+  animation: sgConfirmRise 220ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.shConfirmTitle {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+.shConfirmActions {
+  display: flex;
+  gap: var(--space-100);
+
+  > * {
+    flex: 1;
+  }
+}
+
+.shDiscardBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-100) var(--space-150);
+  background: transparent;
+  border: var(--border-width-100) solid var(--color-text-error);
+  border-radius: var(--radius-150);
+  color: var(--color-text-error);
+  font-family: inherit;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  cursor: pointer;
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  &:hover {
+    background: var(--color-text-error);
+    color: var(--white);
+  }
+
+  &:focus-visible {
+    outline: var(--border-width-150) solid var(--color-text-error);
+    outline-offset: var(--size-02);
+  }
+}
+
+@keyframes sgConfirmRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* ─── Captured signature SVG render ─────────────────────────────── */
+
+.signatureSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: none;
+  stroke: var(--grey-90);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+@keyframes sgInkDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ─── Preview region — captured state additions ─────────────────── */
+
+.preview_captured {
+  cursor: pointer;
+  border-color: var(--grey-30);
+  background: var(--white);
+
+  &:hover {
+    border-color: var(--brand-60);
+  }
+}
+
+.preview_captured .previewBaseline,
+.preview_captured .previewMark {
+  display: none;
+}
+
+.preview_captured .previewCaption {
+  position: absolute;
+  bottom: var(--space-075);
+  right: var(--space-100);
+  transform: none;
+  color: var(--grey-50);
+}
+
+.preview:focus-visible {
+  outline: var(--border-width-150) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
