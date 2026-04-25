@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import cx from 'classnames'
 import {
@@ -45,7 +45,7 @@ import styles from './signatureCapture.module.scss'
    Rule book: docs/widget-conventions.md
    ─────────────────────────────────────────────────────────────────── */
 
-const SHEET_ANIM_DURATION       = 280
+const SHEET_ANIM_DURATION       = 320  /* matches the slowest exit transition (transform 320ms) */
 const STROKE_DRAW_DURATION_MS   = 280
 const STROKE_DRAW_STAGGER_MS    = 60
 const STROKE_DRAW_CAP           = 8
@@ -328,6 +328,11 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
   }
 
   function handlePointerDown(e) {
+    /* Ignore pointer-down during the 200ms clear-fade window — drawing
+       on top of fading strokes paints the new stroke at globalAlpha 0.4
+       too, which reads as a stuck-dim signature. Wait for the fade to
+       finish, then redraw at full alpha. */
+    if (clearing) return
     e.preventDefault()
     try { e.target.setPointerCapture(e.pointerId) } catch { /* not supported */ }
     drawingRef.current = true
@@ -739,7 +744,10 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
     setAtEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_END_TOLERANCE_PX)
   }, [scrollRef])
 
-  useEffect(() => {
+  /* Layout-effect runs synchronously before paint so short-content
+     agreements (where scrollHeight ≤ clientHeight) don't flash the
+     bottom fade-mask for one frame before the effect hides it. */
+  useLayoutEffect(() => {
     measureScroll()
   }, [measureScroll, agreementText])
 
@@ -903,8 +911,15 @@ export function SignatureCapture({ payload }) {
       if (documentRef?.version) parts.push(documentRef.version)
       return parts.join(' · ')
     }
+    /* Text variant — surface a hint of the agreement so the signer
+       knows which document they're committing to inside the sheet,
+       not just the card's use-case copy. */
+    if (agreementText) {
+      const trimmed = String(agreementText).trim()
+      return trimmed.length > 60 ? `${trimmed.slice(0, 60).trimEnd()}…` : trimmed
+    }
     return subtitle
-  }, [variant, documentRef, subtitle])
+  }, [variant, documentRef, agreementText, subtitle])
 
   return (
     <div className={cx(styles.card, gateMet && styles.card_gateMet)}>
@@ -933,13 +948,13 @@ export function SignatureCapture({ payload }) {
         />
       )}
 
-      {/* Both faces render at all times; CSS crossfades between them and
-          the Check icon slides in on the springy curve when gate clears.
-          aria-live announces the swap once on transition; visually-hidden
-          duplicate isn't needed because both faces share the same DOM. */}
+      {/* Visual: two faces crossfade in place (CSS), Check springs in on
+          gate-clear. A11y: aria-hidden flips don't reliably trigger
+          aria-live announcements (NVDA in particular ignores them), so a
+          separate sr-only aria-live region carries the actual text
+          mutation that screen readers will announce. */}
       <p
         className={cx(styles.gateCaption, gateMet && styles.gateCaption_met)}
-        aria-live="polite"
       >
         <span className={styles.gateCaptionPending} aria-hidden={gateMet || undefined}>
           {gatePendingCopy(variant)}
@@ -947,6 +962,9 @@ export function SignatureCapture({ payload }) {
         <span className={styles.gateCaptionMet} aria-hidden={!gateMet || undefined}>
           <Check size={14} strokeWidth={2.25} aria-hidden />
           <span>{gateMetCopy(variant)} · {timeLabel(gateAt)}</span>
+        </span>
+        <span className={styles.srOnly} aria-live="polite">
+          {gateMet ? `${gateMetCopy(variant)} at ${timeLabel(gateAt)}` : ''}
         </span>
       </p>
 
