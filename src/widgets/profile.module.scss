@@ -234,30 +234,44 @@ img.photo {
   animation-delay: 900ms;
 }
 
+/* @property registers --pcd-ring-angle as a typed angle so it can
+   be interpolated by CSS animation. Without this declaration, the
+   custom property would step instantly to its end value instead of
+   animating smoothly through intermediate angles. */
+@property --pcd-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Conic-gradient ring. Starts at -90deg so the fill begins at 12
+   o'clock (matching Option A's rotated SVG). The radial mask cuts
+   out the center to leave a border-width-300 (3px) stroke band at
+   the edge. */
 .ring {
   display: block;
   width: var(--size-64);
   height: var(--size-64);
-  transform: rotate(-90deg);
-}
-
-.ringTrack {
-  stroke: var(--grey-10);
-  stroke-width: var(--border-width-300);
-}
-
-.ringFill {
-  stroke: var(--tone-color);
-  stroke-width: var(--border-width-300);
-  stroke-linecap: round;
-  stroke-dasharray: var(--pcd-ring-circumference);
-  stroke-dashoffset: var(--pcd-ring-circumference);
-  transform-origin: center;
-
-  /* Animate from full-empty (dashoffset = circumference) to the
-     target offset. Runs 720ms, delay 180ms — paired with the score
-     count-up inside. */
-  animation: pcdRingFill 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  border-radius: var(--radius-full);
+  --pcd-ring-angle: 0deg;
+  background: conic-gradient(
+    from -90deg,
+    var(--tone-color) 0deg,
+    var(--tone-color) var(--pcd-ring-angle),
+    var(--grey-10) var(--pcd-ring-angle),
+    var(--grey-10) 360deg
+  );
+  mask: radial-gradient(
+    circle,
+    transparent calc(50% - var(--border-width-300)),
+    black calc(50% - var(--border-width-300))
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent calc(50% - var(--border-width-300)),
+    black calc(50% - var(--border-width-300))
+  );
+  animation: pcdRingFillConic 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
   animation-delay: 180ms;
 }
 
@@ -590,9 +604,10 @@ img.photo {
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
-@keyframes pcdRingFill {
-  from { stroke-dashoffset: var(--pcd-ring-circumference); }
-  to   { stroke-dashoffset: var(--pcd-ring-target); }
+/* Conic-gradient angle interpolation. Requires the @property
+   declaration above to register --pcd-ring-angle as a typed angle. */
+@keyframes pcdRingFillConic {
+  to { --pcd-ring-angle: var(--pcd-ring-target-angle, 0deg); }
 }
 
 @keyframes pcdStatRise {
@@ -675,7 +690,7 @@ img.photo {
   .adminFooter,
   .actionBar,
   .successBanner,
-  .ringFill,
+  .ring,
   .ringWrap_success,
   .ringWrap_warning,
   .ringWrap_error,
@@ -687,7 +702,8 @@ img.photo {
     transform: none;
   }
 
-  .ringFill {
-    stroke-dashoffset: var(--pcd-ring-target);
+  /* Conic ring jumps straight to filled state; no angle sweep. */
+  .ring {
+    --pcd-ring-angle: var(--pcd-ring-target-angle, 0deg);
   }
 }
