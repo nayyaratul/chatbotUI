@@ -406,12 +406,11 @@ export function VoiceRecording({ payload }) {
         </div>
       </div>
 
-      {/* Prompt block (optional) */}
+      {/* Prompt block (optional) — the actual question/situation the
+          user is being asked to answer. Promoted to headline weight
+          so it reads first; the §2 title becomes a category label. */}
       {prompt && (
-        <div className={styles.promptBlock}>
-          <span className={styles.promptEyebrow}>Prompt</span>
-          <p className={styles.promptText}>{prompt}</p>
-        </div>
+        <p className={styles.promptText}>{prompt}</p>
       )}
 
       {/* ─── IDLE — big mic capture button ────────────────────────── */}
