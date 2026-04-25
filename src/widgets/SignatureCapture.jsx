@@ -45,12 +45,17 @@ import styles from './signatureCapture.module.scss'
    Rule book: docs/widget-conventions.md
    ─────────────────────────────────────────────────────────────────── */
 
-const SHEET_ANIM_DURATION = 280
-const STROKE_DRAW_DURATION_MS = 280
-const STROKE_DRAW_STAGGER_MS  = 60
-const STROKE_DRAW_CAP         = 8
-const SVG_VIEWBOX_W           = 500
-const SVG_VIEWBOX_H           = 200
+const SHEET_ANIM_DURATION       = 280
+const STROKE_DRAW_DURATION_MS   = 280
+const STROKE_DRAW_STAGGER_MS    = 60
+const STROKE_DRAW_CAP           = 8
+const SVG_VIEWBOX_W             = 500
+const SVG_VIEWBOX_H             = 200
+/* Scroll-to-end tolerance in CSS pixels. Mirrors var(--size-04) — the
+   closest token rung on the design system's spacing scale. JS can't
+   read CSS vars directly inside a numeric comparison, so naming the
+   constant carries the intent through. */
+const SCROLL_END_TOLERANCE_PX   = 4
 
 const USE_CASE_ICON = {
   offer:      HandCoins,
@@ -173,6 +178,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const canvasRef             = useRef(null)
   const containerRef          = useRef(null)
+  const closeBtnRef           = useRef(null)
   const closingRef            = useRef(false)
   const drawingRef            = useRef(false)
   const currentStrokeRef      = useRef(null)
@@ -192,6 +198,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
   useEffect(() => {
     if (phase !== 'open') return
+    closeBtnRef.current?.focus()
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prevOverflow }
@@ -394,6 +401,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
             )}
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.shClose}
             onClick={handleCancel}
@@ -700,7 +708,7 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
     if (gateMet) return
     const el = scrollRef.current
     if (!el) return
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_END_TOLERANCE_PX) {
       onScrollEnd()
     }
   }

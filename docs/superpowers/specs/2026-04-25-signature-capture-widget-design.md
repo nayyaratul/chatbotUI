@@ -187,7 +187,7 @@ A modal overlay that owns the actual canvas. Renders into a portal anchored at `
 - Background `var(--white)`. Inner border `var(--grey-10)`. Dashed signature baseline (`grey-30`) + `X` mark fade out 200ms on first stroke.
 - **Ink color: `var(--grey-90)`** — black-equivalent. Documented as a deliberate §13 exception: the signature is the *user's*, not the system's; brand-blue ink reads as a stylistic flourish where formality is the goal. All other widget chrome (CTA, banner chip, gate-caption tone, header icon badge) stays brand-60 / success per §13.
 - Smoothing: quadratic curve through stroke-point midpoints (Catmull-Rom-equivalent for two-point segments) — no jagged polylines.
-- Floating Undo (`↶`) and Clear (`✕`) buttons top-right of canvas, `size={16}` Lucide glyphs in `var(--size-32)` tappable circles. Disabled while history empty.
+- Floating Undo (Lucide `Undo2`) and Clear (Lucide `Eraser` — reads more semantically as "clear" than `X`) buttons top-right of canvas, `size={16}` glyphs in `var(--size-32)` tappable circles. Disabled while history empty.
 
 **Sheet footer.**
 - Two buttons, `flex; gap: var(--space-100)`:

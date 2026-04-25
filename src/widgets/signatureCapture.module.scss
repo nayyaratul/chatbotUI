@@ -293,8 +293,10 @@
   background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
 }
 
-/* Region 1 placeholder content. Captured / submitted states will swap
-   this out in later regions. */
+/* The 38% bottom-anchor places the dashed signature baseline at the
+   natural mid-x-height of a hand-drawn signature inside a 5:2 box —
+   slightly below the geometric centre, where the reader's eye expects
+   the ink. Don't "correct" it to 50%. */
 .previewBaseline {
   position: absolute;
   left: var(--space-200);
