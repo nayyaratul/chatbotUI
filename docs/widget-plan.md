@@ -18,11 +18,11 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 
 ## Status
 
-**24 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
+**25 of 30 CSV widgets built**, plus two chat primitives (`text`, `widget_response`) and one companion (`evidence_review`, worker-facing sibling of QC Evidence Review).
 
-**Last shipped:** Candidate / Worker Profile Card (#29) — landed across `85ccaac` (Pass 2 ring settles + avail pulse) / `6e16e41` (Pass 1 close) / `11a9745` (Pass 1 structure) / `7196a35` (spec).
+**Last shipped:** Voice Recording (#26) — landed across `6eb6971` (Pass 2 close) / `2cb86af` (Pass 2 elevation) / `ed984c7` (Pass 1 close) / `0388887` (spec).
 
-**Pending:** 6 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
+**Pending:** 5 widgets — all P2 (Phase 2+). All P0 and P1 widgets complete.
 
 ---
 
@@ -58,21 +58,21 @@ If `/frontend-design` ever proposes something that conflicts with the convention
 | 23 | Approval | `Approval.jsx` | Four use-case variants (bgv / interview / qc_flagged / offer); tiered decision flow — Approve 50/50 with Reject; destructive actions two-step with tone-striped inline notes. Eyebrow announces card type per variant |
 | 24 | Training Scenario | `TrainingScenario.jsx` | Pre-brief + post-results variants |
 
-## Done — P2 / Phase 2+ (2 / 8)
+## Done — P2 / Phase 2+ (3 / 8)
 
 | # | Widget | File | Notes |
 |---|---|---|---|
+| 26 | Voice Recording | `VoiceRecording.jsx` | Single variant (`default`, tap-to-start / tap-to-stop). Real `getUserMedia` + `MediaRecorder` + Web Audio `AnalyserNode`. Signature primitive: 32-bar live waveform driven by time-domain RMS into a 32-slot ring buffer at ~10 samples/sec, bar heights computed via `calc(size-04 + bar-norm * (size-32 − size-04))` on a per-bar `--bar-norm`. Pulsing red recording dot + `vrcDotPulse` halo synced with a `vrcTimerHalo` red-glow on the timer's `::before` (1400ms cadence on the springy curve). Within 5s of max, every active bar tints toward `--color-text-error` so the urgency lives on the row, not just the timer. PREVIEW pairs the frozen waveform with a brand-60 L→R sweep (clip-path on `--play-progress`, RAF-tracked from `audio.currentTime`) plus a `mask-image` wet leading edge so the sweep "kisses" each bar. End-of-playback fires a one-cycle springy bar-pulse and swaps Play → `RotateCcw` until the next press. SUBMITTED retints every bar to `--color-text-success` and runs a 600ms one-cycle "seal" shimmer (`::after` with `color-mix(--white 36%, transparent)` overlay) — documented exception above the §16 280–360ms entry band, called out as a deliberate "sealed" beat. IDLE mic-icon breathes on a 2.6s state-curve loop. Reduced-motion neutralises all 12 introduced animations. Sets the audio data-viz primitive that #25 Audio Player will inherit. |
 | 28 | Payment / Earnings | `Earnings.jsx` | Three variants (paycheck / incentive / advance). Signature moment: RAF-driven count-up on the big total (0 → target, ease-out cubic, 720ms) inside a tone-tinted container, with a gradient sheen sweeping L→R across the container as the count lands and a brightness settle closing the beat. Trend chip pops after the count and does a one-cycle directional nudge (up / down / flat). Breakdown rows stagger with §8 ledger-dot vocabulary + tone halo. Big total stays at `font-size-400` despite CSV's 28px — prominence carried by weight + tinted container + count-up, not size escalation (§12). |
 | 29 | Candidate / Worker Profile Card | `Profile.jsx` | Two variants (worker / admin). Signature moment: composite score ring (§6 linear-fill vocabulary translated to circle per the widget-plan sanction) — two concentric SVG circles in a 64×64 viewBox, stroke-dashoffset animates 0 → target over 720ms while the score number counts up inside (RAF, same helper as Earnings). Tone bands drive ring colour + verdict word (Strong / Decent / Room to grow); arrival settle is tone-specific (success halo / warning scale-pulse / error opacity settle). Header: 48×48 initials disc + name + headline + §7 availability chip (available status gets a one-cycle "live" dot-pulse). Body: 2-col grid with ring left + stats list right. Skill §7 chips with dashed-border overflow indicator. Admin footer follows Approval's destructive-left / constructive-right convention. |
 
-## Pending — P2 / Phase 2+ (0 / 6)
+## Pending — P2 / Phase 2+ (0 / 5)
 
 | # | Widget | Spec-CSV summary | Signature-moment hint |
 |---|---|---|---|
 | 13 | Location Picker / Map | GPS-backed pin-drop or POI selector | `data-widget-variant="wide"` to hold a meaningful map area |
 | 14 | Signature Capture | Touch canvas with smooth bezier ink | Render the submitted signature as a framed "stamp" in the success banner |
-| 25 | Audio Player | Voice content with waveform + speed toggle | Pre-rendered waveform animates as the played portion fills in accent |
-| 26 | Voice Recording | Press-and-hold capture, 10–120s | Live waveform + pulsing red dot during capture |
+| 25 | Audio Player | Voice content with waveform + speed toggle | Pre-rendered waveform animates as the played portion fills in accent — inherits #26's bar + sweep + `--play-progress` vocabulary |
 | 27 | Embedded Webview | Iframe escape-hatch for complex UIs | Compact preview → expanded iframe; minimal chrome |
 | 30 | Incentive / Leaderboard | Personal ring OR top-5 list | Progress ring target-hit animation on §16 springy curve (builds on #29's ring vocabulary) |
 
