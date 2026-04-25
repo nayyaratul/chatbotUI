@@ -412,8 +412,6 @@ img.photo {
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--grey-50);
-  padding-bottom: var(--space-050);
-  border-bottom: var(--border-width-100) solid var(--grey-10);
 
   /* Eyebrow lands 60ms before the first skill chip (540ms), so the
      section header arrives as a natural cue for the chip stagger. */
