@@ -380,8 +380,15 @@ export function VoiceRecording({ payload }) {
      onstop so the FileReader path doesn't fire on a dead component,
      stop mic stream, release audio context, cancel RAF, pause any
      playing <audio>. The `mountedRef` flag is the belt to this
-     teardown's suspenders for the recorder→reader async window. */
+     teardown's suspenders for the recorder→reader async window.
+
+     IMPORTANT: set mountedRef.current = true on every setup pass.
+     React 18 StrictMode in dev runs setup → cleanup → setup on the
+     initial mount to verify cleanup correctness; without resetting
+     it on setup, the cleanup pass leaves mountedRef = false for the
+     rest of the component's lifetime, and every async path bails. */
   useEffect(() => {
+    mountedRef.current = true
     return () => {
       mountedRef.current = false
       if (stopFallbackRef.current) {
