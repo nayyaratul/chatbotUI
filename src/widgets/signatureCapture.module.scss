@@ -879,3 +879,142 @@
   outline: var(--border-width-150) solid var(--brand-60);
   outline-offset: var(--size-02);
 }
+
+/* ─── Submitted — framed signature stamp ────────────────────────────
+   Wrapper border re-tones to success. Hatched repeating-linear-gradient
+   reads as a formal-document stamp frame. Captured SVG ink scale-settles
+   on the springy curve. Halo blooms 120ms after the ink settle, then
+   fades 200ms. Pointer disabled — terminal per family convention. */
+
+.preview_submitted {
+  cursor: default;
+  pointer-events: none;
+  border-color: var(--color-text-success);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent var(--size-04),
+      color-mix(in srgb, var(--color-text-success) 8%, transparent) var(--size-04),
+      color-mix(in srgb, var(--color-text-success) 8%, transparent) calc(var(--size-04) + var(--border-width-300))
+    ),
+    var(--white);
+  transition:
+    border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    background 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.preview_submitted .signatureSvg {
+  /* Re-anchor the SVG render inside the stamp frame so the hatched
+     border is visible around the captured ink. By submit time the
+     stroke-dasharray draw-in has already finished, so the settle
+     runs immediately to feel like part of the same beat as the
+     border re-tone. */
+  inset: var(--space-100);
+  width: auto;
+  height: auto;
+  animation: sgInkSettle 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.stampHalo {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-150);
+  pointer-events: none;
+  /* Halo blooms 120ms after the ink settle ends (280 + 120 = 400ms)
+     per the spec's "valid" beat. */
+  animation: sgHaloBloom 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 400ms both;
+}
+
+@keyframes sgInkSettle {
+  0%   { transform: scale(1); }
+  55%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sgHaloBloom {
+  0%   {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+  60%  {
+    box-shadow:
+      0 0 var(--size-12) var(--size-04) color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+}
+
+/* Stamp metadata — sits below the preview region, identifies the signer. */
+.stampMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-075);
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--grey-60);
+
+  > [aria-hidden] {
+    color: var(--grey-30);
+  }
+}
+
+.stampSigner {
+  color: var(--grey-90);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stampTime {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── §10 success banner ────────────────────────────────────────────
+   Replaces the CTA region on submit. Chip + tabular-nums timestamp,
+   no confetti, no "Great job!" — see §10. */
+
+.banner {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-125) var(--space-150);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--white));
+  animation: sgBannerRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.bannerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  color: var(--color-text-success);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.bannerText {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes sgBannerRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}

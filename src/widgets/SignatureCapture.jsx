@@ -13,6 +13,8 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
+import { useChatActions } from '../chat/ChatActionsContext.jsx'
+import { makeId } from '../engine/ids.js'
 import styles from './signatureCapture.module.scss'
 
 /* ─── Signature Capture (#14) ─────────────────────────────────────────
@@ -89,6 +91,34 @@ function timeLabel(ms) {
   const hh = String(d.getHours()).padStart(2, '0')
   const mm = String(d.getMinutes()).padStart(2, '0')
   return `${hh}:${mm}`
+}
+
+function dateLabel(ms) {
+  if (!ms) return ''
+  const d = new Date(ms)
+  const month = d.toLocaleString('en-US', { month: 'short' })
+  return `${month} ${d.getDate()}`
+}
+
+/* Short readable form of navigator.userAgent for the stamp metadata.
+   Not a fingerprint — `iPhone · Safari` rather than the full UA. */
+function deviceInfoLabel() {
+  if (typeof navigator === 'undefined') return 'Web'
+  const ua = navigator.userAgent
+  let device = 'Web'
+  if (/iPhone|iPad|iPod/.test(ua))     device = /iPad/.test(ua) ? 'iPad' : 'iPhone'
+  else if (/Android/.test(ua))         device = 'Android'
+  else if (/Mac/i.test(ua))            device = 'macOS'
+  else if (/Windows/.test(ua))         device = 'Windows'
+  else if (/Linux/i.test(ua))          device = 'Linux'
+
+  let browser = 'Browser'
+  if (/Edg/.test(ua))                  browser = 'Edge'
+  else if (/CriOS|Chrome/.test(ua))    browser = 'Chrome'
+  else if (/FxiOS|Firefox/.test(ua))   browser = 'Firefox'
+  else if (/Safari/.test(ua))          browser = 'Safari'
+
+  return `${device} · ${browser}`
 }
 
 /* ─── Stroke geometry helpers ────────────────────────────────────────
@@ -709,15 +739,19 @@ export function SignatureCapture({ payload }) {
   const documentRef  = payload?.document_ref
   const agreementText = payload?.agreement_text
 
+  const { onReply } = useChatActions()
+
   const [gateMet, setGateMet]       = useState(false)
   const [gateAt, setGateAt]         = useState(null)
   const [docOpen, setDocOpen]       = useState(false)
   const [signOpen, setSignOpen]     = useState(false)
   const [strokes, setStrokes]       = useState([])
   const [drawInKey, setDrawInKey]   = useState(0)
+  const [submission, setSubmission] = useState(null)  /* { at, signer_name, device_info, signature_image_id } once submitted */
   const scrollRef                   = useRef(null)
 
-  const captured = strokes.length > 0
+  const captured  = strokes.length > 0
+  const submitted = submission !== null
 
   const handleGateClear = useCallback(() => {
     setGateMet((prev) => {
@@ -737,17 +771,44 @@ export function SignatureCapture({ payload }) {
   }, [handleGateClear])
 
   const handlePreviewTap = useCallback(() => {
-    if (!gateMet) return
+    if (!gateMet || submitted) return
     setSignOpen(true)
-  }, [gateMet])
+  }, [gateMet, submitted])
 
   const handlePreviewKey = useCallback((e) => {
-    if (!gateMet) return
+    if (!gateMet || submitted) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       setSignOpen(true)
     }
-  }, [gateMet])
+  }, [gateMet, submitted])
+
+  const signerName = payload?.signer_name ?? 'Signed'
+
+  const handleSubmit = useCallback(() => {
+    if (!gateMet || !captured || submitted) return
+    const at = Date.now()
+    const decided = {
+      at,
+      signer_name: signerName,
+      device_info: deviceInfoLabel(),
+      signature_image_id: makeId('img'),
+    }
+    setSubmission(decided)
+    onReply({
+      type: 'widget_response',
+      payload: {
+        widget_id: payload?.widget_id,
+        source_type: 'signature',
+        signature_image_id: decided.signature_image_id,
+        signed_at: new Date(at).toISOString(),
+        device_info: decided.device_info,
+        document_id: payload?.document_id,
+        signer_name: signerName,
+        decided_at: new Date(at).toISOString(),
+      },
+    })
+  }, [gateMet, captured, submitted, signerName, onReply, payload?.widget_id, payload?.document_id])
 
   const handleSheetClose = useCallback(() => {
     setSignOpen(false)
@@ -812,23 +873,28 @@ export function SignatureCapture({ payload }) {
         className={cx(
           styles.preview,
           !gateMet && styles.preview_gated,
-          captured && styles.preview_captured,
+          captured && !submitted && styles.preview_captured,
+          submitted && styles.preview_submitted,
         )}
-        role="button"
-        tabIndex={gateMet ? 0 : -1}
+        role={submitted ? 'img' : 'button'}
+        tabIndex={!submitted && gateMet ? 0 : -1}
         aria-disabled={!gateMet || undefined}
         aria-label={
-          captured ? 'Tap to re-sign' : 'Tap to sign'
+          submitted
+            ? 'Captured signature'
+            : captured
+              ? 'Tap to re-sign'
+              : 'Tap to sign'
         }
-        onClick={handlePreviewTap}
-        onKeyDown={handlePreviewKey}
+        onClick={submitted ? undefined : handlePreviewTap}
+        onKeyDown={submitted ? undefined : handlePreviewKey}
       >
         {captured ? (
           <SignatureSvg
             key={drawInKey}
             strokes={strokes}
             drawIn
-            ariaLabel="Captured signature"
+            ariaLabel={submitted ? 'Signed' : 'Captured signature'}
           />
         ) : (
           <>
@@ -836,24 +902,54 @@ export function SignatureCapture({ payload }) {
             <span className={styles.previewMark} aria-hidden>×</span>
           </>
         )}
-        <span className={styles.previewCaption}>
-          {captured ? 'Tap to re-sign' : 'Tap to sign'}
-        </span>
+        {!submitted && (
+          <span className={styles.previewCaption}>
+            {captured ? 'Tap to re-sign' : 'Tap to sign'}
+          </span>
+        )}
+        {submitted && (
+          <div className={styles.stampHalo} aria-hidden />
+        )}
       </div>
 
-      {showDisclaimer && (
+      {submitted && (
+        <p className={styles.stampMeta}>
+          <span className={styles.stampSigner}>{submission.signer_name}</span>
+          <span aria-hidden>·</span>
+          <span className={styles.stampTime}>{timeLabel(submission.at)}</span>
+          <span aria-hidden>·</span>
+          <span>{dateLabel(submission.at)}</span>
+          <span aria-hidden>·</span>
+          <span>{submission.device_info}</span>
+        </p>
+      )}
+
+      {!submitted && showDisclaimer && (
         <p className={styles.disclaimer}>{disclaimer}</p>
       )}
 
-      <div className={styles.ctaRow}>
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!gateMet || !captured}
-        >
-          {ctaLabel}
-        </Button>
-      </div>
+      {submitted ? (
+        <div className={styles.banner} role="status" aria-live="polite">
+          <span className={styles.bannerChip}>
+            <Check size={14} strokeWidth={2.25} aria-hidden />
+            <span>Signed</span>
+          </span>
+          <span className={styles.bannerText}>
+            Signature captured at {timeLabel(submission.at)}
+          </span>
+        </div>
+      ) : (
+        <div className={styles.ctaRow}>
+          <Button
+            variant="primary"
+            fullWidth
+            disabled={!gateMet || !captured}
+            onClick={handleSubmit}
+          >
+            {ctaLabel}
+          </Button>
+        </div>
+      )}
 
       {variant === 'document' && docOpen && (
         <DocumentViewerSheet
