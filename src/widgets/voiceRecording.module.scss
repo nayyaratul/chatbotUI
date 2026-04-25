@@ -142,7 +142,11 @@
   gap: var(--space-100);
   padding: var(--space-200);
   width: 100%;
-  min-height: var(--size-64);
+  /* Common state-block floor — every state in the media region
+     resolves to the same outer height so the card doesn't visually
+     jump as phases change. var(--size-176) covers the tallest
+     natural state (RECORDING ≈ 168px) with breathing room. */
+  min-height: var(--size-176);
 
   background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
   border: var(--border-width-100) dashed color-mix(in srgb, var(--brand-60) 36%, transparent);
@@ -237,9 +241,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-150);
   padding: var(--space-150);
   width: 100%;
+  /* Common state-block floor — see .captureBtn comment. */
+  min-height: var(--size-176);
 
   background: color-mix(in srgb, var(--color-text-error) 4%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-error) 20%, transparent);
@@ -414,8 +421,58 @@
   100% { transform: scale(1); }
 }
 
+/* Plain button — full control over disabled-state UX (live
+   countdown copy) and the click handler stays as direct as
+   possible. Mirrors the family CTA shape (full-width, sentence-case
+   verb, Lucide iconLeft) without going through the Nexus atom. */
 .stopBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-075);
   width: 100%;
+  padding: var(--space-100) var(--space-150);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-30);
+  border-radius: var(--radius-150);
+  color: var(--grey-90);
+  cursor: pointer;
+  font-family: var(--sans);
+
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.stopBtnLabel {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.stopBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--grey-90) 4%, var(--white));
+  border-color: var(--grey-50);
+}
+
+.stopBtn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--grey-90) 8%, var(--white));
+}
+
+.stopBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.stopBtnDisabled,
+.stopBtn:disabled {
+  cursor: not-allowed;
+  background: var(--grey-10);
+  border-color: var(--grey-20);
+  color: var(--grey-50);
 }
 
 /* ─── PREVIEW — static waveform + playback sweep ───────────── */
@@ -423,8 +480,11 @@
 .previewBlock {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--space-150);
   width: 100%;
+  /* Common state-block floor — see .captureBtn comment. */
+  min-height: var(--size-176);
 }
 
 .previewRow {
@@ -566,8 +626,11 @@
 .submittedBlock {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--space-150);
   width: 100%;
+  /* Common state-block floor — see .captureBtn comment. */
+  min-height: var(--size-176);
   /* §16 entry curve — opacity + translateY rise is the rise-up role,
      not a chip pop. Keep this on cubic-bezier(0.18, 0.9, 0.28, 1.04). */
   animation: vrcRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
@@ -679,17 +742,54 @@
   background: var(--color-text-success);
 }
 
-.submittedFoot {
+/* Submission summary — labelled key/value rows so the user sees
+   exactly what was just submitted (title + duration + size + time).
+   Definition list is the right semantic for label/value pairs. */
+.submittedDetails {
+  margin: 0;
+  padding: var(--space-125) var(--space-150);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-075);
 
+  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 16%, transparent);
+  border-radius: var(--radius-150);
+}
+
+.submittedDetailRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-150);
+  min-width: 0;
+}
+
+.submittedDetailLabel {
+  flex-shrink: 0;
   font-family: var(--sans);
   font-size: var(--font-size-100);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
   color: var(--grey-50);
+}
+
+.submittedDetailValue {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ─── DENIED — permission error + retry (mirrors ImageCapture) */
@@ -698,8 +798,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-150);
   padding: var(--space-200);
+  /* Common state-block floor — see .captureBtn comment. */
+  min-height: var(--size-176);
 
   background: color-mix(in srgb, var(--grey-50) 4%, var(--white));
   border: var(--border-width-100) solid var(--grey-20);

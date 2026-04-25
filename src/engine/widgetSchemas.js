@@ -1197,7 +1197,7 @@ export const widgetSchemas = {
           description: 'Speak clearly. You can review the clip before submitting.',
           prompt: 'Describe a time you handled a difficult delivery situation and how you resolved it.',
           max_duration_seconds: 60,
-          min_duration_seconds: 5,
+          min_duration_seconds: 2,
           auto_transcribe: false,
           silent: false,
         }),

@@ -413,10 +413,11 @@ export function VoiceRecording({ payload }) {
   }, [onReply, widgetId, title, promptId, isSilent])
 
   /* Derived recording values. */
-  const elapsedSec    = Math.floor(elapsedMs / 1000)
-  const remainingMs   = Math.max(0, maxDurationSec * 1000 - elapsedMs)
-  const isWarning     = phase === 'recording' && remainingMs <= WARNING_THRESHOLD_MS
-  const minMet        = elapsedMs >= minDurationSec * 1000
+  const elapsedSec      = Math.floor(elapsedMs / 1000)
+  const remainingMs     = Math.max(0, maxDurationSec * 1000 - elapsedMs)
+  const isWarning       = phase === 'recording' && remainingMs <= WARNING_THRESHOLD_MS
+  const minMet          = elapsedMs >= minDurationSec * 1000
+  const remainingMinSec = Math.max(0, Math.ceil((minDurationSec * 1000 - elapsedMs) / 1000))
   const stopDisabled  = phase === 'recording' && !minMet
 
   /* Frozen-bar values for PREVIEW + SUBMITTED. Pre-normalised once
@@ -508,18 +509,22 @@ export function VoiceRecording({ payload }) {
             {formatTime(elapsedSec)}
           </div>
 
-          <Button
-            variant="secondary"
-            size="md"
-            className={styles.stopBtn}
+          {/* Plain <button> rather than the Nexus atom so we can
+              control the disabled-state UX precisely (live countdown
+              label) and keep the click handler as direct as possible. */}
+          <button
+            type="button"
+            className={cx(styles.stopBtn, stopDisabled && styles.stopBtnDisabled)}
             onClick={handleStopRecording}
             disabled={stopDisabled}
-            iconLeft={<Square size={14} strokeWidth={2.25} aria-hidden="true" />}
           >
-            {stopDisabled
-              ? `Hold for ${minDurationSec}s`
-              : 'Stop recording'}
-          </Button>
+            <Square size={14} strokeWidth={2.25} aria-hidden="true" />
+            <span className={styles.stopBtnLabel}>
+              {stopDisabled
+                ? `Hold for ${remainingMinSec}s more`
+                : 'Stop recording'}
+            </span>
+          </button>
         </div>
       )}
 
@@ -699,17 +704,34 @@ export function VoiceRecording({ payload }) {
             </div>
           </div>
 
-          <div className={styles.submittedFoot}>
-            <span className={styles.submittedDuration}>
-              {Math.round(previewDuration)}s
-            </span>
+          {/* Submission summary — gives the user a clear receipt of
+              what was just submitted: which title, how long, how big,
+              and when. Matches the family pattern (ImageCapture's
+              submitted footer leads with title + meta). */}
+          <dl className={styles.submittedDetails}>
+            <div className={styles.submittedDetailRow}>
+              <dt className={styles.submittedDetailLabel}>Submitted</dt>
+              <dd className={styles.submittedDetailValue}>{title}</dd>
+            </div>
+            <div className={styles.submittedDetailRow}>
+              <dt className={styles.submittedDetailLabel}>Duration</dt>
+              <dd className={styles.submittedDetailValue}>
+                {Math.round(previewDuration)}s
+              </dd>
+            </div>
             {previewSize > 0 && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className={styles.submittedSize}>{formatBytes(previewSize)}</span>
-              </>
+              <div className={styles.submittedDetailRow}>
+                <dt className={styles.submittedDetailLabel}>File size</dt>
+                <dd className={styles.submittedDetailValue}>{formatBytes(previewSize)}</dd>
+              </div>
             )}
-          </div>
+            {submittedAt && (
+              <div className={styles.submittedDetailRow}>
+                <dt className={styles.submittedDetailLabel}>Submitted at</dt>
+                <dd className={styles.submittedDetailValue}>{timeLabel(submittedAt)}</dd>
+              </div>
+            )}
+          </dl>
         </div>
       )}
 
