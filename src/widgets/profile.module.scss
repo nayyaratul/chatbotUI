@@ -84,13 +84,15 @@
   min-width: 0;
 }
 
+/* Photo bumped to 64×64 for stronger card anchor (ref: Arlene McCoy
+   profile card). Matches the score ring's 64px footprint visually. */
 .photo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: var(--size-48);
-  height: var(--size-48);
+  width: var(--size-64);
+  height: var(--size-64);
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
@@ -106,7 +108,7 @@ img.photo {
 }
 
 .photoInitials {
-  font-size: var(--font-size-200);
+  font-size: var(--font-size-300);   /* bumped from 200 to fit larger 64px disc */
   font-weight: var(--font-weight-semibold);
   line-height: 1;
   letter-spacing: var(--letter-spacing-wide);
@@ -272,6 +274,9 @@ img.photo {
   height: var(--size-64);
 }
 
+/* Score number — counts up via JS, then on landing (~900ms) does a
+   subtle scale-bounce on success/warning tones. Error tone skips the
+   bounce — quiet acknowledgement, no celebration. */
 .ringValue {
   font-size: var(--font-size-400);
   font-weight: var(--font-weight-semibold);
@@ -279,6 +284,14 @@ img.photo {
   letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
   font-variant-numeric: tabular-nums;
+  display: inline-block;
+  transform-origin: center center;
+}
+
+.ringWrap_success .ringValue,
+.ringWrap_warning .ringValue {
+  animation: pcdValueBounce 360ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
+  animation-delay: 900ms;
 }
 
 .ringMax {
@@ -290,9 +303,11 @@ img.photo {
   margin-top: var(--space-025);
 }
 
-/* Verdict word under the ring. Width is bounded by the 64px ring
-   column; line-height-200 (16px) allows up to two-line wrap for any
-   verdict override that exceeds the single-word default. */
+/* Verdict word under the ring. Delayed entry — slides up + fades in
+   AFTER the ring fill + count-up land, so the sequence reads as one
+   composed beat (ring → number → verdict) instead of all-at-once.
+   Width bounded by the 64px ring column; line-height-200 allows
+   2-line wrap if a future verdict override exceeds one word. */
 .ringVerdict {
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
@@ -304,6 +319,11 @@ img.photo {
   max-width: var(--size-64);
   word-break: normal;
   overflow-wrap: anywhere;
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050));
+  animation: pcdVerdictRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 1080ms;   /* lands ~180ms after the score bounce settles */
 }
 
 /* ─── Stats list — full-width now that the ring lives in the header.
@@ -322,13 +342,16 @@ img.photo {
   animation-delay: 120ms;
 }
 
+/* Inline "Label: Value" text row — reference-inspired pattern. Pure
+   text rhythm, no icon disc. Label is grey-60 regular, value is
+   grey-90 semibold; baseline-aligned with a single gap. */
 .statRow {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  column-gap: var(--space-125);
-  align-items: center;
-  padding: var(--space-050) 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-075);
+  padding: var(--space-025) 0;
   min-width: 0;
+  flex-wrap: wrap;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050));
@@ -336,40 +359,21 @@ img.photo {
   animation-delay: var(--pcd-stat-delay, 300ms);
 }
 
-/* Icon disc — 24×24 tinted circle behind each Lucide glyph. Gives
-   stats a composed "spec-sheet" feel (vs a loose icon + text row)
-   without introducing a new primitive. */
-.statIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: var(--size-24);
-  height: var(--size-24);
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
-  border: var(--border-width-100) solid var(--grey-10);
-  color: var(--grey-60);
-}
-
 .statLabel {
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-200);
-  color: var(--grey-80);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+  flex: 0 0 auto;
 }
 
 .statValue {
   font-size: var(--font-size-200);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-200);
+  line-height: var(--line-height-300);
   color: var(--grey-90);
   font-variant-numeric: tabular-nums;
-  text-align: right;
-  flex: 0 0 auto;
+  min-width: 0;
 }
 
 /* ─── Skills ──────────────────────────────────────────────── */
@@ -405,26 +409,24 @@ img.photo {
   gap: var(--space-075);
 }
 
-/* Skill tag — matches ScoreCard's .chip vocabulary: pill (radius-
-   full), bordered, uppercase semibold with letter-spacing-wide.
-   Neutral grey tones since skills don't carry semantic state (no
-   pass/fail). Same type rhythm as the rest of the family's chips
-   — availability, status banners, etc. */
+/* Skill tag — brand-tinted outlined pill, sentence/title case.
+   Reference-inspired (Arlene's expertise tags); §13's brand-60
+   accent extends from the photo into the skills section to create
+   visual cohesion between identity and capabilities. */
 .skillChip {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: var(--space-050);
-  padding: var(--space-050) var(--space-100);
+  padding: var(--space-075) var(--space-125);
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--grey-10) 60%, var(--white));
-  border: var(--border-width-100) solid var(--grey-20);
-  color: var(--grey-80);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
+  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 32%, transparent);
+  color: var(--brand-60);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
   line-height: 1;
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050)) scale(0.96);
@@ -436,7 +438,9 @@ img.photo {
     border-color 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-/* Overflow chip — dashed outline signals "there's more under this". */
+/* Overflow chip — dashed outline + neutral grey signals "there's
+   more under this" while staying visually distinct from the active
+   brand-tinted skill chips. */
 .skillChip_overflow {
   background: transparent;
   border: var(--border-width-100) dashed var(--grey-30);
@@ -606,6 +610,20 @@ img.photo {
   to   { opacity: var(--opacity-100); transform: translateY(0) scale(1); }
 }
 
+/* Score number scale-bounce on count-up landing. Tiny celebratory
+   beat for success/warning tones; error skips. */
+@keyframes pcdValueBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* Verdict word delayed slide-up — lands after the score bounces. */
+@keyframes pcdVerdictRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
 /* Success halo — tone-colored box-shadow expands 0 → size-24 and
    dissipates. Reads as a single rewarding "well done" beat on the
    ring's arrival frame. */
@@ -647,6 +665,10 @@ img.photo {
   .card,
   .statsList,
   .statRow,
+  .ringValue,
+  .ringWrap_success .ringValue,
+  .ringWrap_warning .ringValue,
+  .ringVerdict,
   .skillsEyebrow,
   .skillChip,
   .submitBtn,

@@ -2,14 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   Circle,
-  Star,
-  Target,
-  Globe,
-  Clock,
-  Briefcase,
-  Award,
-  TrendingUp,
-  Dot,
   CheckCircle2,
   Check,
   X,
@@ -34,16 +26,6 @@ const COUNT_UP_MS = 720
 const COUNT_UP_DELAY_MS = 180
 const MAX_SKILLS_SHOWN = 5
 const MAX_STATS = 4
-
-const STAT_ICON = {
-  star:          Star,
-  target:        Target,
-  globe:         Globe,
-  clock:         Clock,
-  briefcase:     Briefcase,
-  award:         Award,
-  'trending-up': TrendingUp,
-}
 
 const AVAILABILITY_LABEL = {
   available:   'Available',
@@ -415,19 +397,18 @@ function ScoreRing({ value, max, displayValue, label, tone }) {
   )
 }
 
-/* ─── Stat row ────────────────────────────────────────────────── */
+/* ─── Stat row — inline "Label: Value" pattern (no icon disc) ──
+   Reference-inspired: pure text, regular label + bold value.
+   Cleaner read than icon + disc + label + value, and lighter on
+   vertical real estate. */
 function StatRow({ idx, stat }) {
-  const Icon = STAT_ICON[stat.icon] ?? Dot
   const delay = 300 + idx * 60
   return (
     <li
       className={styles.statRow}
       style={{ '--pcd-stat-delay': `${delay}ms` }}
     >
-      <span className={styles.statIcon} aria-hidden="true">
-        <Icon size={16} strokeWidth={2} />
-      </span>
-      <span className={styles.statLabel}>{stat.label}</span>
+      <span className={styles.statLabel}>{stat.label}:</span>
       <span className={styles.statValue}>{stat.value}</span>
     </li>
   )
