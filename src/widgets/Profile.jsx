@@ -346,28 +346,46 @@ function AvailabilityChip({ availability }) {
   )
 }
 
-/* ─── Score ring — conic-gradient (Option B) ──────────────────────
-   Single <div> with a conic-gradient background showing the tone-
-   colored fill from 0→ratio° and grey-10 from ratio°→360°. A radial
-   mask cuts out the center to leave a border-width-300 ring stroke.
-   Animation is driven by a CSS @property --pcd-ring-angle, which
-   transitions smoothly between angle values (whereas a regular CSS
-   custom property cannot interpolate `<angle>` types).
-
-   Easy revert: this whole component can be swapped back to the SVG
-   stroke-dashoffset version (Option A) without changing schema or
-   animation timings — they all hang off the same .ringWrap classes. */
+/* ─── Score ring — SVG stroke-dashoffset fill ─────────────────────
+   viewBox 64×64. Two circles: grey track + tone-coloured fill. The
+   fill's stroke-dasharray equals the circumference; stroke-dashoffset
+   animates from circumference → circumference * (1 - ratio) on mount.
+   Rotated -90° so the fill starts at 12 o'clock. */
 function ScoreRing({ value, max, displayValue, label, tone }) {
   const ratio = Math.max(0, Math.min(1, value / (max || 1)))
-  const targetAngle = ratio * 360
+  // viewBox 64x64, radius 28 → circumference = 2 * π * 28 ≈ 175.93
+  const radius = 28
+  const circumference = 2 * Math.PI * radius
+  const targetOffset = circumference * (1 - ratio)
 
   return (
     <div className={cx(styles.ringWrap, styles[`ringWrap_${tone}`])}>
-      <div
+      <svg
         className={styles.ring}
-        style={{ '--pcd-ring-target-angle': `${targetAngle}deg` }}
+        viewBox="0 0 64 64"
+        width="64"
+        height="64"
         aria-hidden="true"
-      />
+      >
+        <circle
+          className={styles.ringTrack}
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+        />
+        <circle
+          className={styles.ringFill}
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          style={{
+            '--pcd-ring-circumference': `${circumference}`,
+            '--pcd-ring-target': `${targetOffset}`,
+          }}
+        />
+      </svg>
       <div className={styles.ringCenter} aria-label={`Score ${value} of ${max}`}>
         <span className={styles.ringValue}>{displayValue}</span>
         {max !== 100 && (
