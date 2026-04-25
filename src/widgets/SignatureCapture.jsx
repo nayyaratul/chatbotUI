@@ -748,6 +748,8 @@ export function SignatureCapture({ payload }) {
   const [strokes, setStrokes]       = useState([])
   const [drawInKey, setDrawInKey]   = useState(0)
   const [submission, setSubmission] = useState(null)  /* { at, signer_name, device_info, signature_image_id } once submitted */
+  const previewRef                  = useRef(null)
+  const restoreFocusRef             = useRef(null)
   const scrollRef                   = useRef(null)
 
   const captured  = strokes.length > 0
@@ -772,6 +774,7 @@ export function SignatureCapture({ payload }) {
 
   const handlePreviewTap = useCallback(() => {
     if (!gateMet || submitted) return
+    restoreFocusRef.current = document.activeElement
     setSignOpen(true)
   }, [gateMet, submitted])
 
@@ -779,6 +782,7 @@ export function SignatureCapture({ payload }) {
     if (!gateMet || submitted) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
+      restoreFocusRef.current = document.activeElement
       setSignOpen(true)
     }
   }, [gateMet, submitted])
@@ -812,6 +816,14 @@ export function SignatureCapture({ payload }) {
 
   const handleSheetClose = useCallback(() => {
     setSignOpen(false)
+    /* Restore focus to whatever held it before the sheet opened —
+       typically the preview region. Wait a frame so the sheet's
+       slide-down doesn't fight focus styling. */
+    requestAnimationFrame(() => {
+      const el = restoreFocusRef.current ?? previewRef.current
+      if (el && typeof el.focus === 'function') el.focus()
+      restoreFocusRef.current = null
+    })
   }, [])
 
   const handleSheetCommit = useCallback((nextStrokes) => {
@@ -870,6 +882,7 @@ export function SignatureCapture({ payload }) {
       </p>
 
       <div
+        ref={previewRef}
         className={cx(
           styles.preview,
           !gateMet && styles.preview_gated,

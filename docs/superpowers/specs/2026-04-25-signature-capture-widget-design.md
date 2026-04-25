@@ -234,19 +234,12 @@ Transitions:
 - **Cancel sheet button / scrim tap / Esc / close `×`** — if strokes exist, prompt: a small inline confirm slides up from the footer ("Discard signature?" + "Discard" `red-50` text button + "Keep drawing" secondary). Two-step prevents accidental loss. If no strokes, closes immediately.
 - **Use signature button** — captures the stroke point arrays into widget state via the parent's setter, then closes the sheet (220ms slide-down on state curve). Disabled until at least one stroke exists.
 
-**Card — keyboard shortcuts (desktop reviewer power-tool).** When the card is focused:
-- `Enter` (gate met, no signature) → opens the sheet.
-- `Enter` (gate met, signature captured) → submits.
-- `O` (variant='document', pre-gate) → opens the document modal.
-- `Esc` (sheet open) → cancel-with-confirm.
+**No card-level keyboard shortcuts.** This is a touch-first widget for workers signing once on a phone — there is no bulk-review power-user case to optimize for. The preview region is `role="button"` so native Enter/Space activation works (baseline a11y, not a power-user shortcut). Sheet has Esc-to-close because that's standard modal hygiene.
 
-Hidden on touch via `@media (hover: hover) and (pointer: fine)`. Shortcut hints render as small `<span>` kbd chips inside the relevant affordances (the §15 Lucide-only rule stays intact — chips are styled spans, not icons).
-
-**Focus management.**
-- Card autofocuses on mount only when in pre-committed states (Idle / Reviewed / Captured); committed (Submitted) does not auto-focus.
-- Tab order on the card: body region's interactive child (Open document link / scrollable body) → signature preview region → Submit CTA.
-- Sheet open: focus traps inside sheet — close button → canvas (focusable for keyboard signing fallback, though impractical) → Undo → Clear → Cancel → Use signature, cycling.
-- Sheet close: focus restores to the signature preview region on the card.
+**Focus management — minimal, modal-hygiene only.**
+- Tab order on the card: body region's interactive child (Open document link / scrollable agreement body) → signature preview region → Submit CTA. No card-root auto-focus on mount — the card lives in a chat scroll context and stealing focus would jump the page.
+- Sheet open: close button auto-focuses; body scroll locks beneath.
+- Sheet close: focus restores to the signature preview region on the card (standard "return focus to opener" pattern). No internal focus trap inside the sheet — the sheet's interactive elements are few, the canvas is the primary surface, and the modal scrim absorbs stray clicks.
 
 **Accessibility — drawing fallback.** Canvas drawing is inherently inaccessible for keyboard-only / screen-reader users. The sheet renders a small italic caption: "Need help signing? Ask the operator to sign on your behalf." This is a known constraint of the primitive, mirroring industry signing flows.
 

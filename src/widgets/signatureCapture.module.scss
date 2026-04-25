@@ -1018,3 +1018,41 @@
   from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
+
+/* ─── Reduced motion ────────────────────────────────────────────────
+   Card entry, sheet slide-ups, and the stamp morph collapse to
+   instant. SVG stroke-dasharray ink draw-in is JS-driven (inline
+   style on each path) — under reduced motion we override it via
+   `animation: none` on the path. The user's drawing inside the
+   sheet is unaffected — that's gesture, not system motion. */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .banner,
+  .shConfirm {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+
+  .dvSheet,
+  .dvScrim,
+  .shSheet,
+  .shScrim {
+    transition-duration: 0.01ms;
+  }
+
+  .signatureSvg path {
+    /* Skip the sgInkDraw stroke-dasharray sweep — render strokes
+       at their final state immediately. */
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+
+  .preview_submitted .signatureSvg {
+    animation: none;
+  }
+
+  .stampHalo {
+    animation: none;
+  }
+}
