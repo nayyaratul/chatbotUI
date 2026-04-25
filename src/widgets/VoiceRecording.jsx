@@ -443,7 +443,10 @@ export function VoiceRecording({ payload }) {
             <span className={styles.recordingLabel}>Recording</span>
           </div>
 
-          <div className={styles.waveform} aria-hidden="true">
+          <div
+            className={cx(styles.waveform, isWarning && styles.waveformWarning)}
+            aria-hidden="true"
+          >
             {bars.map((v, i) => {
               const norm = Math.min(1, Math.max(0, v * RMS_GAIN))
               return (
@@ -496,15 +499,24 @@ export function VoiceRecording({ payload }) {
               type="button"
               className={styles.playBtn}
               onClick={handlePlayPause}
-              aria-label={isPlaying ? 'Pause playback' : 'Play recording'}
+              aria-label={
+                isPlaying ? 'Pause playback'
+                  : playProgress >= 1 ? 'Replay recording'
+                    : 'Play recording'
+              }
             >
               {isPlaying
                 ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
-                : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+                : playProgress >= 1
+                  ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
+                  : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
             </button>
 
             <div
-              className={styles.previewWaveform}
+              className={cx(
+                styles.previewWaveform,
+                playProgress >= 1 && !isPlaying && styles.previewWaveformEnded,
+              )}
               style={{ '--play-progress': playProgress }}
               aria-hidden="true"
             >

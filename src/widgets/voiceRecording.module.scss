@@ -182,9 +182,29 @@
   background: var(--white);
   border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 32%, transparent);
   color: var(--brand-60);
-  box-shadow:
-    0 var(--size-02) var(--size-08) 0
-    color-mix(in srgb, var(--brand-60) 18%, transparent);
+
+  /* Resting halo — slow brand-60 breath that signals "tap me; I'm
+     listening soon." Single state-curve loop, no second beat. */
+  animation: vrcIdleBreath 2600ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+
+@keyframes vrcIdleBreath {
+  0%, 100% {
+    box-shadow:
+      0 var(--size-02) var(--size-08) 0
+      color-mix(in srgb, var(--brand-60) 18%, transparent),
+      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 0%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 var(--size-02) var(--size-08) 0
+      color-mix(in srgb, var(--brand-60) 24%, transparent),
+      0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 12%, transparent);
+  }
+}
+
+.captureBtn:hover .captureIcon {
+  border-color: color-mix(in srgb, var(--brand-60) 56%, transparent);
 }
 
 .captureText {
@@ -295,11 +315,38 @@
 }
 
 .barEmpty {
-  /* Silence floor — always visible so the row never collapses. */
+  /* Silence floor — always visible so the row never collapses.
+     Slow grey-20 ↔ grey-30 cross-fade reads as a "pilot light" —
+     "we're listening" rather than "we're stuck." */
+  background: var(--grey-20);
+  animation: vrcSilencePilot 2400ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+
+@keyframes vrcSilencePilot {
+  0%, 100% { background: var(--grey-20); }
+  50%      { background: var(--grey-30); }
+}
+
+/* Warning-tone propagation — within 5s of max, every active bar
+   tints toward error so the urgency lives on the whole row, not
+   just the timer. .waveformWarning is set on the .waveform parent. */
+.waveformWarning .bar {
+  background: color-mix(in srgb, var(--color-text-error) 64%, var(--brand-60));
+}
+
+.waveformWarning .barEmpty {
+  /* Silence floor stays subtle, not warning-toned (would over-fire). */
   background: var(--grey-20);
 }
 
 .timer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-050) var(--space-150);
+  border-radius: var(--radius-full);
+
   font-family: var(--sans);
   font-size: var(--font-size-400);
   font-weight: var(--font-weight-semibold);
@@ -311,9 +358,51 @@
   transition: color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+/* Timer halo — soft red-glow box-shadow that breathes alongside
+   the dot pulse on the same 1400ms cadence. Synchrony between dot
+   and timer reads as "the whole region is alive." Only fires while
+   recording (parent .recordingBlock is the only place .timer
+   exists). */
+.timer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-error) 0%, transparent);
+  animation: vrcTimerHalo 1400ms cubic-bezier(0.18, 0.9, 0.28, 1.4) infinite;
+}
+
+@keyframes vrcTimerHalo {
+  0%, 100% {
+    box-shadow: 0 0 0 var(--size-02)
+      color-mix(in srgb, var(--color-text-error) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 var(--size-12) var(--size-02)
+      color-mix(in srgb, var(--color-text-error) 20%, transparent);
+  }
+}
+
 .timerWarning {
   color: var(--color-text-error);
   animation: vrcTimerWarning 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
+}
+
+/* Warning state — halo brightens noticeably to land the urgency. */
+.timerWarning::before {
+  animation: vrcTimerHaloWarning 1400ms cubic-bezier(0.18, 0.9, 0.28, 1.4) infinite;
+}
+
+@keyframes vrcTimerHaloWarning {
+  0%, 100% {
+    box-shadow: 0 0 0 var(--size-02)
+      color-mix(in srgb, var(--color-text-error) 16%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 var(--size-16) var(--size-04)
+      color-mix(in srgb, var(--color-text-error) 40%, transparent);
+  }
 }
 
 @keyframes vrcTimerWarning {
@@ -406,8 +495,37 @@
 .waveformSweep {
   /* Reveal proportional to --play-progress (0 → 1). Inset's right
      value collapses as progress grows, exposing the brand-60 bars.
-     Driven by RAF — no transition needed. */
+     Driven by RAF — no transition needed.
+
+     The mask-image fades out the rightmost size-08 of the sweep so
+     the brand-60 "kisses" each bar instead of slamming through —
+     gives the sweep front a wet, refined feel. */
   clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
+  mask-image: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% * var(--play-progress, 0) - var(--size-08)),
+    transparent calc(100% * var(--play-progress, 0))
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% * var(--play-progress, 0) - var(--size-08)),
+    transparent calc(100% * var(--play-progress, 0))
+  );
+}
+
+/* Moment-of-completion settle — the rightmost bar of BOTH layers
+   gets a single springy pulse when playback ends. Re-fires whenever
+   .previewWaveformEnded is re-applied (i.e., on every replay end). */
+.previewWaveformEnded .waveformLayer .bar:last-child {
+  animation: vrcEndPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
+}
+
+@keyframes vrcEndPulse {
+  0%   { transform: scaleY(1); }
+  50%  { transform: scaleY(1.16); }
+  100% { transform: scaleY(1); }
 }
 
 .barUnplayed {
@@ -470,6 +588,14 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-success);
+
+  /* Springy land — the chip "settles" rather than fading in. */
+  animation: vrcCheckSpring 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes vrcCheckSpring {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: var(--opacity-100); transform: scale(1); }
 }
 
 .successBody {
@@ -498,10 +624,37 @@
 
 /* Submitted-state waveform row — same layout as PREVIEW but with
    a tone-success tint on every bar so the captured clip reads as a
-   "stamp" of the contribution rather than an editable preview. */
+   "stamp" of the contribution rather than an editable preview.
+
+   On entry, a one-cycle "seal" shimmer sweeps L→R across the row
+   via an ::after overlay whose background-position animates once.
+   Lands the saved beat. */
 .previewRowSubmitted {
+  position: relative;
+  overflow: hidden;
   background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
   border-color: color-mix(in srgb, var(--color-text-success) 20%, transparent);
+}
+
+.previewRowSubmitted::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in srgb, var(--white) 36%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  animation: vrcSealShimmer 600ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 1 forwards;
+}
+
+@keyframes vrcSealShimmer {
+  from { background-position: -100% 0; }
+  to   { background-position:  200% 0; }
 }
 
 .playBtnSubmitted {
@@ -597,8 +750,21 @@
     animation-delay: 0ms;
   }
 
-  .recordingDot {
+  .captureIcon {
     animation: none;
+  }
+
+  .recordingDot,
+  .timer::before,
+  .timerWarning::before {
+    animation: none;
+  }
+
+  .barEmpty {
+    /* Pilot-light shimmer becomes a static grey-20 floor under
+       reduced motion. */
+    animation: none;
+    background: var(--grey-20);
   }
 
   .timerWarning {
@@ -613,12 +779,28 @@
     /* Spec: under reduced motion the sweep skips its L→R animation
        and shows the full fill. Pinning --play-progress to 1 here
        overrides the RAF-driven inline value, so the clip-path stays
-       fully open regardless of audio.currentTime. */
+       fully open regardless of audio.currentTime. The mask-image
+       wet-edge collapses too. */
     --play-progress: 1 !important;
     transition: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .previewWaveformEnded .waveformLayer .bar:last-child {
+    animation: none;
   }
 
   .submittedBlock {
     animation-duration: 0.01ms;
+  }
+
+  .successCheck {
+    animation: none;
+  }
+
+  .previewRowSubmitted::after {
+    animation: none;
+    display: none;
   }
 }
