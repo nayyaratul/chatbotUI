@@ -125,6 +125,13 @@ img.photo {
   flex: 1;
 }
 
+/* max-width: 100% caps the line at the parent's flex-allotted width
+   so overflow + ellipsis actually engages on narrow screens. Without
+   this cap, .headerText's `align-items: flex-start` (cross-axis) lets
+   children take their content width, so a long headline like
+   "Candidate · Applied for Delivery Executive" would extend past the
+   text column and overlap the score arc on mobile. The cap is no-op
+   on desktop where the column has enough room. */
 .name {
   margin: 0;
   font-size: var(--font-size-400);
@@ -132,6 +139,7 @@ img.photo {
   line-height: var(--line-height-300);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--grey-90);
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -143,6 +151,7 @@ img.photo {
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-300);
   color: var(--grey-60);
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
