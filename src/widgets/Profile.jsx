@@ -346,48 +346,46 @@ function AvailabilityChip({ availability }) {
   )
 }
 
-/* ─── Score arc — half-circle gauge ──────────────────────────────
-   viewBox 100×56. SVG path describes a 180° arc from (6,50) up over
-   the top to (94,50). Two paths: grey-10 track + tone-coloured fill.
-   Fill's stroke-dasharray = arc length; stroke-dashoffset animates
-   from full → target on mount. Score number + verdict word stack
-   inside the arc opening (centered absolute overlay).
-
-   Compacter than the previous full circle (was 64×~80 with verdict
-   below; now 100×56 with verdict inside) and more "speedometer-
-   style" — reads as a measurement, not a target. */
+/* ─── Score arc — compact half-circle gauge ─────────────────────
+   72×44 SVG arc with score number centered inside the opening; the
+   verdict word renders BELOW the arc as separate title-case text
+   (not inside the arc body, not uppercase). Reference-aligned —
+   tighter footprint than the prior 100×56 version, leaves more
+   horizontal room for the headerText column. */
 function ScoreRing({ value, max, displayValue, label, tone }) {
   const ratio = Math.max(0, Math.min(1, value / (max || 1)))
-  const RADIUS = 44
-  const ARC_LENGTH = Math.PI * RADIUS   // half-circle ≈ 138.23
+  const RADIUS = 32
+  const ARC_LENGTH = Math.PI * RADIUS   // half-circle ≈ 100.53
   const targetOffset = ARC_LENGTH * (1 - ratio)
 
   return (
     <div className={cx(styles.ringWrap, styles[`ringWrap_${tone}`])}>
-      <svg
-        className={styles.arc}
-        viewBox="0 0 100 56"
-        aria-hidden="true"
-      >
-        <path
-          className={styles.arcTrack}
-          d="M 6 50 A 44 44 0 0 1 94 50"
-          fill="none"
-        />
-        <path
-          className={styles.arcFill}
-          d="M 6 50 A 44 44 0 0 1 94 50"
-          fill="none"
-          style={{
-            '--pcd-arc-length': `${ARC_LENGTH}`,
-            '--pcd-arc-target': `${targetOffset}`,
-          }}
-        />
-      </svg>
-      <div className={styles.ringCenter} aria-label={`Score ${value} of ${max}`}>
-        <span className={styles.ringValue}>{displayValue}</span>
-        <span className={styles.ringVerdict}>{label}</span>
+      <div className={styles.arcWrap}>
+        <svg
+          className={styles.arc}
+          viewBox="0 0 72 44"
+          aria-hidden="true"
+        >
+          <path
+            className={styles.arcTrack}
+            d="M 4 36 A 32 32 0 0 1 68 36"
+            fill="none"
+          />
+          <path
+            className={styles.arcFill}
+            d="M 4 36 A 32 32 0 0 1 68 36"
+            fill="none"
+            style={{
+              '--pcd-arc-length': `${ARC_LENGTH}`,
+              '--pcd-arc-target': `${targetOffset}`,
+            }}
+          />
+        </svg>
+        <div className={styles.ringCenter} aria-label={`Score ${value} of ${max}`}>
+          <span className={styles.ringValue}>{displayValue}</span>
+        </div>
       </div>
+      <span className={styles.ringVerdict}>{label}</span>
     </div>
   )
 }

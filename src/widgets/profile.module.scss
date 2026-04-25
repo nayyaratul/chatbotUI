@@ -188,17 +188,27 @@ img.photo {
   animation-delay: 420ms;
 }
 
-/* ─── Score arc — half-circle gauge (Option C) ───────────────────
-   100×56px gauge in the header's right column. Replaces the previous
-   64px full ring. Score number + verdict word stack inside the arc
-   opening as an absolute overlay; total height shrinks from ~80px
-   (ring + verdict-below) to 56px. */
+/* ─── Score arc — compact half-circle gauge ─────────────────────
+   Two-tier composition:
+     1. .arcWrap (72×44) — SVG arc + score number absolute-overlay
+        centered inside the arc opening.
+     2. .ringVerdict — title-case verdict word rendered BELOW the arc
+        as separate text, tone-coloured.
+   Wider than tall arc + breathing-room verdict lets the score read
+   as a "gauge measurement" with a label, like the reference. */
 
 .ringWrap {
-  position: relative;
-  width: var(--size-100);
-  height: var(--size-56);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-050);
   flex: 0 0 auto;
+}
+
+.arcWrap {
+  position: relative;
+  width: var(--size-72);
+  height: var(--size-44);
 }
 
 /* ── Ring arrival settle (per-tone) ──────────────────────────────
@@ -258,17 +268,15 @@ img.photo {
   animation-delay: 180ms;
 }
 
-/* Score + verdict stack inside the arc opening. Centered absolute
-   overlay; gap-025 keeps the stack tight (4px between number and
-   verdict). */
+/* Score number sits centered inside the arc opening as an absolute
+   overlay. Verdict moved out — it now lives below the arc as a
+   sibling of .arcWrap. */
 .ringCenter {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-025);
   pointer-events: none;
 }
 
@@ -292,27 +300,27 @@ img.photo {
   animation-delay: 900ms;
 }
 
-/* Verdict word inside the arc opening, below the score. Delayed
-   entry — slides up + fades in AFTER the arc fill + count-up land,
-   so the sequence reads as one composed beat (arc → number →
-   verdict). Width bounded by the arc opening; overflow-wrap:anywhere
-   handles future override values that exceed one word. */
+/* Verdict word — title case, sits below the arc as separate text.
+   Bumped from font-size-100 uppercase to font-size-200 title-case
+   for natural readability (matches reference: "Decent" not
+   "DECENT"). Delayed entry stays the same — slides up after the
+   arc fill + count-up + score bounce all land. */
 .ringVerdict {
-  font-size: var(--font-size-100);
+  font-size: var(--font-size-200);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
   color: var(--tone-color);
   text-align: center;
-  max-width: var(--size-72);
+  max-width: var(--size-96);
   word-break: normal;
   overflow-wrap: anywhere;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050));
   animation: pcdVerdictRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
-  animation-delay: 1080ms;   /* lands ~180ms after the score bounce settles */
+  animation-delay: 1080ms;
 }
 
 /* ─── Stats list — full-width now that the ring lives in the header.
