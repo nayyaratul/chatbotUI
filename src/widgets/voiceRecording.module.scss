@@ -335,8 +335,11 @@
 }
 
 .waveformWarning .barEmpty {
-  /* Silence floor stays subtle, not warning-toned (would over-fire). */
+  /* Silence floor stays subtle, not warning-toned (would over-fire).
+     Pilot-light cross-fade is also frozen here so the urgency curve
+     owns the room — no dual-rhythm against the warning beat. */
   background: var(--grey-20);
+  animation: none;
 }
 
 .timer {
@@ -567,7 +570,9 @@
   flex-direction: column;
   gap: var(--space-150);
   width: 100%;
-  animation: vrcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  /* §16 entry curve — opacity + translateY rise is the rise-up role,
+     not a chip pop. Keep this on cubic-bezier(0.18, 0.9, 0.28, 1.04). */
+  animation: vrcRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
 /* §10 success banner — chip + tabular-nums timestamp. */
@@ -649,6 +654,10 @@
   );
   background-size: 200% 100%;
   background-position: -100% 0;
+  /* Curve identity is §16 entry. Duration sits above the 280–360ms
+     entry band intentionally — a snappy 340ms version reads as a
+     hover-state flash rather than a deliberate "saved/sealed" beat
+     traveling across the row. Documented exception, not drift. */
   animation: vrcSealShimmer 600ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 1 forwards;
 }
 

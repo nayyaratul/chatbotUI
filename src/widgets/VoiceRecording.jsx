@@ -512,6 +512,10 @@ export function VoiceRecording({ payload }) {
                   : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
             </button>
 
+            {/* `previewWaveformEnded` toggles off for at least one
+                render frame on Replay (isPlaying flips to true while
+                playProgress is still 1 from the prior end), so the
+                end-pulse keyframe re-fires on every replay-then-end. */}
             <div
               className={cx(
                 styles.previewWaveform,
