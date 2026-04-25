@@ -502,6 +502,54 @@ function buildVideoPayload(variant) {
   throw new Error(`buildVideoPayload: unknown variant "${variant}"`)
 }
 
+/* ─── Signature Capture (#14) — payload builder ──────────────────────
+   Two structural variants share one shell. `document` mounts a
+   thumbnail preview band that hands off to JobDetailsModal; `text`
+   mounts an inline scrollable agreement body. Use-case (offer /
+   contract / completion) drives the header icon + default copy and
+   travels as a payload field, not a variant. */
+function buildSignaturePayload(variant) {
+  const base = {
+    widget_id: makeId('sg'),
+    variant,
+    signer_name: 'Atul Nayyar',
+    silent: false,
+  }
+
+  if (variant === 'document') {
+    return {
+      ...base,
+      use_case: 'offer',
+      document_id: 'doc-offer-2026-04-25',
+      document_ref: {
+        label: 'Offer letter — Riders Operations',
+        version: 'v3.2',
+        pages: 3,
+        updated_at: '2026-04-22',
+      },
+    }
+  }
+
+  if (variant === 'text') {
+    return {
+      ...base,
+      use_case: 'contract',
+      title: 'Sign the NDA',
+      subtitle: 'Vendor onboarding · 2026-04',
+      agreement_text:
+        "This Non-Disclosure Agreement (\"Agreement\") is entered into between the Company and the Recipient as of the date of signing below.\n\n"
+        + "1. Confidential Information. The Recipient acknowledges that during the engagement they may be exposed to non-public information about the Company's operations, customers, vendors, technology, and business strategy. All such information is treated as confidential.\n\n"
+        + "2. Use of Information. The Recipient agrees to use confidential information solely for the purpose of performing the engagement and not for any personal benefit or third-party advantage.\n\n"
+        + "3. Term. The obligations under this Agreement remain in force for a period of three (3) years from the date of last disclosure, after which the obligations expire automatically.\n\n"
+        + "4. Return of Materials. Upon completion of the engagement or earlier on request, the Recipient shall return or destroy all materials containing confidential information.\n\n"
+        + "5. Governing Law. This Agreement is governed by the laws of India and any disputes shall be resolved in the courts of Bengaluru.\n\n"
+        + "By signing below, the Recipient acknowledges that they have read this Agreement, understand its terms, and agree to be bound by them.",
+    }
+  }
+
+  throw new Error(`buildSignaturePayload: unknown variant "${variant}"`)
+}
+
 export const widgetSchemas = {
 
   // ─── engine ──────────────────────────────────────────────────────
@@ -1201,6 +1249,23 @@ export const widgetSchemas = {
           auto_transcribe: false,
           silent: false,
         }),
+      },
+    ],
+  },
+
+  signature: {
+    label: 'Signature',
+    category: 'input',
+    variants: [
+      {
+        id: 'document',
+        label: 'Document',
+        payload: () => buildSignaturePayload('document'),
+      },
+      {
+        id: 'text',
+        label: 'Agreement',
+        payload: () => buildSignaturePayload('text'),
       },
     ],
   },

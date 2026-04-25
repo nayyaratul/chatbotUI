@@ -1,0 +1,348 @@
+/* Signature Capture (#14) — sign-the-thing widget.
+   Region 1: shell + §2 header + idle (gate-pending) state.
+   Spec: docs/superpowers/specs/2026-04-25-signature-capture-widget-design.md */
+
+/* ─── Card shell — §1 verbatim ─────────────────────────────────────── */
+
+.card {
+  /* §9 tone (default brand-60). Drives the framed-stamp tint on submit
+     in a later region; carried as a local custom prop now so child
+     elements (gate-met check, preview accent) can read from it. */
+  --tone-color:  var(--brand-60);
+  --tone-tint:   color-mix(in srgb, var(--tone-color) 10%, var(--white));
+  --tone-border: color-mix(in srgb, var(--tone-color) 22%, transparent);
+
+  /* §5 — brand-60 accent for the primary CTA */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+  min-height: 30rem;     /* §4 — match Image Capture; preview + body must not shift */
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: sgRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+@keyframes sgRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* ─── Header — §2 verbatim ─────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Body — `document` variant: thumbnail preview band ────────────── */
+
+.docBand {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  padding: var(--space-125);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: var(--white);
+}
+
+.docThumb {
+  flex: 0 0 auto;
+  width: var(--size-72);
+  height: var(--size-72);
+  border-radius: var(--radius-150);
+  background: var(--grey-10);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.docThumb_empty {
+  background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
+  color: var(--brand-60);
+}
+
+.docText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  min-width: 0;
+  flex: 1;
+}
+
+.docLabel {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  word-break: break-word;
+}
+
+.docMeta {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.docOpenLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin: 0;
+  margin-top: var(--space-025);
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  color: var(--brand-60);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  transition: color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  &:hover:not(:disabled) {
+    color: color-mix(in srgb, var(--brand-60) 88%, black);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--opacity-064);
+  }
+
+  > svg {
+    transition: transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+
+  &:hover:not(:disabled) > svg {
+    transform: translateX(var(--size-02));
+  }
+}
+
+/* ─── Body — `text` variant: scrollable agreement body ─────────────── */
+
+.agreement {
+  position: relative;
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.agreementBody {
+  /* ~7 lines of body text before scroll kicks in. line-height-300 is
+     1.25rem absolute, so 7 * 1.25rem ≈ 8.75rem (140px). Fade masks at
+     top/bottom signal "more above/below". */
+  max-height: calc(var(--line-height-300) * 7);
+  overflow-y: auto;
+  padding: var(--space-125) var(--space-150);
+  scroll-behavior: smooth;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--white) var(--space-100),
+    var(--white) calc(100% - var(--space-100)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--white) var(--space-100),
+    var(--white) calc(100% - var(--space-100)),
+    transparent 100%
+  );
+
+  > p {
+    margin: 0;
+    font-size: var(--font-size-200);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-300);
+    color: var(--grey-90);
+
+    + p {
+      margin-top: var(--space-100);
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--border-width-150) solid var(--brand-60);
+    outline-offset: var(--size-02);
+  }
+}
+
+/* ─── Gate caption row ──────────────────────────────────────────────── */
+
+.gateCaption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--grey-60);
+  transition:
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.gateCaption_met {
+  color: var(--color-text-success);
+
+  > svg {
+    color: var(--color-text-success);
+  }
+}
+
+/* ─── Signature preview region — idle / gated ──────────────────────── */
+
+.preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  padding: var(--space-150);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  background: var(--white);
+  cursor: pointer;
+  transition:
+    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.preview_gated {
+  opacity: var(--opacity-064);
+  cursor: not-allowed;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--grey-10) 50%, var(--white));
+}
+
+/* Region 1 placeholder content. Captured / submitted states will swap
+   this out in later regions. */
+.previewBaseline {
+  position: absolute;
+  left: var(--space-200);
+  right: var(--space-200);
+  bottom: 38%;
+  height: 0;
+  border-top: var(--border-width-100) dashed var(--grey-30);
+}
+
+.previewMark {
+  position: absolute;
+  left: var(--space-200);
+  bottom: calc(38% - var(--space-025));
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-30);
+  user-select: none;
+}
+
+.previewCaption {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  transform: translateY(calc(50% + var(--space-100)));
+}
+
+.preview:hover:not(.preview_gated) {
+  border-color: var(--brand-60);
+  background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
+}
+
+/* ─── Disclaimer + CTA row ─────────────────────────────────────────── */
+
+.disclaimer {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+}
+
+.ctaRow {
+  margin-top: auto;          /* §4 — sticky-bottom CTA so floor doesn't pad-up */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+}

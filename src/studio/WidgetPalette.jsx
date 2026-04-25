@@ -31,6 +31,7 @@ import {
   PlaySquare,
   Package,
   Pencil,
+  Signature,
 } from 'lucide-react'
 import styles from './widgetPalette.module.scss'
 
@@ -63,6 +64,7 @@ const WIDGET_ICONS = {
   earnings:           Wallet,
   profile:            UserCircle2,
   voice_recording:    Mic,
+  signature:          Signature,
 }
 
 /**

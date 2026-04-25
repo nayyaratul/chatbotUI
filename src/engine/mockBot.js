@@ -418,6 +418,20 @@ registerRule({
   build: () => ({ type: 'voice_recording', payload: getVariantPayload('voice_recording', 'default') }),
 })
 
+// ─── Signature Capture — `document` variant (default) ────────────
+// Trigger: "sign", "signature", "sign capture", "signature capture"
+registerRule({
+  match: /^(show )?sign(ature)?( capture)?$/i,
+  build: () => ({ type: 'signature', payload: getVariantPayload('signature', 'document') }),
+})
+
+// ─── Signature Capture — `text` variant (inline agreement) ───────
+// Trigger: "sign nda", "sign agreement", "sign text"
+registerRule({
+  match: /^(show )?sign (nda|agreement|text)$/i,
+  build: () => ({ type: 'signature', payload: getVariantPayload('signature', 'text') }),
+})
+
 // ─── Job Card — single card ────────────────────────────────────────
 // Trigger: "job card", "show job card", "show job", "job"
 registerRule({
