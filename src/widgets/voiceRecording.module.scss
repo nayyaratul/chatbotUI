@@ -122,19 +122,26 @@
 /* ─── Media region — fixed-height wrapper around all state blocks
    so the card doesn't visually jump as phases change. flex:1 fills
    the remaining card space below the header + prompt; each state
-   block sits top-anchored inside it (no per-block margin-top:auto).
-   §4 constant-height contract is honoured by the card's own
-   min-height: 24rem floor + this region's flex grow. */
+   block stretches to fill the region (flex:1 on state blocks
+   below). §4 constant-height contract is honoured by the card's
+   own min-height: 24rem floor + this region's flex grow.
+
+   padding-top adds a small extra beat between the prompt and the
+   media box on top of the card's space-150 gap — the prompt is
+   the dominant headline and benefits from an explicit gap before
+   the action area. */
 .mediaRegion {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding-top: var(--space-075);
 }
 
 /* ─── IDLE — big mic capture button ─────────────────────────── */
 
 .captureBtn {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -144,8 +151,8 @@
   width: 100%;
   /* Common state-block floor — every state in the media region
      resolves to the same outer height so the card doesn't visually
-     jump as phases change. var(--size-176) covers the tallest
-     natural state (RECORDING ≈ 168px) with breathing room. */
+     jump as phases change. flex:1 fills the region; min-height
+     covers the rare case where the region is unusually short. */
   min-height: var(--size-176);
 
   background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
@@ -238,6 +245,7 @@
 /* ─── RECORDING — live waveform + timer + stop ─────────────── */
 
 .recordingBlock {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -478,6 +486,7 @@
 /* ─── PREVIEW — static waveform + playback sweep ───────────── */
 
 .previewBlock {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -624,6 +633,7 @@
 /* ─── SUBMITTED — success banner + frozen waveform ─────────── */
 
 .submittedBlock {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -780,6 +790,7 @@
 /* ─── DENIED — permission error + retry (mirrors ImageCapture) */
 
 .deniedBlock {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
