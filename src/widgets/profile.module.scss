@@ -334,37 +334,47 @@ img.photo {
   animation-delay: 1080ms;
 }
 
-/* ─── Stats list — full-width now that the ring lives in the header.
-   Gains its own entry animation (previously inherited from .body). */
+/* Stats grid — auto-fit responsive layout. 2 columns on wide cards
+   (~32rem desktop), 1 column on narrow (mobile). minmax(176px, 1fr)
+   = "fit a column iff at least 176px is available". Matches the
+   spec's "2-3 columns of key metrics with icons" hint. Note: the
+   Nexus size scale jumps from 136 to 176 with no rung in between —
+   176 is the closest available token to a "180-ish" cutoff. */
 
 .statsList {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-050);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--size-176), 1fr));
+  column-gap: var(--space-150);
+  row-gap: var(--space-050);
   min-width: 0;
 
   animation: pcdRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
   animation-delay: 120ms;
 }
 
-/* Inline "Label: Value" text row — reference-inspired pattern. Pure
-   text rhythm, no icon disc. Label is grey-60 regular, value is
-   grey-90 semibold; baseline-aligned with a single gap. */
+/* Stat row — Lucide icon + Label + Value, baseline-aligned. Icon
+   uses align-self: center (icons read better visually-centered than
+   baseline-aligned with text). */
 .statRow {
   display: flex;
   align-items: baseline;
   gap: var(--space-075);
   padding: var(--space-025) 0;
   min-width: 0;
-  flex-wrap: wrap;
 
   opacity: var(--opacity-000);
   transform: translateY(var(--space-050));
   animation: pcdStatRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
   animation-delay: var(--pcd-stat-delay, 300ms);
+}
+
+.statIcon {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--grey-60);
 }
 
 .statLabel {
@@ -382,6 +392,9 @@ img.photo {
   color: var(--grey-90);
   font-variant-numeric: tabular-nums;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ─── Skills ──────────────────────────────────────────────── */
@@ -476,58 +489,44 @@ img.photo {
   animation-delay: var(--pcd-cta-delay, 1500ms);
 }
 
-/* Text-link styled like JobCard's "View details" — no button chrome,
-   just tone-coloured text + chevron. min-height: var(--size-44)
-   guarantees the 44pt tap-target minimum (WCAG / HIG / MD) even
-   though the visible text stays compact. Hover lifts tone to
-   brand-60; active state deepens further for sub-100ms press
-   feedback on mobile. */
+/* Matches JobCard's .viewDetailsLink exactly — brand-60 medium-
+   weight tappable text link with a brand-tint hover wash and a
+   small chevron-style arrow that nudges right on hover. Negative
+   margin-left of var(--space-075) pulls the visible text flush
+   with the column's left edge despite the inner padding (so the
+   tap area is generous but the optical alignment is tight). */
 .viewFullLink {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
   gap: var(--space-050);
-  padding: var(--space-100) var(--space-050);
-  min-height: var(--size-44);
+  margin-left: calc(-1 * var(--space-075));
+  padding: var(--space-050) var(--space-075);
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--sans);
   font-size: var(--font-size-200);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   line-height: 1;
-  letter-spacing: var(--letter-spacing-tight);
-  color: var(--grey-80);
+  color: var(--brand-60);
   border-radius: var(--radius-100);
-  transition:
-    color 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    background 140ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: background 160ms ease, color 160ms ease;
 }
 
 .viewFullLink:hover {
-  color: var(--brand-60);
-}
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
 
-/* Active state — slight background wash gives sub-100ms tap feedback
-   on mobile (pro-max tap-feedback-speed + press-feedback rules). */
-.viewFullLink:active {
-  color: var(--brand-60);
-  background: color-mix(in srgb, var(--brand-60) 8%, transparent);
+  > svg {
+    transform: translateX(var(--space-025));
+    transition: transform 160ms ease;
+  }
 }
 
 .viewFullLink:focus-visible {
-  outline: var(--border-width-300) solid color-mix(in srgb, var(--brand-60) 40%, transparent);
+  outline: var(--border-width-200) solid var(--brand-60);
   outline-offset: var(--size-02);
-}
-
-.viewFullLink svg {
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
-  vertical-align: text-bottom;
-}
-
-.viewFullLink:hover svg,
-.viewFullLink:active svg {
-  transform: translateX(var(--size-02));
 }
 
 /* Decision row — Reject + Shortlist, 50/50 grid. Destructive on the

@@ -2,10 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   Circle,
+  Star,
+  Target,
+  Globe,
+  Clock,
+  Briefcase,
+  Award,
+  TrendingUp,
+  Dot,
   CheckCircle2,
   Check,
   X,
-  ChevronRight,
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
@@ -26,6 +33,16 @@ const COUNT_UP_MS = 720
 const COUNT_UP_DELAY_MS = 180
 const MAX_SKILLS_SHOWN = 5
 const MAX_STATS = 4
+
+const STAT_ICON = {
+  star:          Star,
+  target:        Target,
+  globe:         Globe,
+  clock:         Clock,
+  briefcase:     Briefcase,
+  award:         Award,
+  'trending-up': TrendingUp,
+}
 
 const AVAILABILITY_LABEL = {
   available:   'Available',
@@ -271,9 +288,10 @@ export function Profile({ payload }) {
                   type="button"
                   className={styles.viewFullLink}
                   onClick={() => handleAction(viewFullAction)}
+                  aria-label={viewFullAction.label}
                 >
                   {viewFullAction.label}
-                  <ChevronRight size={14} strokeWidth={2.25} aria-hidden="true" />
+                  <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
                 </button>
               )}
               {decisionActions.length > 0 && (
@@ -389,17 +407,24 @@ function ScoreRing({ value, max, displayValue, label, tone }) {
   )
 }
 
-/* ─── Stat row — inline "Label: Value" pattern (no icon disc) ──
-   Reference-inspired: pure text, regular label + bold value.
-   Cleaner read than icon + disc + label + value, and lighter on
-   vertical real estate. */
+/* ─── Stat row — icon + Label + Value, JobCard-style ─────────────
+   Inline icon (Lucide, no disc), regular grey-60 label, semibold
+   grey-90 value. Stats grid is responsive via auto-fit minmax: 2
+   columns on wide cards, 1 column on narrow. */
 function StatRow({ idx, stat }) {
+  const Icon = STAT_ICON[stat.icon] ?? Dot
   const delay = 300 + idx * 60
   return (
     <li
       className={styles.statRow}
       style={{ '--pcd-stat-delay': `${delay}ms` }}
     >
+      <Icon
+        className={styles.statIcon}
+        size={14}
+        strokeWidth={2}
+        aria-hidden="true"
+      />
       <span className={styles.statLabel}>{stat.label}:</span>
       <span className={styles.statValue}>{stat.value}</span>
     </li>
