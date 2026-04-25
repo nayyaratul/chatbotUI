@@ -347,15 +347,14 @@ function AvailabilityChip({ availability }) {
 }
 
 /* ─── Score arc — compact half-circle gauge ─────────────────────
-   72×44 SVG arc with score number centered inside the opening; the
-   verdict word renders BELOW the arc as separate title-case text
-   (not inside the arc body, not uppercase). Reference-aligned —
-   tighter footprint than the prior 100×56 version, leaves more
-   horizontal room for the headerText column. */
+   56×32 SVG arc with the score number bottom-aligned to the arc
+   baseline (sitting visually on top of the arc's open ends, like
+   the reference). Verdict word renders below the arc as separate
+   title-case text. */
 function ScoreRing({ value, max, displayValue, label, tone }) {
   const ratio = Math.max(0, Math.min(1, value / (max || 1)))
-  const RADIUS = 32
-  const ARC_LENGTH = Math.PI * RADIUS   // half-circle ≈ 100.53
+  const RADIUS = 24
+  const ARC_LENGTH = Math.PI * RADIUS   // half-circle ≈ 75.40
   const targetOffset = ARC_LENGTH * (1 - ratio)
 
   return (
@@ -363,17 +362,17 @@ function ScoreRing({ value, max, displayValue, label, tone }) {
       <div className={styles.arcWrap}>
         <svg
           className={styles.arc}
-          viewBox="0 0 72 44"
+          viewBox="0 0 56 32"
           aria-hidden="true"
         >
           <path
             className={styles.arcTrack}
-            d="M 4 36 A 32 32 0 0 1 68 36"
+            d="M 4 28 A 24 24 0 0 1 52 28"
             fill="none"
           />
           <path
             className={styles.arcFill}
-            d="M 4 36 A 32 32 0 0 1 68 36"
+            d="M 4 28 A 24 24 0 0 1 52 28"
             fill="none"
             style={{
               '--pcd-arc-length': `${ARC_LENGTH}`,

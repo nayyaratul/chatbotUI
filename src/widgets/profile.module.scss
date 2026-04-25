@@ -207,8 +207,8 @@ img.photo {
 
 .arcWrap {
   position: relative;
-  width: var(--size-72);
-  height: var(--size-44);
+  width: var(--size-56);
+  height: var(--size-32);
 }
 
 /* ── Ring arrival settle (per-tone) ──────────────────────────────
@@ -268,14 +268,16 @@ img.photo {
   animation-delay: 180ms;
 }
 
-/* Score number sits centered inside the arc opening as an absolute
-   overlay. Verdict moved out — it now lives below the arc as a
-   sibling of .arcWrap. */
+/* Score sits at the bottom of the arc opening — its baseline aligns
+   with the arc's open ends (y=28 in viewBox terms). flex-end +
+   padding-bottom: 0 lands the digits' bottom edge at y=32 (wrap
+   bottom), which positions text-baseline ~y=28 (matching arc
+   baseline). The digits visually rest on the arc's open horizontal. */
 .ringCenter {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   pointer-events: none;
 }
