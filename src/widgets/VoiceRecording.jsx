@@ -138,27 +138,20 @@ export function VoiceRecording({ payload }) {
      onstop + fallback timer racing — the second call hits an
      already-set capturedRef and re-runs the same setPhase no-op). */
   const finalizeRecording = useCallback((blob) => {
-    /* eslint-disable no-console */
-    console.log('[VoiceRecording] finalizeRecording, blob size:', blob.size, 'type:', blob.type)
     if (!mountedRef.current) {
-      console.log('[VoiceRecording] not mounted — bailing')
       teardownCapture()
       return
     }
     /* If we've already finalised once, don't redo it. */
-    if (capturedRef.current) {
-      console.log('[VoiceRecording] already finalised — skipping')
-      return
-    }
+    if (capturedRef.current) return
+
     const durationSec = (Date.now() - recordStartRef.current) / 1000
     const finalBars = [...ringBufferRef.current]
 
     let objectUrl = ''
     try {
       objectUrl = URL.createObjectURL(blob)
-    } catch (err) {
-      console.warn('[VoiceRecording] createObjectURL threw:', err)
-    }
+    } catch { /* ignore — preview will fall back to no audio src */ }
 
     capturedRef.current = {
       blob,
@@ -168,16 +161,11 @@ export function VoiceRecording({ payload }) {
       sizeBytes: blob.size,
       bars: finalBars,
     }
-    console.log('[VoiceRecording] capturedRef set, transitioning to preview')
     teardownCapture()
     setPhase('preview')
-    /* eslint-enable no-console */
   }, [teardownCapture])
 
   const handleStopRecording = useCallback(() => {
-    /* eslint-disable no-console */
-    console.log('[VoiceRecording] handleStopRecording invoked')
-
     /* Stop the analyser/sampler immediately; MediaRecorder's onstop
        fires asynchronously and finalises the captured payload. */
     if (tickRef.current) {
@@ -192,7 +180,6 @@ export function VoiceRecording({ payload }) {
        might not fire (dropped event, browser bug, weird mr state). */
     if (stopFallbackRef.current) clearTimeout(stopFallbackRef.current)
     stopFallbackRef.current = setTimeout(() => {
-      console.log('[VoiceRecording] fallback timer fired — finalizing')
       stopFallbackRef.current = null
       if (!mountedRef.current) return
       const fbMr = mediaRecorderRef.current
@@ -205,7 +192,6 @@ export function VoiceRecording({ payload }) {
     /* Try the normal MediaRecorder.stop() path. If it fails or
        mr is in a weird state, the fallback above still saves us. */
     const mr = mediaRecorderRef.current
-    console.log('[VoiceRecording] mr state at stop:', mr?.state)
     if (mr && mr.state !== 'inactive') {
       try {
         /* Flush any pending data buffered inside the recorder
@@ -214,12 +200,8 @@ export function VoiceRecording({ payload }) {
            very short clips). */
         if (typeof mr.requestData === 'function') mr.requestData()
         mr.stop()
-        console.log('[VoiceRecording] mr.stop() called')
-      } catch (err) {
-        console.warn('[VoiceRecording] mr.stop() threw:', err)
-      }
+      } catch { /* ignore — fallback timer covers this */ }
     }
-    /* eslint-enable no-console */
   }, [finalizeRecording])
 
   const handleStartRecording = useCallback(async () => {
@@ -253,8 +235,6 @@ export function VoiceRecording({ payload }) {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
       }
       mr.onstop = () => {
-        /* eslint-disable no-console */
-        console.log('[VoiceRecording] mr.onstop fired')
         /* Cancel the defensive fallback — the real onstop fired. */
         if (stopFallbackRef.current) {
           clearTimeout(stopFallbackRef.current)
@@ -262,15 +242,12 @@ export function VoiceRecording({ payload }) {
         }
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
         finalizeRecording(blob)
-        /* eslint-enable no-console */
       }
-      mr.onerror = (e) => {
-        /* eslint-disable no-console */
-        console.warn('[VoiceRecording] MediaRecorder error', e)
-        /* Force the same finalize path so we don't get stuck. */
+      mr.onerror = () => {
+        /* Force the same finalize path so a recorder error doesn't
+           strand the UI in the recording phase. */
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
         finalizeRecording(blob)
-        /* eslint-enable no-console */
       }
       mediaRecorderRef.current = mr
       mr.start()
