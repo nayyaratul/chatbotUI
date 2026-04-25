@@ -554,34 +554,21 @@ function SignatureSvg({ strokes, drawIn, ariaLabel }) {
     if (!el) return
     const rect = el.getBoundingClientRect()
     const cs   = getComputedStyle(el)
-    // eslint-disable-next-line no-console
-    console.log('[sg:4 svg mounted]', {
-      rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y },
-      computed: {
-        opacity:  cs.opacity,
-        display:  cs.display,
-        visibility: cs.visibility,
-        stroke:   cs.stroke,
-        strokeWidth: cs.strokeWidth,
-        animationName: cs.animationName,
-        transform: cs.transform,
-      },
-      pathCount: el.querySelectorAll('path').length,
-      firstPath: (() => {
-        const p = el.querySelector('path')
-        if (!p) return null
-        const r = p.getBoundingClientRect()
-        const pcs = getComputedStyle(p)
-        return {
-          rect: { w: r.width, h: r.height },
-          opacity: pcs.opacity,
-          stroke: pcs.stroke,
-          strokeDasharray: pcs.strokeDasharray,
-          strokeDashoffset: pcs.strokeDashoffset,
-          animationName: pcs.animationName,
-        }
-      })(),
-    })
+    const p    = el.querySelector('path')
+    const pr   = p ? p.getBoundingClientRect() : null
+    const pcs  = p ? getComputedStyle(p) : null
+    // Flat string so values print inline without needing to expand
+    /* eslint-disable no-console */
+    console.log(
+      `[sg:4 svg] rect=${Math.round(rect.width)}x${Math.round(rect.height)}`,
+      `| svg.opacity=${cs.opacity} display=${cs.display} visibility=${cs.visibility}`,
+      `| svg.stroke=${cs.stroke} strokeW=${cs.strokeWidth}`,
+      `| svg.anim=${cs.animationName} transform=${cs.transform}`,
+      `| paths=${el.querySelectorAll('path').length}`,
+      p ? `| path.rect=${Math.round(pr.width)}x${Math.round(pr.height)}` : `| path=NONE`,
+      pcs ? `| path.opacity=${pcs.opacity} stroke=${pcs.stroke} dasharray=${pcs.strokeDasharray} dashoffset=${pcs.strokeDashoffset} anim=${pcs.animationName}` : '',
+    )
+    /* eslint-enable no-console */
   })
 
   return (
