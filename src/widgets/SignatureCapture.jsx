@@ -45,12 +45,9 @@ import styles from './signatureCapture.module.scss'
    Rule book: docs/widget-conventions.md
    ─────────────────────────────────────────────────────────────────── */
 
-const SHEET_ANIM_DURATION       = 320  /* matches the slowest exit transition (transform 320ms) */
-const STROKE_DRAW_DURATION_MS   = 280
-const STROKE_DRAW_STAGGER_MS    = 60
-const STROKE_DRAW_CAP           = 8
-const SVG_VIEWBOX_W             = 500
-const SVG_VIEWBOX_H             = 200
+const SHEET_ANIM_DURATION = 320  /* matches the slowest exit transition (transform 320ms) */
+const SVG_VIEWBOX_W       = 500
+const SVG_VIEWBOX_H       = 200
 const USE_CASE_ICON = {
   offer:      HandCoins,
   contract:   ScrollText,
@@ -147,17 +144,6 @@ function strokeToPathD(stroke, viewW, viewH) {
   const last = stroke[stroke.length - 1]
   d += ` L ${last.x * viewW} ${last.y * viewH}`
   return d
-}
-
-function approxStrokeLength(stroke, viewW, viewH) {
-  if (!stroke || stroke.length < 2) return 1
-  let len = 0
-  for (let i = 1; i < stroke.length; i++) {
-    const dx = (stroke[i].x - stroke[i - 1].x) * viewW
-    const dy = (stroke[i].y - stroke[i - 1].y) * viewH
-    len += Math.sqrt(dx * dx + dy * dy)
-  }
-  return Math.max(len, 1)
 }
 
 /* ─── SignatureSheet — portaled capture surface ─────────────────────
@@ -397,11 +383,6 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
   function handleUse() {
     if (strokes.length === 0) return
-    // eslint-disable-next-line no-console
-    console.log('[sg:1 sheet→parent]', {
-      sheetStrokesCount: strokes.length,
-      sheetStrokesSample: strokes[0]?.slice(0, 3),
-    })
     onCommit(strokes)
     requestClose()
   }
@@ -532,73 +513,22 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
    Renders an Array<Stroke> as inline SVG paths with stroke-dasharray
    draw-in animation. Caps the per-stroke stagger at 8 (§11). */
 
-function SignatureSvg({ strokes, drawIn, ariaLabel }) {
-  const svgRef = useRef(null)
+function SignatureSvg({ strokes, ariaLabel }) {
   const paths = useMemo(() => {
-    return (strokes ?? []).map((stroke) => ({
-      d:      strokeToPathD(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H),
-      length: approxStrokeLength(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H),
-    }))
+    return (strokes ?? []).map((stroke) => strokeToPathD(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H))
   }, [strokes])
-
-  // eslint-disable-next-line no-console
-  console.log('[sg:3 svg render]', {
-    strokesCount: strokes?.length,
-    pathsCount: paths.length,
-    pathsSample: paths.slice(0, 2).map((p) => ({ d_head: p.d.slice(0, 60), len: p.length })),
-    drawIn,
-  })
-
-  useEffect(() => {
-    const el = svgRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const cs   = getComputedStyle(el)
-    const p    = el.querySelector('path')
-    const pr   = p ? p.getBoundingClientRect() : null
-    const pcs  = p ? getComputedStyle(p) : null
-    // Flat string so values print inline without needing to expand
-    /* eslint-disable no-console */
-    console.log(
-      `[sg:4 svg] rect=${Math.round(rect.width)}x${Math.round(rect.height)}`,
-      `| svg.opacity=${cs.opacity} display=${cs.display} visibility=${cs.visibility}`,
-      `| svg.stroke=${cs.stroke} strokeW=${cs.strokeWidth}`,
-      `| svg.anim=${cs.animationName} transform=${cs.transform}`,
-      `| paths=${el.querySelectorAll('path').length}`,
-      p ? `| path.rect=${Math.round(pr.width)}x${Math.round(pr.height)}` : `| path=NONE`,
-      pcs ? `| path.opacity=${pcs.opacity} stroke=${pcs.stroke} dasharray=${pcs.strokeDasharray} dashoffset=${pcs.strokeDashoffset} anim=${pcs.animationName}` : '',
-    )
-    /* eslint-enable no-console */
-  })
 
   return (
     <svg
-      ref={svgRef}
       className={styles.signatureSvg}
       viewBox={`0 0 ${SVG_VIEWBOX_W} ${SVG_VIEWBOX_H}`}
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={ariaLabel}
     >
-      {paths.map((p, i) => {
-        const stagger = drawIn
-          ? Math.min(i, STROKE_DRAW_CAP - 1) * STROKE_DRAW_STAGGER_MS
-          : 0
-        const style = drawIn
-          ? {
-              strokeDasharray: p.length,
-              strokeDashoffset: p.length,
-              animation: `sgInkDraw ${STROKE_DRAW_DURATION_MS}ms cubic-bezier(0.18, 0.9, 0.28, 1.04) ${stagger}ms forwards`,
-            }
-          : undefined
-        return (
-          <path
-            key={i}
-            d={p.d}
-            style={style}
-          />
-        )
-      })}
+      {paths.map((d, i) => (
+        <path key={i} d={d} />
+      ))}
     </svg>
   )
 }
@@ -868,7 +798,6 @@ export function SignatureCapture({ payload }) {
   const [reviewOpen, setReviewOpen] = useState(false)
   const [signOpen, setSignOpen]     = useState(false)
   const [strokes, setStrokes]       = useState([])
-  const [drawInKey, setDrawInKey]   = useState(0)
   const [submission, setSubmission] = useState(null)  /* { at, signer_name, device_info, signature_image_id } once submitted */
   const previewRef                  = useRef(null)
   const restoreFocusRef             = useRef(null)
@@ -948,15 +877,7 @@ export function SignatureCapture({ payload }) {
   }, [])
 
   const handleSheetCommit = useCallback((nextStrokes) => {
-    // eslint-disable-next-line no-console
-    console.log('[sg:2 parent received]', {
-      strokesCount: nextStrokes?.length,
-      strokesSample: nextStrokes?.[0]?.slice(0, 3),
-    })
     setStrokes(nextStrokes)
-    /* Bump key so the SVG remounts and re-runs its draw-in animation
-       on every commit (including re-signs). */
-    setDrawInKey((k) => k + 1)
   }, [])
 
   const previewSubtitle = useMemo(() => {
@@ -1068,9 +989,7 @@ export function SignatureCapture({ payload }) {
       >
         {captured ? (
           <SignatureSvg
-            key={drawInKey}
             strokes={strokes}
-            drawIn
             ariaLabel={submitted ? 'Signed' : 'Captured signature'}
           />
         ) : (

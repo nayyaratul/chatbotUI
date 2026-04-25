@@ -992,12 +992,15 @@
 }
 
 /* ─── Captured signature SVG render ─────────────────────────────────
-   The SVG mounts with a wrapper-level lift animation (sgInkLift): tiny
-   scale-up + opacity ramp on the springy entry curve. This is the
-   "handoff" beat — the strokes feel lifted from the sheet onto the
-   card, not just dropped in. Per-stroke dasharray draw-in then traces
-   each path on top, so the user sees a settle followed by ink coming
-   alive. */
+   The strokes are point arrays normalized to 0..1; SignatureSvg maps
+   them to <path d="..."> elements inside a 500×200 viewBox. No
+   entrance animation on the SVG or the paths — the inline-style
+   stroke-dasharray draw-in we tried in Pass 2 was browser-flaky (the
+   `to`-only keyframe inherited inline-style from-state inconsistently
+   across SVG presentation attributes, leaving paths stuck at full
+   dashoffset / invisible). Strokes appear instantly — the act of
+   drawing them is the user's own micro-interaction, no further
+   choreography is needed. */
 
 .signatureSvg {
   position: absolute;
@@ -1012,20 +1015,6 @@
   stroke-linejoin: round;
   pointer-events: none;
   transform-origin: center;
-  /* No wrapper entrance animation. Pass 2 added a scale-fade
-     (`sgInkLift`) that was leaving the captured signature stuck at
-     opacity:0 in some flow combinations. The per-path stroke-dasharray
-     "writes itself" animation is the signature's reveal moment; the
-     wrapper just appears. */
-}
-
-/* Per-path stroke-dasharray draw-in. Inline style on each <path>
-   sets stroke-dasharray = path-length, stroke-dashoffset = path-length,
-   then this keyframe animates dashoffset → 0 (full path visible).
-   `forwards` fill mode preserves the visible state after animation
-   ends. */
-@keyframes sgInkDraw {
-  to { stroke-dashoffset: 0; }
 }
 
 /* ─── Preview region — captured state additions ─────────────────── */
@@ -1398,13 +1387,6 @@
   .gateCaptionMet > svg {
     transition-duration: 0.01ms;
     transition-delay: 0ms;
-  }
-
-  .signatureSvg path {
-    /* Skip the sgInkDraw stroke-dasharray sweep — render strokes
-       at their final state immediately. */
-    animation: none !important;
-    stroke-dashoffset: 0 !important;
   }
 
   .preview_submitted .signatureSvg {
