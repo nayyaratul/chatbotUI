@@ -14,6 +14,7 @@ import {
   Star,
   TextCursorInput,
   Camera,
+  Mic,
   Upload,
   Milestone,
   Gauge,
@@ -61,6 +62,7 @@ const WIDGET_ICONS = {
   comparison:         GitCompare,
   earnings:           Wallet,
   profile:            UserCircle2,
+  voice_recording:    Mic,
 }
 
 /**

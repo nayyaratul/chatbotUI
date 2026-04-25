@@ -1183,6 +1183,28 @@ export const widgetSchemas = {
     ],
   },
 
+  voice_recording: {
+    label: 'Voice',
+    category: 'input',
+    variants: [
+      {
+        id: 'default',
+        label: 'Default',
+        payload: () => ({
+          widget_id: makeId('vrc'),
+          prompt_id: 'difficult_delivery',
+          title: 'Record your answer',
+          description: 'Speak clearly. You can review the clip before submitting.',
+          prompt: 'Describe a time you handled a difficult delivery situation and how you resolved it.',
+          max_duration_seconds: 60,
+          min_duration_seconds: 5,
+          auto_transcribe: false,
+          silent: false,
+        }),
+      },
+    ],
+  },
+
   file_upload: {
     label: 'File Upload',
     category: 'input',

@@ -411,6 +411,13 @@ registerRule({
   build: () => ({ type: 'image_capture', payload: getVariantPayload('image_capture', 'evidence') }),
 })
 
+// ─── Voice Recording — bounded audio capture ─────────────────────
+// Trigger: "voice", "voice record", "record voice", "record answer"
+registerRule({
+  match: /^(voice|voice ?record(ing)?|record voice|record answer|voice answer)$/i,
+  build: () => ({ type: 'voice_recording', payload: getVariantPayload('voice_recording', 'default') }),
+})
+
 // ─── Job Card — single card ────────────────────────────────────────
 // Trigger: "job card", "show job card", "show job", "job"
 registerRule({
