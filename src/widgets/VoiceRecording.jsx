@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { Mic, Square } from 'lucide-react'
+import { Mic, Square, Play, Pause, RotateCcw, ArrowRight } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './voiceRecording.module.scss'
@@ -77,6 +77,10 @@ export function VoiceRecording({ payload }) {
   const [bars, setBars] = useState(() => new Array(BAR_COUNT).fill(0))
   const [elapsedMs, setElapsedMs] = useState(0)
 
+  /* Playback state — only meaningful in PREVIEW + SUBMITTED. */
+  const [isPlaying, setIsPlaying]     = useState(false)
+  const [playProgress, setPlayProgress] = useState(0)         // 0..1
+
   /* Capture refs — survive re-renders without triggering them. */
   const streamRef         = useRef(null)
   const mediaRecorderRef  = useRef(null)
@@ -86,7 +90,9 @@ export function VoiceRecording({ payload }) {
   const recordStartRef    = useRef(0)
   const ringBufferRef     = useRef(new Array(BAR_COUNT).fill(0))
   const chunksRef         = useRef([])
-  const capturedRef       = useRef(null)        // { dataUrl, durationSec, mimeType, bars[] }
+  const capturedRef       = useRef(null)        // { dataUrl, durationSec, mimeType, sizeBytes, bars[] }
+  const audioElRef        = useRef(null)        // <audio> for playback in PREVIEW
+  const playRafRef        = useRef(null)        // RAF loop while playing
 
   /* Read the analyser's time-domain buffer and return its RMS. */
   const readRMS = useCallback(() => {
@@ -222,8 +228,105 @@ export function VoiceRecording({ payload }) {
     }
   }, [maxDurationSec, readRMS, handleStopRecording, teardownCapture])
 
+  /* ─── Playback (PREVIEW + SUBMITTED) ──────────────────────── */
+
+  const stopPlayRaf = useCallback(() => {
+    if (playRafRef.current) {
+      cancelAnimationFrame(playRafRef.current)
+      playRafRef.current = null
+    }
+  }, [])
+
+  const handlePlayPause = useCallback(() => {
+    const el = audioElRef.current
+    if (!el) return
+    if (el.paused) {
+      el.play().catch(() => { /* autoplay policy — usually fine after user gesture */ })
+    } else {
+      el.pause()
+    }
+  }, [])
+
+  const handleAudioPlay = useCallback(() => {
+    setIsPlaying(true)
+    /* RAF loop drives the sweep — ~60fps is much smoother than the
+       4Hz `timeupdate` event. */
+    const tick = () => {
+      const el = audioElRef.current
+      if (!el) return
+      const dur = el.duration || capturedRef.current?.durationSec || 0
+      const progress = dur > 0 ? Math.min(1, el.currentTime / dur) : 0
+      setPlayProgress(progress)
+      playRafRef.current = requestAnimationFrame(tick)
+    }
+    playRafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const handleAudioPause = useCallback(() => {
+    setIsPlaying(false)
+    stopPlayRaf()
+  }, [stopPlayRaf])
+
+  const handleAudioEnded = useCallback(() => {
+    setIsPlaying(false)
+    setPlayProgress(1)
+    stopPlayRaf()
+  }, [stopPlayRaf])
+
+  const handleReRecord = useCallback(() => {
+    /* Stop any current playback, drop the captured payload, return
+       to IDLE. Does NOT auto-restart getUserMedia — user re-taps. */
+    const el = audioElRef.current
+    if (el) {
+      try { el.pause() } catch { /* ignore */ }
+      el.removeAttribute('src')
+      try { el.load() } catch { /* ignore */ }
+    }
+    stopPlayRaf()
+    setIsPlaying(false)
+    setPlayProgress(0)
+    setBars(new Array(BAR_COUNT).fill(0))
+    setElapsedMs(0)
+    capturedRef.current = null
+    setPhase('idle')
+  }, [stopPlayRaf])
+
   /* Cleanup on unmount — stop everything, no leftover mic stream. */
-  useEffect(() => () => teardownCapture(), [teardownCapture])
+  useEffect(() => {
+    return () => {
+      teardownCapture()
+      stopPlayRaf()
+      const el = audioElRef.current
+      if (el) {
+        try { el.pause() } catch { /* ignore */ }
+      }
+    }
+  }, [teardownCapture, stopPlayRaf])
+
+  const handleSubmit = useCallback(() => {
+    const captured = capturedRef.current
+    if (!captured) return
+    const recordedAt = Date.now()
+    setPhase('submitted')
+    onReply?.(
+      {
+        type: 'widget_response',
+        payload: {
+          source_type: 'voice_recording',
+          source_widget_id: widgetId,
+          data: {
+            label: title,
+            prompt_id: promptId,
+            audio_data_url: captured.dataUrl,
+            duration_seconds: captured.durationSec,
+            mime_type: captured.mimeType,
+            recorded_at: recordedAt,
+          },
+        },
+      },
+      { silent: isSilent },
+    )
+  }, [onReply, widgetId, title, promptId, isSilent])
 
   /* Derived recording values. */
   const elapsedSec    = Math.floor(elapsedMs / 1000)
@@ -231,6 +334,16 @@ export function VoiceRecording({ payload }) {
   const isWarning     = phase === 'recording' && remainingMs <= WARNING_THRESHOLD_MS
   const minMet        = elapsedMs >= minDurationSec * 1000
   const stopDisabled  = phase === 'recording' && !minMet
+
+  /* Frozen-bar values for PREVIEW + SUBMITTED. Pre-normalised once
+     so the render path doesn't rebuild on every re-render. */
+  const captured       = capturedRef.current
+  const previewBars    = captured?.bars ?? null
+  const previewDuration = captured?.durationSec ?? 0
+  const previewSize    = captured?.sizeBytes ?? 0
+  const previewCurrent = isPlaying
+    ? playProgress * previewDuration
+    : (playProgress >= 1 ? previewDuration : 0)
 
   return (
     <div className={styles.card} role="article" aria-label={title}>
@@ -317,7 +430,95 @@ export function VoiceRecording({ payload }) {
         </div>
       )}
 
-      {/* PREVIEW / SUBMITTED / DENIED — regions 3–4 */}
+      {/* ─── PREVIEW — frozen waveform + playback sweep + actions ─ */}
+      {phase === 'preview' && previewBars && (
+        <div className={styles.previewBlock}>
+          <audio
+            ref={audioElRef}
+            src={captured.dataUrl}
+            onPlay={handleAudioPlay}
+            onPause={handleAudioPause}
+            onEnded={handleAudioEnded}
+            preload="metadata"
+            aria-hidden="true"
+          />
+
+          <div className={styles.previewRow}>
+            <button
+              type="button"
+              className={styles.playBtn}
+              onClick={handlePlayPause}
+              aria-label={isPlaying ? 'Pause playback' : 'Play recording'}
+            >
+              {isPlaying
+                ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
+                : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+            </button>
+
+            <div
+              className={styles.previewWaveform}
+              style={{ '--play-progress': playProgress }}
+              aria-hidden="true"
+            >
+              {/* Base layer: bars in grey-30 (unplayed). */}
+              <div className={styles.waveformLayer}>
+                {previewBars.map((v, i) => {
+                  const norm = Math.min(1, Math.max(0, v * RMS_GAIN))
+                  return (
+                    <span
+                      key={i}
+                      className={cx(styles.bar, styles.barUnplayed, norm <= 0 && styles.barEmpty)}
+                      style={{ '--bar-norm': norm }}
+                    />
+                  )
+                })}
+              </div>
+              {/* Sweep layer: same bars in brand-60, clipped L→R by --play-progress. */}
+              <div className={cx(styles.waveformLayer, styles.waveformSweep)}>
+                {previewBars.map((v, i) => {
+                  const norm = Math.min(1, Math.max(0, v * RMS_GAIN))
+                  return (
+                    <span
+                      key={i}
+                      className={cx(styles.bar, norm <= 0 && styles.barEmpty)}
+                      style={{ '--bar-norm': norm }}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className={styles.previewDuration}>
+              {isPlaying
+                ? `${formatTime(previewCurrent)} / ${formatTime(previewDuration)}`
+                : formatTime(previewDuration)}
+            </div>
+          </div>
+
+          <div className={styles.actionsRow}>
+            <Button
+              variant="secondary"
+              size="md"
+              className={styles.reRecordBtn}
+              iconLeft={<RotateCcw size={14} strokeWidth={2.25} aria-hidden="true" />}
+              onClick={handleReRecord}
+            >
+              Re-record
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              className={styles.submitBtn}
+              iconRight={<ArrowRight size={14} strokeWidth={2.25} aria-hidden="true" />}
+              onClick={handleSubmit}
+            >
+              Submit recording
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* SUBMITTED / DENIED — region 4 */}
     </div>
   )
 }
