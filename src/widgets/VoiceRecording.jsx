@@ -95,6 +95,7 @@ export function VoiceRecording({ payload }) {
   const audioElRef        = useRef(null)        // <audio> for playback in PREVIEW
   const playRafRef        = useRef(null)        // RAF loop while playing
   const mountedRef        = useRef(true)        // gates async setState after unmount
+  const stopFallbackRef   = useRef(null)        // safety timer if mr.onstop never fires
 
   /* Read the analyser's time-domain buffer and return its RMS. */
   const readRMS = useCallback(() => {
@@ -128,6 +129,38 @@ export function VoiceRecording({ payload }) {
     analyserRef.current = null
   }, [])
 
+  /* Encode the captured chunks into a data URL, freeze the bar
+     history, and transition to PREVIEW. Shared between the normal
+     `mr.onstop` path and the defensive fallback timer. Idempotent
+     against unmount; safe to call multiple times (the second call
+     just re-runs FileReader on the same data — no state change). */
+  const finalizeRecording = useCallback((blob) => {
+    if (!mountedRef.current) {
+      teardownCapture()
+      return
+    }
+    const durationSec = (Date.now() - recordStartRef.current) / 1000
+    const finalBars = [...ringBufferRef.current]
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (!mountedRef.current) {
+        teardownCapture()
+        return
+      }
+      capturedRef.current = {
+        dataUrl: typeof reader.result === 'string' ? reader.result : '',
+        durationSec,
+        mimeType: blob.type,
+        sizeBytes: blob.size,
+        bars: finalBars,
+      }
+      teardownCapture()
+      setPhase('preview')
+    }
+    reader.readAsDataURL(blob)
+  }, [teardownCapture])
+
   const handleStopRecording = useCallback(() => {
     /* Stop the analyser/sampler immediately; MediaRecorder's onstop
        fires asynchronously and finalises the captured payload. */
@@ -136,10 +169,34 @@ export function VoiceRecording({ payload }) {
       tickRef.current = null
     }
     const mr = mediaRecorderRef.current
-    if (mr && mr.state !== 'inactive') {
-      try { mr.stop() } catch { /* ignore */ }
-    }
-  }, [])
+    if (!mr || mr.state === 'inactive') return
+
+    /* Defensive fallback: some browsers occasionally drop the
+       `onstop` event on very short clips or when the audio graph
+       is in a quirky state. If the transition hasn't happened
+       within 1500ms of stop, force it with whatever data we've
+       collected. The onstop path clears this timer if it fires. */
+    if (stopFallbackRef.current) clearTimeout(stopFallbackRef.current)
+    stopFallbackRef.current = setTimeout(() => {
+      stopFallbackRef.current = null
+      if (!mountedRef.current) return
+      const fbMr = mediaRecorderRef.current
+      const blob = new Blob(chunksRef.current, {
+        type: fbMr?.mimeType || 'audio/webm',
+      })
+      finalizeRecording(blob)
+    }, 1500)
+
+    try {
+      /* Flush any pending data buffered inside the recorder. This
+         is essential when `mr.start()` was called without a
+         timeslice — the recorder otherwise only emits `dataavailable`
+         once on stop, and some browsers skip that single delivery
+         on very short clips. */
+      if (typeof mr.requestData === 'function') mr.requestData()
+      mr.stop()
+    } catch { /* ignore */ }
+  }, [finalizeRecording])
 
   const handleStartRecording = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -172,38 +229,13 @@ export function VoiceRecording({ payload }) {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
       }
       mr.onstop = () => {
-        /* If the component already unmounted, don't bother encoding
-           — just release the audio graph and bail. */
-        if (!mountedRef.current) {
-          teardownCapture()
-          return
+        /* Cancel the defensive fallback — the real onstop fired. */
+        if (stopFallbackRef.current) {
+          clearTimeout(stopFallbackRef.current)
+          stopFallbackRef.current = null
         }
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
-        const durationSec = (Date.now() - recordStartRef.current) / 1000
-        const finalBars = [...ringBufferRef.current]
-
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          /* Component might have unmounted during the FileReader
-             encode window. Bail before touching state. */
-          if (!mountedRef.current) {
-            teardownCapture()
-            return
-          }
-          capturedRef.current = {
-            dataUrl: typeof reader.result === 'string' ? reader.result : '',
-            durationSec,
-            mimeType: blob.type,
-            sizeBytes: blob.size,
-            bars: finalBars,
-          }
-          /* Stream + audio context torn down only after the blob is
-             encoded — closing the context too early can cancel the
-             pending data delivery on some browsers. */
-          teardownCapture()
-          setPhase('preview')
-        }
-        reader.readAsDataURL(blob)
+        finalizeRecording(blob)
       }
       mediaRecorderRef.current = mr
       mr.start()
@@ -313,6 +345,10 @@ export function VoiceRecording({ payload }) {
   useEffect(() => {
     return () => {
       mountedRef.current = false
+      if (stopFallbackRef.current) {
+        clearTimeout(stopFallbackRef.current)
+        stopFallbackRef.current = null
+      }
       const mr = mediaRecorderRef.current
       if (mr) {
         mr.onstop = null
@@ -413,6 +449,13 @@ export function VoiceRecording({ payload }) {
         <p className={styles.promptText}>{prompt}</p>
       )}
 
+      {/* ─── Media region — single fixed-height container that holds
+          whichever state is active. All state-specific blocks render
+          inside this wrapper at the same top position so the card
+          doesn't visually jump as phases change (§4 constant-height
+          contract). The wrapper takes flex:1 of the card's vertical
+          space below the header + prompt. */}
+      <div className={styles.mediaRegion}>
       {/* ─── IDLE — big mic capture button ────────────────────────── */}
       {phase === 'idle' && (
         <button
@@ -692,6 +735,7 @@ export function VoiceRecording({ payload }) {
           </Button>
         </div>
       )}
+      </div>
     </div>
   )
 }
