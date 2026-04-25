@@ -19,8 +19,10 @@ Two variants, **structural** (different body layout above the signature region).
 
 | Variant | Body region above sign | Gate to enable signing |
 |---|---|---|
-| `document` | Document preview band — 72×72 thumbnail + title + meta + "Open document" link routing through existing `JobDetailsModal` chrome | User must tap "Open document" once; on close, "Document reviewed · HH:MM" caption appears and signing enables |
-| `text` | Inline scrollable agreement body — `max-height: var(--size-...)` (~12rem), scrolls within the card with a subtle fade-mask at top and bottom | User must scroll to the end of the agreement; on `scrollTop + clientHeight ≥ scrollHeight - tolerance`, "Agreement read · HH:MM" caption appears and signing enables |
+| `document` | Preview band — 72×72 thumbnail (or `FileText` icon fallback) + title + meta + "Open document" link. Tap opens the full content in `ReviewSheet` (portaled bottom-sheet, same containment pattern as `JobDetailsModal`). | User must tap "Open document" once; on sheet close, "Document reviewed · HH:MM" caption appears and signing enables |
+| `text`     | Preview band, same shape as `document` — `ScrollText` icon thumb + "Agreement to read" title + meta (paragraph count + estimated minutes) + "Open agreement" link. Tap opens the agreement text in `ReviewSheet` with proper room to read on mobile. | User must tap "Open agreement" once; on sheet close, "Agreement read · HH:MM" caption appears and signing enables |
+
+The earlier `text`-variant pattern (inline scrollable body inside the card with `scrollTop + clientHeight` gate) was replaced after live-testing — at ~140px tall × ~360px wide, the inline scroll was unreadable on mobile. Unifying both variants under the band → ReviewSheet pattern (a) gives the user real room to read, (b) collapses gate logic to one rule (sheet close → gate clears), (c) makes Step 1 read as one consistent control regardless of variant.
 
 Default mock-bot variant: `document` (richer body, exercises the JobDetailsModal handoff).
 

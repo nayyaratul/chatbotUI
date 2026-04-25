@@ -265,79 +265,13 @@
   }
 }
 
-/* ─── Body — `text` variant: scrollable agreement body ─────────────── */
-
-.agreement {
-  position: relative;
-  border: var(--border-width-100) solid var(--grey-10);
-  border-radius: var(--radius-150);
-  background: var(--white);
-  overflow: hidden;
-
-  /* Edge fades sit on the wrapper as overlay layers so they can hide
-     conditionally — top fade hides at scrollTop===0, bottom fade hides
-     at scrolled-to-end. Peripheral cue, not a chrome element. */
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: var(--space-200);
-    pointer-events: none;
-    z-index: 1;
-    opacity: var(--opacity-100);
-    transition: opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
-  }
-  &::before {
-    top: 0;
-    background: linear-gradient(
-      to bottom,
-      var(--white) 0,
-      color-mix(in srgb, var(--white) 72%, transparent) 50%,
-      transparent 100%
-    );
-  }
-  &::after {
-    bottom: 0;
-    background: linear-gradient(
-      to top,
-      var(--white) 0,
-      color-mix(in srgb, var(--white) 72%, transparent) 50%,
-      transparent 100%
-    );
-  }
-}
-
-.agreement_atTop::before { opacity: var(--opacity-000); }
-.agreement_atEnd::after  { opacity: var(--opacity-000); }
-
-.agreementBody {
-  /* ~7 lines of body text before scroll kicks in. line-height-300 is
-     1.25rem absolute, so 7 * 1.25rem ≈ 8.75rem (140px). The wrapper
-     paints conditional fade masks; the body itself stays clean. */
-  max-height: calc(var(--line-height-300) * 7);
-  overflow-y: auto;
-  padding: var(--space-125) var(--space-150);
-  scroll-behavior: smooth;
-
-  > p {
-    margin: 0;
-    font-size: var(--font-size-200);
-    font-weight: var(--font-weight-regular);
-    line-height: var(--line-height-300);
-    color: var(--grey-90);
-
-    + p {
-      margin-top: var(--space-100);
-    }
-  }
-
-  &:focus-visible {
-    outline: var(--border-width-150) solid var(--brand-60);
-    outline-offset: var(--size-02);
-  }
-}
+/* The text variant uses the same .docBand shape as the document
+   variant — the only difference is the icon thumb (ScrollText vs
+   FileText) and the open-link copy ("Open agreement" vs "Open
+   document"). The inline scrollable agreement body was removed: it
+   was unreadable at ~140px tall on mobile, and unifying both variants
+   under the band → ReviewSheet pattern collapses the gate logic to
+   one rule (sheet close → gate clears). */
 
 /* ─── Gate caption row ──────────────────────────────────────────────────
    Two faces share the same row; CSS crossfades between them. The success
@@ -1467,8 +1401,6 @@
   .dvScrim,
   .shSheet,
   .shScrim,
-  .agreement::before,
-  .agreement::after,
   .gateCaptionPending,
   .gateCaptionMet,
   .gateCaptionMet > svg {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import cx from 'classnames'
 import {
@@ -51,12 +51,6 @@ const STROKE_DRAW_STAGGER_MS    = 60
 const STROKE_DRAW_CAP           = 8
 const SVG_VIEWBOX_W             = 500
 const SVG_VIEWBOX_H             = 200
-/* Scroll-to-end tolerance in CSS pixels. Mirrors var(--size-04) — the
-   closest token rung on the design system's spacing scale. JS can't
-   read CSS vars directly inside a numeric comparison, so naming the
-   constant carries the intent through. */
-const SCROLL_END_TOLERANCE_PX   = 4
-
 const USE_CASE_ICON = {
   offer:      HandCoins,
   contract:   ScrollText,
@@ -203,10 +197,12 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
   useEffect(() => {
     if (phase !== 'open') return
-    closeBtnRef.current?.focus()
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prevOverflow }
+    /* preventScroll keeps the chat behind from scroll-jumping when the
+       close button auto-focuses. No body-scroll-lock — the modal-root's
+       absolute inset:0 + this sheet's scrim already cover the chat;
+       locking document.body.style.overflow caused a scrollbar/width
+       snap on desktop ("refresh"-like flash). */
+    closeBtnRef.current?.focus({ preventScroll: true })
   }, [phase])
 
   /* Resolve --grey-90 to its computed colour so the canvas ink stays in
@@ -570,12 +566,20 @@ function SignatureSvg({ strokes, drawIn, ariaLabel }) {
   )
 }
 
-/* ─── Document viewer — portaled bottom-sheet ───────────────────────
-   Mirrors JobDetailsModal's containment pattern (portal into
-   #chat-modal-root, three-phase animation, scrim click + Esc + close
-   ×, single in-flight close guard). */
+/* ─── Review sheet — portaled bottom-sheet for both variants ────────
+   Step 1 of the signing flow lives here. The card's body region is
+   intentionally minimal (a tappable band that names the thing being
+   signed); the full content opens in this sheet so the user actually
+   has room to read on mobile. Mirrors JobDetailsModal's containment
+   pattern (portal into #chat-modal-root, three-phase animation, scrim
+   + Esc + close ×, single in-flight close guard).
 
-function DocumentViewerSheet({ documentRef, onClose }) {
+   No body scroll lock — the modal-root is `position: absolute; inset:
+   0` over the chat pane and the sheet's scrim covers it, so the chat
+   can't be touched. Locking document.body.style.overflow caused a
+   visible scrollbar/width snap on desktop ("refresh"-like flash). */
+
+function ReviewSheet({ kind, documentRef, agreementText, onClose }) {
   const [phase, setPhase] = useState('entering')
   const closeBtnRef = useRef(null)
   const closingRef  = useRef(false)
@@ -592,10 +596,9 @@ function DocumentViewerSheet({ documentRef, onClose }) {
 
   useEffect(() => {
     if (phase !== 'open') return
-    closeBtnRef.current?.focus()
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prevOverflow }
+    /* preventScroll: avoid focus()-induced scrollIntoView jumps in the
+       chat behind the sheet. */
+    closeBtnRef.current?.focus({ preventScroll: true })
   }, [phase])
 
   const requestClose = useCallback(() => {
@@ -615,17 +618,42 @@ function DocumentViewerSheet({ documentRef, onClose }) {
 
   if (!portalTarget) return null
 
+  const isText = kind === 'text'
+
+  const eyebrow = isText ? 'Agreement' : 'Document preview'
+  const title   = isText
+    ? 'Read the agreement'
+    : (documentRef?.label ?? 'Document')
+
   const meta = []
-  if (documentRef?.pages != null) meta.push(`${documentRef.pages} page${documentRef.pages === 1 ? '' : 's'}`)
-  if (documentRef?.version)       meta.push(documentRef.version)
-  if (documentRef?.updated_at)    meta.push(`Updated ${documentRef.updated_at}`)
+  if (!isText) {
+    if (documentRef?.pages != null) meta.push(`${documentRef.pages} page${documentRef.pages === 1 ? '' : 's'}`)
+    if (documentRef?.version)       meta.push(documentRef.version)
+    if (documentRef?.updated_at)    meta.push(`Updated ${documentRef.updated_at}`)
+  } else {
+    const text = String(agreementText ?? '')
+    const paraCount = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).length
+    const words     = text.split(/\s+/).filter(Boolean).length
+    const minutes   = Math.max(1, Math.ceil(words / 200))
+    if (paraCount > 0) meta.push(`${paraCount} section${paraCount === 1 ? '' : 's'}`)
+    meta.push(`~${minutes} min read`)
+  }
+
+  const ctaLabel = isText ? 'I have read the agreement' : 'I have reviewed the document'
+  const ariaLabel = isText
+    ? 'Agreement — full text'
+    : `${documentRef?.label ?? 'Document'} — preview`
+
+  const paragraphs = isText
+    ? String(agreementText ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+    : null
 
   return createPortal(
     <div
       className={cx(styles.dvLayer, styles[`dvLayer_${phase}`])}
       role="dialog"
       aria-modal="true"
-      aria-label={`${documentRef?.label ?? 'Document'} — preview`}
+      aria-label={ariaLabel}
     >
       <div
         className={styles.dvScrim}
@@ -635,8 +663,8 @@ function DocumentViewerSheet({ documentRef, onClose }) {
       <div className={styles.dvSheet}>
         <header className={styles.dvHeader}>
           <div className={styles.dvHeaderText}>
-            <p className={styles.dvEyebrow}>Document preview</p>
-            <h4 className={styles.dvTitle}>{documentRef?.label ?? 'Document'}</h4>
+            <p className={styles.dvEyebrow}>{eyebrow}</p>
+            <h4 className={styles.dvTitle}>{title}</h4>
             {meta.length > 0 && (
               <p className={styles.dvMeta}>{meta.join(' · ')}</p>
             )}
@@ -646,26 +674,40 @@ function DocumentViewerSheet({ documentRef, onClose }) {
             type="button"
             className={styles.dvClose}
             onClick={requestClose}
-            aria-label="Close document preview"
+            aria-label={isText ? 'Close agreement' : 'Close document preview'}
           >
             <XIcon size={18} strokeWidth={2} aria-hidden />
           </button>
         </header>
 
         <div className={styles.dvBody}>
-          <p>
-            This is a preview of the document attached to your signing request. In a real
-            engagement this region would render the full document — letter, contract, or
-            audit report — at full readable scale.
-          </p>
-          <p>
-            Take a moment to review the terms above. When you close this preview, the
-            signing affordance below the document band on the chat card will enable.
-          </p>
-          <p className={styles.dvBodyCaption}>
-            <Check size={14} strokeWidth={2.25} aria-hidden />
-            <span>Close to enable signing</span>
-          </p>
+          {isText ? (
+            <>
+              {paragraphs.length > 0
+                ? paragraphs.map((p, i) => <p key={i}>{p}</p>)
+                : <p>{agreementText}</p>}
+              <p className={styles.dvBodyCaption}>
+                <Check size={14} strokeWidth={2.25} aria-hidden />
+                <span>Close to enable signing</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                This is a preview of the document attached to your signing request. In a real
+                engagement this region would render the full document — letter, contract, or
+                audit report — at full readable scale.
+              </p>
+              <p>
+                Take a moment to review the terms above. When you close this preview, the
+                signing affordance below the document band on the chat card will enable.
+              </p>
+              <p className={styles.dvBodyCaption}>
+                <Check size={14} strokeWidth={2.25} aria-hidden />
+                <span>Close to enable signing</span>
+              </p>
+            </>
+          )}
         </div>
 
         <footer className={styles.dvFooter}>
@@ -674,7 +716,7 @@ function DocumentViewerSheet({ documentRef, onClose }) {
             fullWidth
             onClick={requestClose}
           >
-            I have reviewed the document
+            {ctaLabel}
           </Button>
         </footer>
       </div>
@@ -722,73 +764,39 @@ function DocumentBody({ documentRef, onOpen, gateMet }) {
   )
 }
 
-/* ─── Body — text variant ───────────────────────────────────────────── */
+/* ─── Body — text variant: agreement band (mirrors doc band) ───────
+   Click target that opens the agreement in the ReviewSheet. The full
+   agreement is unreadable inside a ~140px scroll area on a phone; the
+   sheet pattern (used for both variants now) gives the user real room
+   to read. Same shape as DocumentBand so Step 1 reads as one consistent
+   control regardless of variant. */
 
-function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
-  const paragraphs = String(agreementText ?? '')
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
+function AgreementBand({ agreementText, onOpen, gateMet }) {
+  const text = String(agreementText ?? '')
+  const paraCount = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).length
+  const words     = text.split(/\s+/).filter(Boolean).length
+  const minutes   = Math.max(1, Math.ceil(words / 200))
 
-  /* Track scroll position so the fade-masks at top/bottom can hide
-     conditionally — top-mask only when there's content above; bottom-mask
-     only when there's content below. Acts as a peripheral cue: "more here"
-     vs "you're at the edge" without adding a chrome element. */
-  const [atTop, setAtTop] = useState(true)
-  const [atEnd, setAtEnd] = useState(false)
-
-  const measureScroll = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    setAtTop(el.scrollTop <= 0)
-    setAtEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_END_TOLERANCE_PX)
-  }, [scrollRef])
-
-  /* Layout-effect runs synchronously before paint so short-content
-     agreements (where scrollHeight ≤ clientHeight) don't flash the
-     bottom fade-mask for one frame before the effect hides it. */
-  useLayoutEffect(() => {
-    measureScroll()
-  }, [measureScroll, agreementText])
-
-  useEffect(() => {
-    if (gateMet) return
-    const el = scrollRef.current
-    if (!el) return
-    if (el.scrollHeight <= el.clientHeight + 1) {
-      onScrollEnd()
-    }
-  }, [gateMet, agreementText, onScrollEnd, scrollRef])
-
-  function handleScroll() {
-    measureScroll()
-    if (gateMet) return
-    const el = scrollRef.current
-    if (!el) return
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_END_TOLERANCE_PX) {
-      onScrollEnd()
-    }
-  }
+  const meta = []
+  if (paraCount > 0) meta.push(`${paraCount} section${paraCount === 1 ? '' : 's'}`)
+  meta.push(`~${minutes} min read`)
 
   return (
-    <div
-      className={cx(
-        styles.agreement,
-        atTop && styles.agreement_atTop,
-        atEnd && styles.agreement_atEnd,
-      )}
-    >
-      <div
-        ref={scrollRef}
-        className={styles.agreementBody}
-        tabIndex={0}
-        role="region"
-        aria-label="Agreement text"
-        onScroll={handleScroll}
-      >
-        {paragraphs.length > 0
-          ? paragraphs.map((p, i) => <p key={i}>{p}</p>)
-          : <p>{agreementText}</p>}
+    <div className={styles.docBand}>
+      <div className={cx(styles.docThumb, styles.docThumb_empty)} aria-hidden>
+        <ScrollText size={28} strokeWidth={1.75} />
+      </div>
+      <div className={styles.docText}>
+        <p className={styles.docLabel}>Agreement to read</p>
+        <p className={styles.docMeta}>{meta.join(' · ')}</p>
+        <button
+          type="button"
+          className={styles.docOpenLink}
+          onClick={onOpen}
+        >
+          <span>{gateMet ? 'Re-open agreement' : 'Open agreement'}</span>
+          <ChevronRight size={14} strokeWidth={2} aria-hidden />
+        </button>
       </div>
     </div>
   )
@@ -814,14 +822,19 @@ export function SignatureCapture({ payload }) {
 
   const [gateMet, setGateMet]       = useState(false)
   const [gateAt, setGateAt]         = useState(null)
-  const [docOpen, setDocOpen]       = useState(false)
+  /* `reviewOpen` covers Step 1 for both variants — document preview AND
+     agreement reading both happen in the portaled ReviewSheet. The
+     scroll-to-end gate on the inline agreement body was removed: the
+     inline scroll was unreadable on mobile, and unifying both variants
+     under the same review→sign cadence collapses the gate logic to one
+     rule (sheet close → gate clears). */
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [signOpen, setSignOpen]     = useState(false)
   const [strokes, setStrokes]       = useState([])
   const [drawInKey, setDrawInKey]   = useState(0)
   const [submission, setSubmission] = useState(null)  /* { at, signer_name, device_info, signature_image_id } once submitted */
   const previewRef                  = useRef(null)
   const restoreFocusRef             = useRef(null)
-  const scrollRef                   = useRef(null)
 
   const captured  = strokes.length > 0
   const submitted = submission !== null
@@ -834,12 +847,12 @@ export function SignatureCapture({ payload }) {
     })
   }, [])
 
-  const handleOpenDocument = useCallback(() => {
-    setDocOpen(true)
+  const handleOpenReview = useCallback(() => {
+    setReviewOpen(true)
   }, [])
 
-  const handleDocumentClose = useCallback(() => {
-    setDocOpen(false)
+  const handleReviewClose = useCallback(() => {
+    setReviewOpen(false)
     handleGateClear()
   }, [handleGateClear])
 
@@ -954,15 +967,14 @@ export function SignatureCapture({ payload }) {
       {variant === 'document' ? (
         <DocumentBody
           documentRef={documentRef}
-          onOpen={handleOpenDocument}
+          onOpen={handleOpenReview}
           gateMet={gateMet}
         />
       ) : (
-        <AgreementBody
+        <AgreementBand
           agreementText={agreementText}
-          onScrollEnd={handleGateClear}
+          onOpen={handleOpenReview}
           gateMet={gateMet}
-          scrollRef={scrollRef}
         />
       )}
 
@@ -1083,10 +1095,12 @@ export function SignatureCapture({ payload }) {
         </div>
       )}
 
-      {variant === 'document' && docOpen && (
-        <DocumentViewerSheet
+      {reviewOpen && (
+        <ReviewSheet
+          kind={variant}
           documentRef={documentRef}
-          onClose={handleDocumentClose}
+          agreementText={agreementText}
+          onClose={handleReviewClose}
         />
       )}
 
