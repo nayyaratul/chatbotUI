@@ -346,53 +346,48 @@ function AvailabilityChip({ availability }) {
   )
 }
 
-/* ─── Score ring — SVG stroke-dashoffset fill ─────────────────────
-   viewBox 64×64. Two circles: grey track + tone-coloured fill. The
-   fill's stroke-dasharray equals the circumference; stroke-dashoffset
-   animates from circumference → circumference * (1 - ratio) on mount.
-   Rotated -90° so the fill starts at 12 o'clock. */
+/* ─── Score arc — half-circle gauge ──────────────────────────────
+   viewBox 100×56. SVG path describes a 180° arc from (6,50) up over
+   the top to (94,50). Two paths: grey-10 track + tone-coloured fill.
+   Fill's stroke-dasharray = arc length; stroke-dashoffset animates
+   from full → target on mount. Score number + verdict word stack
+   inside the arc opening (centered absolute overlay).
+
+   Compacter than the previous full circle (was 64×~80 with verdict
+   below; now 100×56 with verdict inside) and more "speedometer-
+   style" — reads as a measurement, not a target. */
 function ScoreRing({ value, max, displayValue, label, tone }) {
   const ratio = Math.max(0, Math.min(1, value / (max || 1)))
-  // viewBox 64x64, radius 28 → circumference = 2 * π * 28 ≈ 175.93
-  const radius = 28
-  const circumference = 2 * Math.PI * radius
-  const targetOffset = circumference * (1 - ratio)
+  const RADIUS = 44
+  const ARC_LENGTH = Math.PI * RADIUS   // half-circle ≈ 138.23
+  const targetOffset = ARC_LENGTH * (1 - ratio)
 
   return (
     <div className={cx(styles.ringWrap, styles[`ringWrap_${tone}`])}>
       <svg
-        className={styles.ring}
-        viewBox="0 0 64 64"
-        width="64"
-        height="64"
+        className={styles.arc}
+        viewBox="0 0 100 56"
         aria-hidden="true"
       >
-        <circle
-          className={styles.ringTrack}
-          cx="32"
-          cy="32"
-          r={radius}
+        <path
+          className={styles.arcTrack}
+          d="M 6 50 A 44 44 0 0 1 94 50"
           fill="none"
         />
-        <circle
-          className={styles.ringFill}
-          cx="32"
-          cy="32"
-          r={radius}
+        <path
+          className={styles.arcFill}
+          d="M 6 50 A 44 44 0 0 1 94 50"
           fill="none"
           style={{
-            '--pcd-ring-circumference': `${circumference}`,
-            '--pcd-ring-target': `${targetOffset}`,
+            '--pcd-arc-length': `${ARC_LENGTH}`,
+            '--pcd-arc-target': `${targetOffset}`,
           }}
         />
       </svg>
       <div className={styles.ringCenter} aria-label={`Score ${value} of ${max}`}>
         <span className={styles.ringValue}>{displayValue}</span>
-        {max !== 100 && (
-          <span className={styles.ringMax}>/ {max}</span>
-        )}
+        <span className={styles.ringVerdict}>{label}</span>
       </div>
-      <div className={styles.ringVerdict}>{label}</div>
     </div>
   )
 }
