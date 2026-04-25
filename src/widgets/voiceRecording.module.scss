@@ -303,7 +303,9 @@
 }
 
 /* Waveform — 32 bars in a flexbox row, each bar's height driven by
-   the `--bar-norm` custom property in [0, 1] set inline from JS. */
+   the `--bar-norm` custom property in [0, 1] set inline from JS.
+   overflow: hidden as a safety net so bars never escape the container
+   even on extremely narrow widths where flex shrink rounds oddly. */
 .waveform {
   display: flex;
   align-items: center;          /* bars centered vertically inside the band */
@@ -311,12 +313,19 @@
   gap: var(--size-02);
   width: 100%;
   height: var(--size-32);       /* bar-band height; same as max bar height */
+  overflow: hidden;
 }
 
 .bar {
   display: inline-block;
-  flex-shrink: 0;
-  width: var(--size-04);
+  /* Responsive width — bars share the container's available width
+     equally (flex-basis 0 + flex-grow 1) and cap at size-04. On
+     narrow cards (small slot width) this keeps the 32 bars + 31
+     gaps inside the waveform's bounds instead of overflowing left
+     under the play button. */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: var(--size-04);
 
   /* Min visible silence ~= size-04, max peak ~= size-32. Linear
      interpolation between the two via --bar-norm in [0, 1]. */
@@ -546,12 +555,18 @@
 /* Waveform-with-sweep wrapper — two stacked layers of identical
    bars. Base layer is grey (unplayed); sweep layer is brand-60,
    clipped L→R by `--play-progress` in [0, 1]. Both layers share the
-   same flex layout so the bars align perfectly. */
+   same flex layout so the bars align perfectly.
+
+   overflow: hidden contains the absolutely-positioned bar layers so
+   they never spill outside the wrapper's bounds (which would put
+   the leftmost bars visually under the play button on narrow
+   slots). */
 .previewWaveform {
   position: relative;
   flex: 1;
   min-width: 0;
   height: var(--size-32);
+  overflow: hidden;
 }
 
 .waveformLayer {
