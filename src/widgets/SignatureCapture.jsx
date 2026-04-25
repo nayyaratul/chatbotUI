@@ -397,6 +397,11 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
   function handleUse() {
     if (strokes.length === 0) return
+    // eslint-disable-next-line no-console
+    console.log('[sg:1 sheet→parent]', {
+      sheetStrokesCount: strokes.length,
+      sheetStrokesSample: strokes[0]?.slice(0, 3),
+    })
     onCommit(strokes)
     requestClose()
   }
@@ -528,6 +533,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
    draw-in animation. Caps the per-stroke stagger at 8 (§11). */
 
 function SignatureSvg({ strokes, drawIn, ariaLabel }) {
+  const svgRef = useRef(null)
   const paths = useMemo(() => {
     return (strokes ?? []).map((stroke) => ({
       d:      strokeToPathD(stroke, SVG_VIEWBOX_W, SVG_VIEWBOX_H),
@@ -535,8 +541,52 @@ function SignatureSvg({ strokes, drawIn, ariaLabel }) {
     }))
   }, [strokes])
 
+  // eslint-disable-next-line no-console
+  console.log('[sg:3 svg render]', {
+    strokesCount: strokes?.length,
+    pathsCount: paths.length,
+    pathsSample: paths.slice(0, 2).map((p) => ({ d_head: p.d.slice(0, 60), len: p.length })),
+    drawIn,
+  })
+
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const cs   = getComputedStyle(el)
+    // eslint-disable-next-line no-console
+    console.log('[sg:4 svg mounted]', {
+      rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y },
+      computed: {
+        opacity:  cs.opacity,
+        display:  cs.display,
+        visibility: cs.visibility,
+        stroke:   cs.stroke,
+        strokeWidth: cs.strokeWidth,
+        animationName: cs.animationName,
+        transform: cs.transform,
+      },
+      pathCount: el.querySelectorAll('path').length,
+      firstPath: (() => {
+        const p = el.querySelector('path')
+        if (!p) return null
+        const r = p.getBoundingClientRect()
+        const pcs = getComputedStyle(p)
+        return {
+          rect: { w: r.width, h: r.height },
+          opacity: pcs.opacity,
+          stroke: pcs.stroke,
+          strokeDasharray: pcs.strokeDasharray,
+          strokeDashoffset: pcs.strokeDashoffset,
+          animationName: pcs.animationName,
+        }
+      })(),
+    })
+  })
+
   return (
     <svg
+      ref={svgRef}
       className={styles.signatureSvg}
       viewBox={`0 0 ${SVG_VIEWBOX_W} ${SVG_VIEWBOX_H}`}
       preserveAspectRatio="xMidYMid meet"
@@ -911,6 +961,11 @@ export function SignatureCapture({ payload }) {
   }, [])
 
   const handleSheetCommit = useCallback((nextStrokes) => {
+    // eslint-disable-next-line no-console
+    console.log('[sg:2 parent received]', {
+      strokesCount: nextStrokes?.length,
+      strokesSample: nextStrokes?.[0]?.slice(0, 3),
+    })
     setStrokes(nextStrokes)
     /* Bump key so the SVG remounts and re-runs its draw-in animation
        on every commit (including re-signs). */
