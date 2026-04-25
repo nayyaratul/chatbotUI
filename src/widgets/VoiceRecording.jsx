@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { Mic, Square, Play, Pause, RotateCcw, ArrowRight } from 'lucide-react'
+import { Mic, Square, Play, Pause, RotateCcw, ArrowRight, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './voiceRecording.module.scss'
@@ -80,6 +80,7 @@ export function VoiceRecording({ payload }) {
   /* Playback state — only meaningful in PREVIEW + SUBMITTED. */
   const [isPlaying, setIsPlaying]     = useState(false)
   const [playProgress, setPlayProgress] = useState(0)         // 0..1
+  const [submittedAt, setSubmittedAt] = useState(null)
 
   /* Capture refs — survive re-renders without triggering them. */
   const streamRef         = useRef(null)
@@ -307,6 +308,12 @@ export function VoiceRecording({ payload }) {
     const captured = capturedRef.current
     if (!captured) return
     const recordedAt = Date.now()
+    setSubmittedAt(recordedAt)
+    /* Freeze the sweep at 100% — the submitted-state waveform reads
+       as a tone-success "stamp" of the captured clip. Replay from
+       the post-submit play button still updates currentTime but the
+       sweep is success-on-success, so visually it stays frozen. */
+    setPlayProgress(1)
     setPhase('submitted')
     onReply?.(
       {
@@ -518,7 +525,117 @@ export function VoiceRecording({ payload }) {
         </div>
       )}
 
-      {/* SUBMITTED / DENIED — region 4 */}
+      {/* ─── SUBMITTED — success banner + frozen waveform ─────── */}
+      {phase === 'submitted' && previewBars && (
+        <div className={styles.submittedBlock}>
+          <div className={styles.successBanner}>
+            <span className={styles.successCheck} aria-hidden="true">
+              <CheckCircle2 size={18} strokeWidth={2.25} />
+            </span>
+            <div className={styles.successBody}>
+              <div className={styles.successTitle}>Voice clip submitted</div>
+              <div className={styles.successSub}>
+                Saved successfully{submittedAt ? ` · ${timeLabel(submittedAt)}` : ''}
+              </div>
+            </div>
+          </div>
+
+          <audio
+            ref={audioElRef}
+            src={captured.dataUrl}
+            onPlay={handleAudioPlay}
+            onPause={handleAudioPause}
+            onEnded={handleAudioEnded}
+            preload="metadata"
+            aria-hidden="true"
+          />
+
+          <div className={cx(styles.previewRow, styles.previewRowSubmitted)}>
+            <button
+              type="button"
+              className={cx(styles.playBtn, styles.playBtnSubmitted)}
+              onClick={handlePlayPause}
+              aria-label={isPlaying ? 'Pause playback' : 'Replay recording'}
+            >
+              {isPlaying
+                ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
+                : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+            </button>
+
+            <div
+              className={cx(styles.previewWaveform, styles.previewWaveformSubmitted)}
+              style={{ '--play-progress': playProgress }}
+              aria-hidden="true"
+            >
+              <div className={styles.waveformLayer}>
+                {previewBars.map((v, i) => {
+                  const norm = Math.min(1, Math.max(0, v * RMS_GAIN))
+                  return (
+                    <span
+                      key={i}
+                      className={cx(styles.bar, styles.barSubmitted, norm <= 0 && styles.barEmpty)}
+                      style={{ '--bar-norm': norm }}
+                    />
+                  )
+                })}
+              </div>
+              <div className={cx(styles.waveformLayer, styles.waveformSweep)}>
+                {previewBars.map((v, i) => {
+                  const norm = Math.min(1, Math.max(0, v * RMS_GAIN))
+                  return (
+                    <span
+                      key={i}
+                      className={cx(styles.bar, styles.barSubmitted, norm <= 0 && styles.barEmpty)}
+                      style={{ '--bar-norm': norm }}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className={styles.previewDuration}>
+              {isPlaying
+                ? `${formatTime(previewCurrent)} / ${formatTime(previewDuration)}`
+                : formatTime(previewDuration)}
+            </div>
+          </div>
+
+          <div className={styles.submittedFoot}>
+            <span className={styles.submittedDuration}>
+              {Math.round(previewDuration)}s
+            </span>
+            {previewSize > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className={styles.submittedSize}>{formatBytes(previewSize)}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── DENIED — permission error + retry ────────────────── */}
+      {phase === 'denied' && (
+        <div className={styles.deniedBlock}>
+          <div className={styles.deniedIcon} aria-hidden="true">
+            <ShieldAlert size={32} strokeWidth={1.5} />
+          </div>
+          <div className={styles.deniedBody}>
+            <div className={styles.deniedTitle}>Microphone required</div>
+            <div className={styles.deniedSub}>
+              {permError || 'Allow microphone permission to continue.'}
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="md"
+            className={styles.retryBtn}
+            onClick={() => { setPermError(null); handleStartRecording() }}
+          >
+            Try again
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -436,6 +436,156 @@
   min-width: 0;
 }
 
+/* ─── SUBMITTED — success banner + frozen waveform ─────────── */
+
+.submittedBlock {
+  margin-top: auto;             /* pin to card bottom — constant-height */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  width: 100%;
+  animation: vrcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+/* §10 success banner — chip + tabular-nums timestamp. */
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125) var(--space-150);
+
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  border-radius: var(--radius-150);
+}
+
+.successCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-success);
+}
+
+.successBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+  min-width: 0;
+}
+
+.successTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+.successSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Submitted-state waveform row — same layout as PREVIEW but with
+   a tone-success tint on every bar so the captured clip reads as a
+   "stamp" of the contribution rather than an editable preview. */
+.previewRowSubmitted {
+  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 20%, transparent);
+}
+
+.playBtnSubmitted {
+  background: var(--color-text-success);
+  border-color: color-mix(in srgb, var(--color-text-success) 88%, black);
+}
+
+.playBtnSubmitted:hover {
+  background: color-mix(in srgb, var(--color-text-success) 88%, black);
+  box-shadow: 0 var(--size-02) var(--size-08) 0
+    color-mix(in srgb, var(--color-text-success) 32%, transparent);
+}
+
+.previewWaveformSubmitted {
+  /* No structural changes — the bars carry the tint via .barSubmitted. */
+}
+
+.barSubmitted {
+  background: var(--color-text-success);
+}
+
+.submittedFoot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-075);
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── DENIED — permission error + retry (mirrors ImageCapture) */
+
+.deniedBlock {
+  margin-top: auto;             /* pin to card bottom — constant-height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-150);
+  padding: var(--space-200);
+
+  background: color-mix(in srgb, var(--grey-50) 4%, var(--white));
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-200);
+  text-align: center;
+}
+
+.deniedIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-64);
+  height: var(--size-64);
+  border-radius: var(--radius-full);
+
+  background: color-mix(in srgb, var(--grey-50) 8%, var(--white));
+  border: var(--border-width-100) solid var(--grey-20);
+  color: var(--grey-60);
+}
+
+.deniedBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+.deniedTitle {
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+}
+
+.deniedSub {
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-200);
+  color: var(--grey-60);
+}
+
+.retryBtn {
+  align-self: stretch;
+}
+
 /* ─── Reduced motion — collapse mount staggers to instant ──── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -460,5 +610,9 @@
 
   .waveformSweep {
     transition: none;
+  }
+
+  .submittedBlock {
+    animation-duration: 0.01ms;
   }
 }
