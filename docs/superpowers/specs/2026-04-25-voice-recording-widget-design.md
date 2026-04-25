@@ -33,19 +33,27 @@ Single variant — `default` (tap-to-start, tap-to-stop). Use-case framing (asse
   max_duration_seconds: number,                // default 60; hard auto-stop ceiling
   min_duration_seconds?: number,               // default 0; gates the Stop button until met
   auto_transcribe?: boolean,                   // SCHEMA-RESERVED: no STT in playground
+  silent?: boolean,                            // family-standard reply mode flag (passed to onReply)
 }
 ```
 
-Result sent on submit (`widget_response`):
+Result sent on submit. Wraps the audio payload in the family-standard `widget_response` envelope (same shape ImageCapture, FileUpload, and the other capture widgets use):
 
 ```js
 {
-  widget_id,
-  prompt_id,
-  audio_data_url: string,                      // base64-encoded recording
-  duration_seconds: number,
-  mime_type: string,                           // whatever MediaRecorder produced — typically 'audio/webm'
-  recorded_at: number,                         // Date.now() at the moment recording stopped
+  type: 'widget_response',
+  payload: {
+    source_type: 'voice_recording',
+    source_widget_id: <widget_id>,
+    data: {
+      label: <title>,
+      prompt_id,
+      audio_data_url: string,                  // base64-encoded recording
+      duration_seconds: number,
+      mime_type: string,                       // whatever MediaRecorder produced — typically 'audio/webm'
+      recorded_at: number,                     // Date.now() at the moment recording stopped
+    },
+  },
 }
 ```
 

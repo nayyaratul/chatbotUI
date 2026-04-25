@@ -94,6 +94,7 @@ export function VoiceRecording({ payload }) {
   const capturedRef       = useRef(null)        // { dataUrl, durationSec, mimeType, sizeBytes, bars[] }
   const audioElRef        = useRef(null)        // <audio> for playback in PREVIEW
   const playRafRef        = useRef(null)        // RAF loop while playing
+  const mountedRef        = useRef(true)        // gates async setState after unmount
 
   /* Read the analyser's time-domain buffer and return its RMS. */
   const readRMS = useCallback(() => {
@@ -171,12 +172,24 @@ export function VoiceRecording({ payload }) {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
       }
       mr.onstop = () => {
+        /* If the component already unmounted, don't bother encoding
+           — just release the audio graph and bail. */
+        if (!mountedRef.current) {
+          teardownCapture()
+          return
+        }
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
         const durationSec = (Date.now() - recordStartRef.current) / 1000
         const finalBars = [...ringBufferRef.current]
 
         const reader = new FileReader()
         reader.onloadend = () => {
+          /* Component might have unmounted during the FileReader
+             encode window. Bail before touching state. */
+          if (!mountedRef.current) {
+            teardownCapture()
+            return
+          }
           capturedRef.current = {
             dataUrl: typeof reader.result === 'string' ? reader.result : '',
             durationSec,
@@ -292,9 +305,23 @@ export function VoiceRecording({ payload }) {
     setPhase('idle')
   }, [stopPlayRaf])
 
-  /* Cleanup on unmount — stop everything, no leftover mic stream. */
+  /* Cleanup on unmount — stop the recorder explicitly + null its
+     onstop so the FileReader path doesn't fire on a dead component,
+     stop mic stream, release audio context, cancel RAF, pause any
+     playing <audio>. The `mountedRef` flag is the belt to this
+     teardown's suspenders for the recorder→reader async window. */
   useEffect(() => {
     return () => {
+      mountedRef.current = false
+      const mr = mediaRecorderRef.current
+      if (mr) {
+        mr.onstop = null
+        mr.ondataavailable = null
+        if (mr.state !== 'inactive') {
+          try { mr.stop() } catch { /* ignore */ }
+        }
+        mediaRecorderRef.current = null
+      }
       teardownCapture()
       stopPlayRaf()
       const el = audioElRef.current
@@ -303,6 +330,20 @@ export function VoiceRecording({ payload }) {
       }
     }
   }, [teardownCapture, stopPlayRaf])
+
+  /* Escape during RECORDING stops the take (only if min met) — spec
+     §Interactions. Listener attaches only while recording. */
+  useEffect(() => {
+    if (phase !== 'recording') return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape' && elapsedMs >= minDurationSec * 1000) {
+        e.preventDefault()
+        handleStopRecording()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase, elapsedMs, minDurationSec, handleStopRecording])
 
   const handleSubmit = useCallback(() => {
     const captured = capturedRef.current
@@ -563,7 +604,7 @@ export function VoiceRecording({ payload }) {
             </button>
 
             <div
-              className={cx(styles.previewWaveform, styles.previewWaveformSubmitted)}
+              className={styles.previewWaveform}
               style={{ '--play-progress': playProgress }}
               aria-hidden="true"
             >

@@ -13,6 +13,11 @@
 /* ─── Card shell (§1) ──────────────────────────────────────────── */
 
 .card {
+  /* §5 — pin the primary CTA accent to brand-60 (Nexus default is
+     brand-50). Same override every other widget in the family uses. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -280,7 +285,7 @@
 
   /* Min visible silence ~= size-04, max peak ~= size-32. Linear
      interpolation between the two via --bar-norm in [0, 1]. */
-  height: calc(var(--size-04) + (var(--bar-norm, 0)) * (var(--size-32) - var(--size-04)));
+  height: calc(var(--size-04) + var(--bar-norm, 0) * (var(--size-32) - var(--size-04)));
 
   border-radius: var(--radius-100);
   background: var(--brand-60);
@@ -400,9 +405,9 @@
 
 .waveformSweep {
   /* Reveal proportional to --play-progress (0 → 1). Inset's right
-     value collapses as progress grows, exposing the brand-60 bars. */
+     value collapses as progress grows, exposing the brand-60 bars.
+     Driven by RAF — no transition needed. */
   clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
-  transition: clip-path 0ms linear;            /* driven by RAF; let the CSS var update directly */
 }
 
 .barUnplayed {
@@ -510,10 +515,6 @@
     color-mix(in srgb, var(--color-text-success) 32%, transparent);
 }
 
-.previewWaveformSubmitted {
-  /* No structural changes — the bars carry the tint via .barSubmitted. */
-}
-
 .barSubmitted {
   background: var(--color-text-success);
 }
@@ -609,6 +610,11 @@
   }
 
   .waveformSweep {
+    /* Spec: under reduced motion the sweep skips its L→R animation
+       and shows the full fill. Pinning --play-progress to 1 here
+       overrides the RAF-driven inline value, so the clip-path stays
+       fully open regardless of audio.currentTime. */
+    --play-progress: 1 !important;
     transition: none;
   }
 
