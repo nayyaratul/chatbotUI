@@ -162,22 +162,24 @@ export function VoiceRecording({ payload }) {
   }, [teardownCapture])
 
   const handleStopRecording = useCallback(() => {
+    /* eslint-disable no-console */
+    console.log('[VoiceRecording] handleStopRecording invoked')
+
     /* Stop the analyser/sampler immediately; MediaRecorder's onstop
        fires asynchronously and finalises the captured payload. */
     if (tickRef.current) {
       clearInterval(tickRef.current)
       tickRef.current = null
     }
-    const mr = mediaRecorderRef.current
-    if (!mr || mr.state === 'inactive') return
 
-    /* Defensive fallback: some browsers occasionally drop the
-       `onstop` event on very short clips or when the audio graph
-       is in a quirky state. If the transition hasn't happened
-       within 1500ms of stop, force it with whatever data we've
-       collected. The onstop path clears this timer if it fires. */
+    /* Schedule a defensive fallback UNCONDITIONALLY — even if
+       mediaRecorderRef is null or already inactive, the fallback
+       still fires the transition with whatever data we have. This
+       is the belt-and-suspenders against any path where mr.onstop
+       might not fire (dropped event, browser bug, weird mr state). */
     if (stopFallbackRef.current) clearTimeout(stopFallbackRef.current)
     stopFallbackRef.current = setTimeout(() => {
+      console.log('[VoiceRecording] fallback timer fired — finalizing')
       stopFallbackRef.current = null
       if (!mountedRef.current) return
       const fbMr = mediaRecorderRef.current
@@ -185,17 +187,26 @@ export function VoiceRecording({ payload }) {
         type: fbMr?.mimeType || 'audio/webm',
       })
       finalizeRecording(blob)
-    }, 1500)
+    }, 800)
 
-    try {
-      /* Flush any pending data buffered inside the recorder. This
-         is essential when `mr.start()` was called without a
-         timeslice — the recorder otherwise only emits `dataavailable`
-         once on stop, and some browsers skip that single delivery
-         on very short clips. */
-      if (typeof mr.requestData === 'function') mr.requestData()
-      mr.stop()
-    } catch { /* ignore */ }
+    /* Try the normal MediaRecorder.stop() path. If it fails or
+       mr is in a weird state, the fallback above still saves us. */
+    const mr = mediaRecorderRef.current
+    console.log('[VoiceRecording] mr state at stop:', mr?.state)
+    if (mr && mr.state !== 'inactive') {
+      try {
+        /* Flush any pending data buffered inside the recorder
+           (start() was called without a timeslice, so dataavailable
+           only fires on stop; some browsers skip that delivery on
+           very short clips). */
+        if (typeof mr.requestData === 'function') mr.requestData()
+        mr.stop()
+        console.log('[VoiceRecording] mr.stop() called')
+      } catch (err) {
+        console.warn('[VoiceRecording] mr.stop() threw:', err)
+      }
+    }
+    /* eslint-enable no-console */
   }, [finalizeRecording])
 
   const handleStartRecording = useCallback(async () => {
@@ -229,6 +240,8 @@ export function VoiceRecording({ payload }) {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
       }
       mr.onstop = () => {
+        /* eslint-disable no-console */
+        console.log('[VoiceRecording] mr.onstop fired')
         /* Cancel the defensive fallback — the real onstop fired. */
         if (stopFallbackRef.current) {
           clearTimeout(stopFallbackRef.current)
@@ -236,6 +249,15 @@ export function VoiceRecording({ payload }) {
         }
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
         finalizeRecording(blob)
+        /* eslint-enable no-console */
+      }
+      mr.onerror = (e) => {
+        /* eslint-disable no-console */
+        console.warn('[VoiceRecording] MediaRecorder error', e)
+        /* Force the same finalize path so we don't get stuck. */
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
+        finalizeRecording(blob)
+        /* eslint-enable no-console */
       }
       mediaRecorderRef.current = mr
       mr.start()
@@ -704,34 +726,23 @@ export function VoiceRecording({ payload }) {
             </div>
           </div>
 
-          {/* Submission summary — gives the user a clear receipt of
-              what was just submitted: which title, how long, how big,
-              and when. Matches the family pattern (ImageCapture's
-              submitted footer leads with title + meta). */}
-          <dl className={styles.submittedDetails}>
-            <div className={styles.submittedDetailRow}>
-              <dt className={styles.submittedDetailLabel}>Submitted</dt>
-              <dd className={styles.submittedDetailValue}>{title}</dd>
-            </div>
-            <div className={styles.submittedDetailRow}>
-              <dt className={styles.submittedDetailLabel}>Duration</dt>
-              <dd className={styles.submittedDetailValue}>
-                {Math.round(previewDuration)}s
-              </dd>
-            </div>
+          {/* Compact submission receipt — single inline meta line so
+              the SUBMITTED block stays within the 176px state-block
+              floor and doesn't push the card taller than other phases.
+              Title leads (bold), then duration · size, all dotted. */}
+          <p className={styles.submittedMeta}>
+            <strong className={styles.submittedMetaTitle}>{title}</strong>
+            <span aria-hidden="true" className={styles.submittedMetaSep}>·</span>
+            <span className={styles.submittedMetaItem}>
+              {Math.round(previewDuration)}s
+            </span>
             {previewSize > 0 && (
-              <div className={styles.submittedDetailRow}>
-                <dt className={styles.submittedDetailLabel}>File size</dt>
-                <dd className={styles.submittedDetailValue}>{formatBytes(previewSize)}</dd>
-              </div>
+              <>
+                <span aria-hidden="true" className={styles.submittedMetaSep}>·</span>
+                <span className={styles.submittedMetaItem}>{formatBytes(previewSize)}</span>
+              </>
             )}
-            {submittedAt && (
-              <div className={styles.submittedDetailRow}>
-                <dt className={styles.submittedDetailLabel}>Submitted at</dt>
-                <dd className={styles.submittedDetailValue}>{timeLabel(submittedAt)}</dd>
-              </div>
-            )}
-          </dl>
+          </p>
         </div>
       )}
 

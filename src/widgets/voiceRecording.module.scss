@@ -742,54 +742,39 @@
   background: var(--color-text-success);
 }
 
-/* Submission summary — labelled key/value rows so the user sees
-   exactly what was just submitted (title + duration + size + time).
-   Definition list is the right semantic for label/value pairs. */
-.submittedDetails {
+/* Compact one-line submission receipt — keeps the SUBMITTED block
+   within the 176px state-block floor (a verbose dl pushed it well
+   past). Title leads in semibold, then duration · size with dot
+   separators in the family meta style. */
+.submittedMeta {
   margin: 0;
-  padding: var(--space-125) var(--space-150);
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
   gap: var(--space-075);
 
-  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 16%, transparent);
-  border-radius: var(--radius-150);
-}
-
-.submittedDetailRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-150);
-  min-width: 0;
-}
-
-.submittedDetailLabel {
-  flex-shrink: 0;
   font-family: var(--sans);
   font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-200);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
   color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.submittedDetailValue {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  text-align: right;
-  font-family: var(--sans);
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-300);
+.submittedMetaTitle {
+  font-weight: var(--font-weight-semibold);
   color: var(--grey-90);
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.submittedMetaItem {
+  font-weight: var(--font-weight-medium);
+  color: var(--grey-80);
+}
+
+.submittedMetaSep {
+  color: var(--grey-30);
 }
 
 /* ─── DENIED — permission error + retry (mirrors ImageCapture) */
