@@ -489,14 +489,11 @@ img.photo {
   animation-delay: var(--pcd-cta-delay, 1500ms);
 }
 
-/* Matches JobCard's .viewDetailsLink visual treatment — brand-60
-   medium-weight tappable text link with brand-tint hover wash +
-   right-nudging arrow. Negative margin-left pulls the visible text
-   flush with the column's left edge despite the inner padding.
-   Adds min-height: var(--size-44) on top of JobCard's pattern to
-   meet the 44pt tap-target floor (pro-max touch-target-size rule);
-   visible text stays compact, tap area meets the WCAG / HIG / MD
-   standard. */
+/* Matches JobCard's .viewDetailsLink exactly — including its
+   compact visual height. Padding is 050/075 (4px / 6px) so the
+   visible link sits ~20px tall, matching JobCard's footprint
+   precisely. The :active state below provides press feedback
+   for mobile despite the small tap area. */
 .viewFullLink {
   align-self: flex-start;
   display: inline-flex;
@@ -504,7 +501,6 @@ img.photo {
   gap: var(--space-050);
   margin-left: calc(-1 * var(--space-075));
   padding: var(--space-050) var(--space-075);
-  min-height: var(--size-44);
   background: transparent;
   border: 0;
   cursor: pointer;
