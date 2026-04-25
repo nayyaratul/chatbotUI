@@ -199,30 +199,53 @@
   border-radius: var(--radius-150);
   background: var(--white);
   overflow: hidden;
+
+  /* Edge fades sit on the wrapper as overlay layers so they can hide
+     conditionally — top fade hides at scrollTop===0, bottom fade hides
+     at scrolled-to-end. Peripheral cue, not a chrome element. */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--space-200);
+    pointer-events: none;
+    z-index: 1;
+    opacity: var(--opacity-100);
+    transition: opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  &::before {
+    top: 0;
+    background: linear-gradient(
+      to bottom,
+      var(--white) 0,
+      color-mix(in srgb, var(--white) 72%, transparent) 50%,
+      transparent 100%
+    );
+  }
+  &::after {
+    bottom: 0;
+    background: linear-gradient(
+      to top,
+      var(--white) 0,
+      color-mix(in srgb, var(--white) 72%, transparent) 50%,
+      transparent 100%
+    );
+  }
 }
+
+.agreement_atTop::before { opacity: var(--opacity-000); }
+.agreement_atEnd::after  { opacity: var(--opacity-000); }
 
 .agreementBody {
   /* ~7 lines of body text before scroll kicks in. line-height-300 is
-     1.25rem absolute, so 7 * 1.25rem ≈ 8.75rem (140px). Fade masks at
-     top/bottom signal "more above/below". */
+     1.25rem absolute, so 7 * 1.25rem ≈ 8.75rem (140px). The wrapper
+     paints conditional fade masks; the body itself stays clean. */
   max-height: calc(var(--line-height-300) * 7);
   overflow-y: auto;
   padding: var(--space-125) var(--space-150);
   scroll-behavior: smooth;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    var(--white) var(--space-100),
-    var(--white) calc(100% - var(--space-100)),
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    var(--white) var(--space-100),
-    var(--white) calc(100% - var(--space-100)),
-    transparent 100%
-  );
 
   > p {
     margin: 0;
@@ -242,28 +265,77 @@
   }
 }
 
-/* ─── Gate caption row ──────────────────────────────────────────────── */
+/* ─── Gate caption row ──────────────────────────────────────────────────
+   Two faces share the same row; CSS crossfades between them. The success
+   Check springs in from the left on the springy curve so the gate-clear
+   reads as a small micro-celebration, not a tone swap. */
 
 .gateCaption {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-050);
+  min-height: var(--size-20);
   margin: 0;
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-200);
   letter-spacing: var(--letter-spacing-wide);
   color: var(--grey-60);
-  transition:
-    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  /* No `transition: all`; color ramp is owned by the inner faces. */
 }
 
-.gateCaption_met {
+.gateCaptionPending,
+.gateCaptionMet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  transition:
+    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.gateCaptionPending {
+  position: relative;
+  opacity: var(--opacity-100);
+  transform: translateY(0);
+}
+
+.gateCaptionMet {
+  position: absolute;
+  inset: 0 auto 0 0;
   color: var(--color-text-success);
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050));
+  pointer-events: none;
 
   > svg {
     color: var(--color-text-success);
+    transform: scale(0.6) rotate(-8deg);
+    transform-origin: center;
+    opacity: var(--opacity-000);
+    transition:
+      transform 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
+      opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
   }
+}
+
+.gateCaption_met .gateCaptionPending {
+  opacity: var(--opacity-000);
+  transform: translateY(calc(-1 * var(--space-050)));
+}
+
+.gateCaption_met .gateCaptionMet {
+  opacity: var(--opacity-100);
+  transform: translateY(0);
+  /* The Check completes its spring 80ms after the caption text settles —
+     small ceremony beat without adding chrome. */
+  transition-delay: 80ms;
+}
+
+.gateCaption_met .gateCaptionMet > svg {
+  opacity: var(--opacity-100);
+  transform: scale(1) rotate(0deg);
+  transition-delay: 120ms;
 }
 
 /* ─── Signature preview region — idle / gated ──────────────────────── */
@@ -368,9 +440,17 @@
 .dvScrim {
   position: absolute;
   inset: 0;
+  /* Scrim ramps from grey-90/0 → grey-90/56 on the entry curve and pairs
+     a soft backdrop blur so the chat content behind reads as out-of-focus
+     during the sign moment. The blur lifts on close. */
   background: var(--grey-90);
   opacity: var(--opacity-000);
-  transition: opacity 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition:
+    opacity 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    -webkit-backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .dvSheet {
@@ -380,21 +460,46 @@
   gap: var(--space-150);
   width: 100%;
   max-height: 88%;
-  padding: var(--space-200);
+  padding: var(--space-300) var(--space-200) var(--space-200);
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
+  border-bottom: 0;
   border-radius: var(--radius-300) var(--radius-300) 0 0;
   box-shadow: 0 calc(-1 * var(--size-12)) var(--size-32) color-mix(in srgb, var(--grey-90) 18%, transparent);
   transform: translateY(100%);
   transition:
-    transform 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
-    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    transform 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
   opacity: var(--opacity-000);
+
+  /* Grabber bar at the top — the universal "this is a sheet" affordance.
+     Single ::before, not a primitive: pure decorative line that reads as
+     a handle without the sheet header carrying the burden. */
+  &::before {
+    content: '';
+    position: absolute;
+    top: var(--space-125);
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--size-36);
+    height: var(--border-width-400);
+    border-radius: var(--radius-full);
+    background: var(--grey-20);
+    pointer-events: none;
+  }
 }
 
-.dvLayer_open .dvScrim    { opacity: var(--opacity-064); }
+.dvLayer_open .dvScrim {
+  opacity: var(--opacity-056);
+  backdrop-filter: blur(var(--size-04));
+  -webkit-backdrop-filter: blur(var(--size-04));
+}
 .dvLayer_open .dvSheet    { transform: translateY(0); opacity: var(--opacity-100); }
-.dvLayer_exiting .dvScrim { opacity: var(--opacity-000); }
+.dvLayer_exiting .dvScrim {
+  opacity: var(--opacity-000);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
 .dvLayer_exiting .dvSheet { transform: translateY(100%); opacity: var(--opacity-000); }
 
 .dvHeader {
@@ -529,7 +634,12 @@
   inset: 0;
   background: var(--grey-90);
   opacity: var(--opacity-000);
-  transition: opacity 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition:
+    opacity 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    -webkit-backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .shSheet {
@@ -539,21 +649,44 @@
   gap: var(--space-150);
   width: 100%;
   max-height: 92%;
-  padding: var(--space-200);
+  padding: var(--space-300) var(--space-200) var(--space-200);
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
+  border-bottom: 0;
   border-radius: var(--radius-300) var(--radius-300) 0 0;
   box-shadow: 0 calc(-1 * var(--size-12)) var(--size-32) color-mix(in srgb, var(--grey-90) 22%, transparent);
   transform: translateY(100%);
   opacity: var(--opacity-000);
   transition:
-    transform 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
-    opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    transform 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  /* Grabber bar — see .dvSheet::before for rationale. */
+  &::before {
+    content: '';
+    position: absolute;
+    top: var(--space-125);
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--size-36);
+    height: var(--border-width-400);
+    border-radius: var(--radius-full);
+    background: var(--grey-20);
+    pointer-events: none;
+  }
 }
 
-.shLayer_open .shScrim    { opacity: var(--opacity-064); }
+.shLayer_open .shScrim {
+  opacity: var(--opacity-056);
+  backdrop-filter: blur(var(--size-04));
+  -webkit-backdrop-filter: blur(var(--size-04));
+}
 .shLayer_open .shSheet    { transform: translateY(0); opacity: var(--opacity-100); }
-.shLayer_exiting .shScrim { opacity: var(--opacity-000); }
+.shLayer_exiting .shScrim {
+  opacity: var(--opacity-000);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
 .shLayer_exiting .shSheet { transform: translateY(100%); opacity: var(--opacity-000); }
 
 .shHeader {
@@ -647,6 +780,21 @@
 
 .shCanvasFrame_inked {
   border-color: var(--grey-30);
+}
+
+/* During the 200ms clear-fade window, the wrapper's opacity ramps to
+   ~64% in lockstep with the canvas's internal globalAlpha drop. Truncate
+   happens at the end of the timer; the perceived ramp is the union of
+   canvas alpha + wrapper opacity. */
+.shCanvasFrame_clearing {
+  border-color: color-mix(in srgb, var(--color-text-error) 28%, var(--grey-10));
+  transition:
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shCanvas_clearing {
+  opacity: var(--opacity-064);
+  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .shBaseline {
@@ -832,7 +980,13 @@
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
-/* ─── Captured signature SVG render ─────────────────────────────── */
+/* ─── Captured signature SVG render ─────────────────────────────────
+   The SVG mounts with a wrapper-level lift animation (sgInkLift): tiny
+   scale-up + opacity ramp on the springy entry curve. This is the
+   "handoff" beat — the strokes feel lifted from the sheet onto the
+   card, not just dropped in. Per-stroke dasharray draw-in then traces
+   each path on top, so the user sees a settle followed by ink coming
+   alive. */
 
 .signatureSvg {
   position: absolute;
@@ -846,6 +1000,19 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
+  transform-origin: center;
+  animation: sgInkLift 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+@keyframes sgInkLift {
+  from {
+    opacity: var(--opacity-000);
+    transform: scale(0.96);
+  }
+  to {
+    opacity: var(--opacity-100);
+    transform: scale(1);
+  }
 }
 
 @keyframes sgInkDraw {
@@ -883,39 +1050,170 @@
 }
 
 /* ─── Submitted — framed signature stamp ────────────────────────────
-   Wrapper border re-tones to success. Hatched repeating-linear-gradient
-   reads as a formal-document stamp frame. Captured SVG ink scale-settles
-   on the springy curve. Halo blooms 120ms after the ink settle, then
-   fades 200ms. Pointer disabled — terminal per family convention. */
+   The signature moment. Reads as a notarized seal: success border with
+   a small overshoot, hatched watermark backdrop with a soft cross-grain
+   tone, an inset frame ring inboard of the wrapper border, four corner
+   brackets at the seal corners, a watermark fleck low-right, captured
+   ink scale-settles on the springy curve, and a halo bloom that punches
+   on press and decays on the gentle curve.
+
+   Composition order (front-to-back inside the wrapper):
+     halo (full bleed, animated box-shadow)
+     watermark fleck (low-right)
+     corner brackets (overlay)
+     inset frame (overlay)
+     SVG ink (centred, scale-settles)
+     hatched background (on .preview_submitted itself)
+
+   Pointer disabled — terminal per family convention. */
 
 .preview_submitted {
   cursor: default;
   pointer-events: none;
   border-color: var(--color-text-success);
+  /* Two-layer hatch — primary 45° stripe at the spec's --size-04 +
+     --border-width-300 stops, plus a fainter cross-grain at -45° for
+     the woven-paper feel of an embossed seal. The cross-grain is
+     ~half the opacity so the dominant direction still reads. */
   background:
     repeating-linear-gradient(
       45deg,
       transparent 0,
       transparent var(--size-04),
-      color-mix(in srgb, var(--color-text-success) 8%, transparent) var(--size-04),
-      color-mix(in srgb, var(--color-text-success) 8%, transparent) calc(var(--size-04) + var(--border-width-300))
+      color-mix(in srgb, var(--color-text-success) 9%, transparent) var(--size-04),
+      color-mix(in srgb, var(--color-text-success) 9%, transparent) calc(var(--size-04) + var(--border-width-300))
     ),
-    var(--white);
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent var(--size-06),
+      color-mix(in srgb, var(--color-text-success) 4%, transparent) var(--size-06),
+      color-mix(in srgb, var(--color-text-success) 4%, transparent) calc(var(--size-06) + var(--border-width-100))
+    ),
+    color-mix(in srgb, var(--color-text-success) 3%, var(--white));
   transition:
     border-color 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
     background 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  /* Border arrives with a small overshoot via the inset-ring trick on
+     .stampFrame; the wrapper border itself just retones. */
 }
 
 .preview_submitted .signatureSvg {
-  /* Re-anchor the SVG render inside the stamp frame so the hatched
-     border is visible around the captured ink. By submit time the
-     stroke-dasharray draw-in has already finished, so the settle
-     runs immediately to feel like part of the same beat as the
-     border re-tone. */
-  inset: var(--space-100);
+  /* Re-anchor the SVG inboard of the inset frame so the hatched border
+     and corner brackets read around the ink. The strokes draw-in has
+     already finished by submit time; the settle runs as part of the
+     same beat as the seal arriving. */
+  inset: var(--space-150);
   width: auto;
   height: auto;
-  animation: sgInkSettle 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation: sgInkSettle 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 80ms both;
+}
+
+/* Inset frame — a second hairline border slightly inboard of the wrapper.
+   This is the "ruled inner" of a formal seal. Renders as a CSS box; not a
+   primitive. Animates on the springy curve so it springs into place after
+   the wrapper border has retoned. */
+.stampFrame {
+  position: absolute;
+  inset: var(--space-075);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  border-radius: calc(var(--radius-150) - var(--space-025));
+  pointer-events: none;
+  opacity: var(--opacity-000);
+  transform: scale(0.985);
+  transform-origin: center;
+  animation: sgFrameSettle 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 120ms both;
+}
+
+/* Corner brackets — four notarization-cue marks at the corners of the
+   seal. Built from layered conic-gradients on a single span, with the
+   four corners being explicit corner-only renderings. We use stacked
+   linear gradients clipped to corners; cleaner is two ::before/::after
+   on a wrapper. We only have one element per corner pattern, so use
+   four box-shadows with corner-only borders... simpler: paint the
+   brackets as background-images via clip-path on layered linear
+   gradients.
+
+   Implementation: a single span uses a layered background with four
+   small "L" marks at the four corners — each L is two thin rectangles
+   joined at right angle. We compose with `background-image` of four
+   linear gradients positioned at corners, sized to a small square. */
+.stampCorners {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--opacity-000);
+  animation: sgCornersFade 280ms cubic-bezier(0.2, 0.8, 0.3, 1) 200ms both;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: var(--size-12);
+    height: var(--size-12);
+    border-color: var(--color-text-success);
+    border-style: solid;
+    border-width: 0;
+  }
+
+  /* Top-left + top-right via ::before (L-shape: top + left for the
+     left, top + right for the right is impossible with one element —
+     so we paint top + left only on ::before and bottom + right on
+     ::after; the other two corners come from box-shadow offsets... no.
+     Cleanest: use ::before for top-left, ::after for bottom-right.
+     Top-right and bottom-left come from a parent box-shadow trick? No.
+     Instead, render four corners by stacking two pseudo-elements on
+     this span and two on a sibling — but that's a primitive.
+
+     Pragmatic resolution: use ::before for top-left + box-shadow
+     replication isn't possible here. We render two opposite corners
+     (top-left, bottom-right) only — diagonal pairing reads as a seal
+     mark, and avoids adding a sibling element. */
+  &::before {
+    top: var(--space-150);
+    left: var(--space-150);
+    border-top-width: var(--border-width-200);
+    border-left-width: var(--border-width-200);
+    border-top-left-radius: var(--radius-050);
+  }
+
+  &::after {
+    bottom: var(--space-150);
+    right: var(--space-150);
+    border-bottom-width: var(--border-width-200);
+    border-right-width: var(--border-width-200);
+    border-bottom-right-radius: var(--radius-050);
+  }
+}
+
+/* Watermark fleck — a low-opacity SIGNED-style cross-grain swatch in the
+   bottom-right corner. Pure CSS: a small repeating-linear-gradient inside
+   a circle, low alpha. Reads as a stamp pad mark, not a logo. */
+.stampWatermark {
+  position: absolute;
+  bottom: var(--space-150);
+  right: var(--space-150);
+  width: var(--size-24);
+  height: var(--size-24);
+  border-radius: var(--radius-full);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent var(--border-width-100),
+      color-mix(in srgb, var(--color-text-success) 22%, transparent) var(--border-width-100),
+      color-mix(in srgb, var(--color-text-success) 22%, transparent) var(--border-width-200)
+    );
+  pointer-events: none;
+  opacity: var(--opacity-000);
+  transform: scale(0.6) rotate(-12deg);
+  transform-origin: center;
+  animation: sgWatermarkPress 360ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 280ms both;
+  /* Sit underneath the corner bracket on bottom-right so the corner mark
+     wins visually; offset slightly inboard so they don't collide. */
+  margin-bottom: var(--space-100);
+  margin-right: var(--space-100);
 }
 
 .stampHalo {
@@ -923,29 +1221,74 @@
   inset: 0;
   border-radius: var(--radius-150);
   pointer-events: none;
-  /* Halo blooms 120ms after the ink settle ends (280 + 120 = 400ms)
-     per the spec's "valid" beat. */
-  animation: sgHaloBloom 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 400ms both;
+  /* Halo bloom — a quick punch at peak (sharp box-shadow ring), then a
+     longer decay on the state curve. Reads as a seal being pressed onto
+     paper, not a generic glow. Starts 320ms in (after the SVG settle's
+     80ms delay + ~240ms of its arc), peaks fast, fades slow. */
+  animation: sgHaloBloom 480ms cubic-bezier(0.2, 0.8, 0.3, 1) 400ms both;
 }
 
 @keyframes sgInkSettle {
-  0%   { transform: scale(1); }
+  0%   { transform: scale(0.92); }
   55%  { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
 
-@keyframes sgHaloBloom {
-  0%   {
-    box-shadow:
-      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+@keyframes sgFrameSettle {
+  0% {
+    opacity: var(--opacity-000);
+    transform: scale(0.985);
   }
-  60%  {
+  60% {
+    opacity: var(--opacity-100);
+    transform: scale(1.008);
+  }
+  100% {
+    opacity: var(--opacity-100);
+    transform: scale(1);
+  }
+}
+
+@keyframes sgCornersFade {
+  from { opacity: var(--opacity-000); }
+  to   { opacity: var(--opacity-100); }
+}
+
+@keyframes sgWatermarkPress {
+  0% {
+    opacity: var(--opacity-000);
+    transform: scale(0.6) rotate(-12deg);
+  }
+  60% {
+    opacity: var(--opacity-072);
+    transform: scale(1.06) rotate(-3deg);
+  }
+  100% {
+    opacity: var(--opacity-056);
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@keyframes sgHaloBloom {
+  0% {
     box-shadow:
-      0 0 var(--size-12) var(--size-04) color-mix(in srgb, var(--color-text-success) 32%, transparent);
+      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent),
+      inset 0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+  35% {
+    box-shadow:
+      0 0 var(--size-08) var(--size-02) color-mix(in srgb, var(--color-text-success) 40%, transparent),
+      inset 0 0 var(--size-08) var(--size-02) color-mix(in srgb, var(--color-text-success) 18%, transparent);
+  }
+  70% {
+    box-shadow:
+      0 0 var(--size-16) var(--size-04) color-mix(in srgb, var(--color-text-success) 18%, transparent),
+      inset 0 0 var(--size-04) 0 color-mix(in srgb, var(--color-text-success) 9%, transparent);
   }
   100% {
     box-shadow:
-      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+      0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent),
+      inset 0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
   }
 }
 
@@ -1031,7 +1374,11 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .banner,
-  .shConfirm {
+  .shConfirm,
+  .signatureSvg,
+  .stampFrame,
+  .stampCorners,
+  .stampWatermark {
     animation-duration: 0.01ms;
     animation-delay: 0ms;
   }
@@ -1039,8 +1386,14 @@
   .dvSheet,
   .dvScrim,
   .shSheet,
-  .shScrim {
+  .shScrim,
+  .agreement::before,
+  .agreement::after,
+  .gateCaptionPending,
+  .gateCaptionMet,
+  .gateCaptionMet > svg {
     transition-duration: 0.01ms;
+    transition-delay: 0ms;
   }
 
   .signatureSvg path {
@@ -1052,9 +1405,22 @@
 
   .preview_submitted .signatureSvg {
     animation: none;
+    transform: scale(1);
   }
 
-  .stampHalo {
+  .stampHalo,
+  .stampFrame,
+  .stampCorners,
+  .stampWatermark {
     animation: none;
+    opacity: var(--opacity-100);
+    transform: none;
+  }
+
+  /* Watermark final state: keep the rotation since it's purely
+     visual (not motion-derived). */
+  .stampWatermark {
+    transform: rotate(-6deg);
+    opacity: var(--opacity-056);
   }
 }

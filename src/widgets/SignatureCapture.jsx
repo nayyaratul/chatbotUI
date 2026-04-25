@@ -176,12 +176,17 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
   const [phase, setPhase]     = useState('entering')
   const [strokes, setStrokes] = useState(initialStrokes ?? [])
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  /* `clearing` is the 200ms fade window after Clear is tapped — the canvas
+     redraws with reduced alpha so existing strokes ramp out before being
+     truncated. Without it, Clear was a hard pop. */
+  const [clearing, setClearing] = useState(false)
   const canvasRef             = useRef(null)
   const containerRef          = useRef(null)
   const closeBtnRef           = useRef(null)
   const closingRef            = useRef(false)
   const drawingRef            = useRef(false)
   const currentStrokeRef      = useRef(null)
+  const clearTimerRef         = useRef(null)
   const inkColorRef           = useRef('rgb(15, 23, 42)') /* fallback; resolved from --grey-90 on mount */
 
   const portalTarget = typeof document !== 'undefined'
@@ -262,6 +267,11 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
     ctx.lineWidth = 2.5
     ctx.strokeStyle = inkColorRef.current
     ctx.fillStyle   = inkColorRef.current
+    /* During the clear-fade window, render existing ink at reduced
+       alpha. CSS-side .shCanvas_clearing nudges the alpha lower in
+       its own transition; the canvas itself paints at half. The
+       perceived ramp comes from the wrapper's opacity transition. */
+    if (clearing) ctx.globalAlpha = 0.4
 
     function drawOne(stroke) {
       if (!stroke || stroke.length === 0) return
@@ -293,7 +303,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
     strokes.forEach(drawOne)
     if (currentStrokeRef.current) drawOne(currentStrokeRef.current)
-  }, [strokes])
+  }, [strokes, clearing])
 
   /* Redraw whenever strokes change; resize observer for viewport
      changes (rotation / soft-keyboard). */
@@ -347,8 +357,24 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
   }
 
   function handleClear() {
-    setStrokes([])
+    if (clearing) return
+    if (strokes.length === 0) return
+    setClearing(true)
+    if (clearTimerRef.current) window.clearTimeout(clearTimerRef.current)
+    clearTimerRef.current = window.setTimeout(() => {
+      setStrokes([])
+      setClearing(false)
+      clearTimerRef.current = null
+    }, 200)
   }
+
+  /* On unmount, drop any in-flight clear-fade timer so it can't fire
+     after the sheet has closed. */
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) window.clearTimeout(clearTimerRef.current)
+    }
+  }, [])
 
   function handleCancel() {
     if (strokes.length > 0) {
@@ -413,16 +439,20 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
 
         <div className={styles.shCanvasWrap}>
           <div
-            className={cx(styles.shCanvasFrame, hasStrokes && styles.shCanvasFrame_inked)}
+            className={cx(
+              styles.shCanvasFrame,
+              hasStrokes && styles.shCanvasFrame_inked,
+              clearing && styles.shCanvasFrame_clearing,
+            )}
           >
             <div className={styles.shBaseline} aria-hidden />
             <span className={styles.shMark} aria-hidden>×</span>
-            {!hasStrokes && (
+            {!hasStrokes && !clearing && (
               <span className={styles.shPlaceholder} aria-hidden>Sign here</span>
             )}
             <canvas
               ref={canvasRef}
-              className={styles.shCanvas}
+              className={cx(styles.shCanvas, clearing && styles.shCanvas_clearing)}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerEnd}
@@ -437,7 +467,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
               type="button"
               className={styles.shToolBtn}
               onClick={handleUndo}
-              disabled={!hasStrokes}
+              disabled={!hasStrokes || clearing}
               aria-label="Undo last stroke"
             >
               <Undo2 size={16} strokeWidth={2} aria-hidden />
@@ -446,7 +476,7 @@ function SignatureSheet({ subtitleContext, initialStrokes, onClose, onCommit }) 
               type="button"
               className={styles.shToolBtn}
               onClick={handleClear}
-              disabled={!hasStrokes}
+              disabled={!hasStrokes || clearing}
               aria-label="Clear signature"
             >
               <Eraser size={16} strokeWidth={2} aria-hidden />
@@ -695,6 +725,24 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
     .map((p) => p.trim())
     .filter(Boolean)
 
+  /* Track scroll position so the fade-masks at top/bottom can hide
+     conditionally — top-mask only when there's content above; bottom-mask
+     only when there's content below. Acts as a peripheral cue: "more here"
+     vs "you're at the edge" without adding a chrome element. */
+  const [atTop, setAtTop] = useState(true)
+  const [atEnd, setAtEnd] = useState(false)
+
+  const measureScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setAtTop(el.scrollTop <= 0)
+    setAtEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_END_TOLERANCE_PX)
+  }, [scrollRef])
+
+  useEffect(() => {
+    measureScroll()
+  }, [measureScroll, agreementText])
+
   useEffect(() => {
     if (gateMet) return
     const el = scrollRef.current
@@ -705,6 +753,7 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
   }, [gateMet, agreementText, onScrollEnd, scrollRef])
 
   function handleScroll() {
+    measureScroll()
     if (gateMet) return
     const el = scrollRef.current
     if (!el) return
@@ -714,7 +763,13 @@ function AgreementBody({ agreementText, onScrollEnd, gateMet, scrollRef }) {
   }
 
   return (
-    <div className={styles.agreement}>
+    <div
+      className={cx(
+        styles.agreement,
+        atTop && styles.agreement_atTop,
+        atEnd && styles.agreement_atEnd,
+      )}
+    >
       <div
         ref={scrollRef}
         className={styles.agreementBody}
@@ -878,15 +933,21 @@ export function SignatureCapture({ payload }) {
         />
       )}
 
-      <p className={cx(styles.gateCaption, gateMet && styles.gateCaption_met)}>
-        {gateMet ? (
-          <>
-            <Check size={14} strokeWidth={2.25} aria-hidden />
-            <span>{gateMetCopy(variant)} · {timeLabel(gateAt)}</span>
-          </>
-        ) : (
-          <span>{gatePendingCopy(variant)}</span>
-        )}
+      {/* Both faces render at all times; CSS crossfades between them and
+          the Check icon slides in on the springy curve when gate clears.
+          aria-live announces the swap once on transition; visually-hidden
+          duplicate isn't needed because both faces share the same DOM. */}
+      <p
+        className={cx(styles.gateCaption, gateMet && styles.gateCaption_met)}
+        aria-live="polite"
+      >
+        <span className={styles.gateCaptionPending} aria-hidden={gateMet || undefined}>
+          {gatePendingCopy(variant)}
+        </span>
+        <span className={styles.gateCaptionMet} aria-hidden={!gateMet || undefined}>
+          <Check size={14} strokeWidth={2.25} aria-hidden />
+          <span>{gateMetCopy(variant)} · {timeLabel(gateAt)}</span>
+        </span>
       </p>
 
       <div
@@ -929,7 +990,16 @@ export function SignatureCapture({ payload }) {
           </span>
         )}
         {submitted && (
-          <div className={styles.stampHalo} aria-hidden />
+          <>
+            {/* Decorative seal layers — corner brackets (notarization
+                cue), an inset frame ring, a low-opacity watermark fleck.
+                All purely CSS-driven decoration on the existing preview
+                primitive; no new primitive introduced. */}
+            <span className={styles.stampFrame} aria-hidden />
+            <span className={styles.stampCorners} aria-hidden />
+            <span className={styles.stampWatermark} aria-hidden />
+            <div className={styles.stampHalo} aria-hidden />
+          </>
         )}
       </div>
 
