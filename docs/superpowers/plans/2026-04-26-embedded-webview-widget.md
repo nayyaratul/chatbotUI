@@ -993,8 +993,8 @@ Append to `src/widgets/embeddedWebview.module.scss`:
 
 .shFavicon {
   display: block;
-  width: var(--size-14);
-  height: var(--size-14);
+  width: var(--size-16);   /* Nexus has no --size-14; scale jumps 12 → 16 */
+  height: var(--size-16);
   border-radius: var(--radius-100);
   flex-shrink: 0;
 }
