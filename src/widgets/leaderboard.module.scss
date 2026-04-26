@@ -538,11 +538,18 @@
    resolving cleanly to the static base. One beat, no persistent
    primitive — the row's resting background is unchanged. Same single-
    coordinated-beat shape as Earnings' container sheen. Inset matches
-   the row's border-radius so the pulse hugs the row outline. */
+   the row's border-radius so the pulse hugs the row outline.
+
+   `z-index: -1` keeps the wash *above* the row's resting background
+   layer but *below* the in-flow text content — the pulse tints the
+   plate, never the text. `.rankRow` already establishes a stacking
+   context via its `position: relative` + transform animation, so the
+   negative z-index stays scoped to the row. */
 .rankRow_user::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: -1;
   border-radius: var(--radius-150);
   background: color-mix(in srgb, var(--brand-60) 4%, transparent);
   opacity: var(--opacity-000);
