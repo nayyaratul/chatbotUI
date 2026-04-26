@@ -466,8 +466,12 @@ function buildProfilePayload(variant) {
 
 /* ─── Shared video payload builder ────────────────────────────────
    Returns a representative payload per variant for the Video Player
-   widget (#16). Both variants point at the Blender Foundation's
-   publicly-hosted Big Buck Bunny sample — CORS-friendly and stable.
+   widget (#16). Both variants point at samplelib's publicly-hosted
+   15-second sample — CORS-friendly and stable. The prior URL
+   (commondatastorage.googleapis.com/gtv-videos-bucket/...) returns
+   403 now; that bucket is locked down. The new URL matches the audio
+   fixture (also samplelib) so the two demos feel like siblings.
+
    The `enforced` variant differs from `standard` only in (a) the
    subtitle copy, (b) the absence of a speed picker at render time
    (driven by the variant flag in the component, not payload). */
@@ -476,9 +480,9 @@ function buildVideoPayload(variant) {
     widget_id: makeId('vid'),
     variant,
     video_id: `vid-${variant === 'enforced' ? 'harass-2026' : 'onboard-welcome'}`,
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    url: 'https://download.samplelib.com/mp4/sample-15s.mp4',
     thumbnail_url: null,
-    duration_seconds: 596,
+    duration_seconds: 15,
     playback_speeds: [0.5, 1, 1.5, 2],
     silent: false,
   }
@@ -487,7 +491,7 @@ function buildVideoPayload(variant) {
     return {
       ...base,
       title: 'Harassment prevention — annual',
-      subtitle: 'Required viewing · 10 min',
+      subtitle: 'Required viewing',
     }
   }
 
@@ -495,7 +499,7 @@ function buildVideoPayload(variant) {
     return {
       ...base,
       title: 'Welcome to the platform',
-      subtitle: 'Onboarding · 10 min',
+      subtitle: 'Onboarding',
     }
   }
 
