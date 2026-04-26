@@ -574,13 +574,48 @@
 }
 
 .rankRow_user {
-  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  /* `background-color` (not `background`) so the podium ambient
+     `background-image` on data-rank="1/2/3" can stack cleanly above
+     it when the user happens to be on the podium. */
+  background-color: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+}
+
+/* Podium ambient glows — soft brand-60 radial fading from the left
+   edge of rows 1/2/3, decreasing intensity by rank. Reads as "this
+   is the podium" without breaking the §13 locked decision against
+   gold/silver/bronze color (the iconBadge vocabulary still carries
+   the rank identity). Persistent at rest — no animation. */
+.rankRow[data-rank="1"] {
+  background-image: radial-gradient(
+    circle at 0% 50%,
+    color-mix(in srgb, var(--brand-60) 5%, transparent) 0%,
+    transparent 55%
+  );
+}
+
+.rankRow[data-rank="2"] {
+  background-image: radial-gradient(
+    circle at 0% 50%,
+    color-mix(in srgb, var(--brand-60) 3%, transparent) 0%,
+    transparent 50%
+  );
+}
+
+.rankRow[data-rank="3"] {
+  background-image: radial-gradient(
+    circle at 0% 50%,
+    color-mix(in srgb, var(--brand-60) 2%, transparent) 0%,
+    transparent 45%
+  );
 }
 
 /* User-row §8 ledger stripe — flush to the left edge, brand-60,
    springs in last after the row's own rise-up settles. Scoped to
    `.rankRow_user::before` so non-user rows carry no pseudo-element
-   at all (cleaner box model than gating on `opacity: 0`). */
+   at all (cleaner box model than gating on `opacity: 0`). The bloom
+   keyframe layers a brand-60 box-shadow that pulses out and fades
+   the same frame the stripe latches — reads as "snapped into
+   place." */
 .rankRow_user::before {
   content: '';
   position: absolute;
@@ -592,8 +627,12 @@
   background: var(--brand-60);
   opacity: var(--opacity-000);
   transform: scaleY(0.5);
-  animation: lbStripeIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
-  animation-delay: var(--lb-stripe-delay, 380ms);
+  animation:
+    lbStripeIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards,
+    lbStripeBloom 540ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation-delay:
+    var(--lb-stripe-delay, 380ms),
+    var(--lb-stripe-delay, 380ms);
 }
 
 /* "You are here" tint pulse — fires the same frame the stripe latches.
@@ -628,6 +667,8 @@
    Lucide vocabulary (Crown / Medal / Award), not gold/silver/bronze
    color — locked decision per §13 (off-brand colors fight brand-60). */
 .rankPill {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -639,6 +680,27 @@
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+/* Crown shimmer for #1 — once-on-mount gradient mask sweep across the
+   pill, lighting up the Crown lucide. Audio Player `apwSealShimmer`
+   precedent. The diagonal angle (100deg) gives the shimmer a slight
+   forward lean as it sweeps L→R. Single cycle, ~720ms; resolves to
+   transparent. */
+.rankPill[data-rank="1"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--white) 60%, transparent) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: lbCrownShimmer 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 540ms;
 }
 
 .rankPill_podium {
@@ -697,6 +759,21 @@
 .delta_positive  { color: var(--color-text-success); }
 .delta_negative  { color: var(--color-text-error); }
 .delta_flat      { color: var(--grey-50); }
+
+/* Delta arrow nudges — on row-mount, up arrows lift then settle and
+   down arrows dip then settle, drawing the eye to who moved. Fires
+   240ms after the row's own rise-up settles so the row reads first.
+   Springy curve for the bounce, --size-04 (4px) magnitude — visible
+   at the small icon size without distorting the row alignment. */
+.delta_positive {
+  animation: lbDeltaUp 360ms cubic-bezier(0.18, 0.9, 0.28, 1.4) backwards;
+  animation-delay: calc(var(--lb-row-delay, 240ms) + 240ms);
+}
+
+.delta_negative {
+  animation: lbDeltaDown 360ms cubic-bezier(0.18, 0.9, 0.28, 1.4) backwards;
+  animation-delay: calc(var(--lb-row-delay, 240ms) + 240ms);
+}
 
 .deltaValue {
   font-weight: var(--font-weight-semibold);
@@ -855,6 +932,38 @@
   from { background: var(--grey-20); }
 }
 
+/* Crown shimmer — gradient mask sweep across the rank pill from L→R
+   over its full width. Single cycle. Audio Player `apwSealShimmer`
+   precedent. */
+@keyframes lbCrownShimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Stripe latch bloom — brand-60 box-shadow pulses out as the stripe
+   springs in, fades to transparent. Pairs with `lbStripeIn` so both
+   beats share the same start frame. */
+@keyframes lbStripeBloom {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 60%, transparent); }
+  40%  { box-shadow: 0 0 var(--size-08) var(--size-02) color-mix(in srgb, var(--brand-60) 60%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Delta arrow nudges — translateY pulses on the springy curve.
+   --size-04 (4px) magnitude is visible at the size={14} Lucide icon
+   without distorting the row baseline. */
+@keyframes lbDeltaUp {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(calc(-1 * var(--size-04))); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes lbDeltaDown {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(var(--size-04)); }
+  100% { transform: translateY(0); }
+}
+
 /* Ring frame brightness settle — `filter: brightness` dips 0.97 mid-
    cycle, returning to 1. Borrowed from Earnings' `earnTotalSettle`.
    Plays alongside the halo so the ring reads as "locking in" instead
@@ -905,6 +1014,9 @@
   .rankRow,
   .rankRow_user::before,
   .rankRow_user::after,
+  .rankPill[data-rank="1"]::after,
+  .delta_positive,
+  .delta_negative,
   .userPosition {
     animation: none !important;
     animation-delay: 0ms !important;

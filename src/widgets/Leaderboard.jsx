@@ -444,6 +444,7 @@ function RankRow({ idx, row, unit }) {
   return (
     <li
       className={cx(styles.rankRow, isUser && styles.rankRow_user)}
+      data-rank={rank}
       style={{
         '--lb-row-delay': `${rowDelay}ms`,
         '--lb-stripe-delay': `${stripeDelay}ms`,
@@ -453,6 +454,7 @@ function RankRow({ idx, row, unit }) {
       {RankIcon ? (
         <span
           className={cx(styles.rankPill, styles.rankPill_podium)}
+          data-rank={rank}
           aria-label={`Rank ${rank}`}
         >
           <RankIcon size={16} strokeWidth={2} aria-hidden="true" />
@@ -460,6 +462,7 @@ function RankRow({ idx, row, unit }) {
       ) : (
         <span
           className={cx(styles.rankPill, styles.rankPill_numeric)}
+          data-rank={rank}
           aria-label={`Rank ${rank}`}
         >
           {rank}
