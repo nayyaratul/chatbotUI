@@ -213,6 +213,26 @@
   border-radius: var(--radius-100);
 }
 
+/* Tap-to-seek acknowledgment — soft brand-60 ring that fans out from the
+   waveform container and fades. Triggered by toggling .waveformSeekFlash
+   on each click; the flash is keyed by `seekTick` (state) so consecutive
+   seeks each re-fire the keyframe. State curve, 320ms — sits inside
+   the 280–360ms band so the visual response time matches the audio
+   snap perceptually. The post-flash sweep snap is instant; the ring
+   IS the micro-feedback on the gesture. */
+.waveformSeekFlash {
+  animation: apwSeekFlash 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 1;
+}
+
+@keyframes apwSeekFlash {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 32%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 0%, transparent);
+  }
+}
+
 .waveformLayer {
   position: absolute;
   inset: 0;
@@ -259,7 +279,15 @@
 
    The mask-image fades out the rightmost size-08 of the sweep so the
    brand-60 "kisses" each bar instead of slamming through — gives
-   the sweep front a wet, refined feel. */
+   the sweep front a wet, refined feel.
+
+   The `filter: drop-shadow(...)` follows the masked silhouette
+   automatically, so the brand-60 sweep casts a soft halo on the
+   un-played grey bars immediately to its right. The wet leading
+   edge gains a faint atmospheric glow without any second primitive —
+   it's a property of the sweep itself, projected through the mask.
+   Drop-shadow is preferred over box-shadow here precisely because
+   the mask shapes both. */
 .waveformSweep {
   clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
   mask-image: linear-gradient(
@@ -273,6 +301,9 @@
     black 0,
     black calc(100% * var(--play-progress, 0) - var(--size-08)),
     transparent calc(100% * var(--play-progress, 0))
+  );
+  filter: drop-shadow(
+    0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 28%, transparent)
   );
 }
 
@@ -319,9 +350,14 @@
 }
 
 /* Listened chip — success-tone marker that replaces the time line
-   after completion. Springy entrance lands the "earned" beat just
-   after the seal shimmer kicks off (240ms is faster than the
-   600ms shimmer so the chip lands first; the shimmer wraps it). */
+   after completion. Springy entrance lands the "earned" beat
+   *inside* the 600ms seal shimmer's traveling sheen.
+
+   Timing: shimmer starts at t=0 and crosses the meta cell at ~t=300ms
+   (50% across the 105deg gradient). Chip starts at t=200ms and
+   settles at ~t=440ms. So the chip's pop visually catches the wave
+   of the shimmer as the wave passes over it — Pass 2 elevation: the
+   two beats now overlap by design instead of stacking back-to-back. */
 .listenedChip {
   display: inline-flex;
   align-items: center;
@@ -335,12 +371,24 @@
   letter-spacing: var(--letter-spacing-tight);
   color: var(--color-text-success);
 
-  animation: apwChipPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+  animation: apwChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 200ms both;
 }
 
 @keyframes apwChipPop {
-  from { opacity: 0; transform: scale(0.8); }
-  to   { opacity: var(--opacity-100); transform: scale(1); }
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: var(--opacity-100); transform: scale(1.06); }
+  100% { opacity: var(--opacity-100); transform: scale(1); }
+}
+
+/* Chip leaf icon settles a fraction after the chip body — same
+   springy curve, slightly longer delay so the check pops "into"
+   the chip after it lands. Tiny detail, but reads as the chip
+   acquiring its check rather than arriving with one stamped on. */
+.listenedChipIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: apwChipPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 320ms both;
 }
 
 /* Player row in the error state — slight tonal shift on the
@@ -396,9 +444,24 @@
    sweep layers so the row reads as a unified "sealed" copy of the
    waveform — even during replay, the brand-60 sweep is still
    visible (it's mixed with the success retint, but the layered
-   structure is preserved). */
+   structure is preserved).
+
+   The barSettle keyframe fires once when the .barListened class
+   first applies — a single 280ms springy beat where every bar
+   briefly settles into the success tone. The retint becomes a
+   physical land, not a paint swap. Curve is the §16 springy curve;
+   duration sits inside the springy band. Plays only once because
+   keyframe is scoped to the .barListened modifier — replay does
+   not re-fire (the class is sticky after the seal). */
 .barListened {
   background: var(--color-text-success);
+  animation: apwBarSettle 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1 both;
+}
+
+@keyframes apwBarSettle {
+  0%   { transform: scaleY(1); }
+  55%  { transform: scaleY(1.12); }
+  100% { transform: scaleY(1); }
 }
 
 /* ─── Speed pill — outlined brand-60 cycling button. Height matches
@@ -443,6 +506,23 @@
 .speedBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
   outline-offset: var(--size-02);
+}
+
+/* Speed-label pulse on cycle — keyed by `speedTick` (a per-cycle counter
+   in JSX) so the inner <span> remounts and re-fires the keyframe on every
+   tap. Springy curve so the new label "lands" with weight; 240ms keeps
+   it inside the entry/springy band. The outer .speedBtn gets the press
+   scale (0.96), the inner .speedLabel gets the bounce — two layers of
+   feedback for one gesture, neither competing with the other. */
+.speedLabel {
+  display: inline-block;
+  animation: apwSpeedLabelPulse 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes apwSpeedLabelPulse {
+  0%   { transform: scale(0.84); opacity: var(--opacity-072); }
+  60%  { transform: scale(1.08); opacity: var(--opacity-100); }
+  100% { transform: scale(1); }
 }
 
 .speedBtn:disabled {
@@ -506,7 +586,29 @@
     display: none;
   }
 
-  .listenedChip {
+  .listenedChip,
+  .listenedChipIcon {
     animation: none;
+  }
+
+  /* Pass 2 elevation animations all collapse — keep the affordance
+     (focus ring, success retint, label change) but drop the motion. */
+  .waveformSeekFlash {
+    animation: none;
+  }
+
+  .speedLabel {
+    animation: none;
+  }
+
+  .barListened {
+    animation: none;
+  }
+
+  /* Drop-shadow halo on the sweep is decorative atmosphere — under
+     reduced motion the sweep is pinned at full fill anyway, so the
+     halo would just be a static bloom around the whole bar row. Drop. */
+  .waveformSweep {
+    filter: none;
   }
 }

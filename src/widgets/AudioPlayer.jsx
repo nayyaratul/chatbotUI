@@ -93,6 +93,12 @@ export function AudioPlayer({ payload }) {
   const [duration, setDuration] = useState(propDuration)
   const [speedIndex, setSpeedIndex] = useState(0)
   const [hasError, setHasError] = useState(false)
+  /* Per-gesture tick counters — bumped on each seek / speed cycle so
+     React remounts the keyed children and re-fires the entry keyframes
+     on every interaction. Pure visual ornament; no behavior depends
+     on the values. Initial 0 means no animation on first paint. */
+  const [seekTick, setSeekTick] = useState(0)
+  const [speedTick, setSpeedTick] = useState(0)
   /* Listen tracking. `listenPercentage` is monotonic max — never
      decremented by rewind. `completed` is a one-way flag that flips
      true on the first crossing of COMPLETION_THRESHOLD; the
@@ -279,6 +285,12 @@ export function AudioPlayer({ payload }) {
 
   const handleSpeedCycle = useCallback(() => {
     setSpeedIndex((i) => (i + 1) % speeds.length)
+    /* Bump the speedTick so the label re-fires its springy pulse on
+       every cycle. Without this, repeated taps on the same widget
+       instance would only animate on the first cycle (the keyed
+       child wouldn't remount because the index value would happen
+       to equal its prior value after a full loop). */
+    setSpeedTick((t) => t + 1)
   }, [speeds.length])
 
   /* Apply playbackRate whenever the speed index changes. Sweep RAF
@@ -315,6 +327,12 @@ export function AudioPlayer({ payload }) {
     const pct = fraction * 100
     setListenPercentage((prev) => (pct > prev ? pct : prev))
     if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
+    /* Bump the seek tick so the .waveformSeekFlash class is re-applied
+       on a fresh keyed wrapper — the brand-60 ring fans out around
+       the waveform on every click as gesture acknowledgment. The
+       sweep's actual snap to position is instant; the flash is the
+       micro-feedback. */
+    setSeekTick((t) => t + 1)
 
     if (el.paused) {
       el.play().catch(() => { /* autoplay policy ok after gesture */ })
@@ -405,9 +423,16 @@ export function AudioPlayer({ payload }) {
             the prior end). */}
         <button
           type="button"
+          /* `key={seekTick}` remounts the button on every seek so the
+             .waveformSeekFlash keyframe re-fires (animations don't
+             auto-replay on class re-application alone). The remount
+             is shallow — the inner bar layers are React-keyed by
+             index and re-render in place. */
+          key={`wave-${seekTick}`}
           className={cx(
             styles.waveform,
             playProgress >= 1 && !isPlaying && styles.waveformEnded,
+            seekTick > 0 && styles.waveformSeekFlash,
           )}
           style={{ '--play-progress': hasError ? 0 : playProgress }}
           onClick={handleWaveformSeek}
@@ -447,7 +472,13 @@ export function AudioPlayer({ payload }) {
             <span className={styles.metaError}>Unable to load audio</span>
           ) : completed ? (
             <span className={styles.listenedChip}>
-              <CheckCircle2 size={12} strokeWidth={2.5} aria-hidden="true" />
+              {/* Inner span gives the leaf icon its own staggered
+                  springy entrance (320ms after the chip body lands).
+                  Tiny detail — the chip "acquires" its check rather
+                  than appearing with one stamped on. */}
+              <span className={styles.listenedChipIcon} aria-hidden="true">
+                <CheckCircle2 size={12} strokeWidth={2.5} />
+              </span>
               Listened
             </span>
           ) : (
@@ -466,7 +497,14 @@ export function AudioPlayer({ payload }) {
           disabled={hasError}
           aria-label={`Playback speed ${speedLabel}, tap to change`}
         >
-          {speedLabel}
+          {/* Keyed wrapper — remounts on every cycle so the
+              .speedLabel springy keyframe re-fires. The outer button
+              owns the press scale (0.96 on :active); the inner span
+              owns the label "land." Two layers of feedback for one
+              gesture, neither stealing the show from the other. */}
+          <span key={`speed-${speedTick}`} className={styles.speedLabel}>
+            {speedLabel}
+          </span>
         </button>
       </div>
     </div>
