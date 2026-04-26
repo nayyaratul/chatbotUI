@@ -316,9 +316,13 @@ export function EmbeddedWebview({ payload, onSubmit }) {
         )
         : (
           <div className={styles.ctaRow}>
-            <Button variant="primary" fullWidth onClick={handleOpen}>
-              <span className={styles.ctaLabel}>{ctaLabel}</span>
-              <ArrowRight size={16} strokeWidth={2} aria-hidden />
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={handleOpen}
+              iconRight={<ArrowRight size={16} strokeWidth={2} aria-hidden />}
+            >
+              {ctaLabel}
             </Button>
           </div>
         )

@@ -12,7 +12,6 @@
   gap: var(--space-150);
   padding: var(--space-200);
   width: 100%;
-  min-height: 24rem;
 
   --color-action-primary: var(--brand-60);
   --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
@@ -87,10 +86,12 @@
 }
 
 /* CTA wrapper: column + gap reserves space for a future secondary
-   action (e.g. "Cancel"). margin-top: auto on the wrapper rather than
-   the Nexus Button is the family pattern (peer: signatureCapture). */
+   action (e.g. "Cancel"). No margin-top: auto — card sizes to its
+   natural content height; the §4 floor was dropped because the
+   widget's state transitions (idle ↔ dismissed ↔ completed) all
+   produce similar content heights, so the constant-height contract
+   isn't load-bearing here. */
 .ctaRow {
-  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-100);
@@ -445,7 +446,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-050);
-  margin-top: auto;
 }
 
 .successChip {
