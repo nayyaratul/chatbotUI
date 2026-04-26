@@ -35,6 +35,23 @@ import styles from './embeddedWebview.module.scss'
 const SHEET_ANIM_DURATION = 360  /* bottom-sheet open/close — matches transform 320ms + 40ms safety */
 const LIFT_DURATION       = 520  /* FLIP poster → iframe-frame morph; Task 13 */
 
+const DEFAULT_SANDBOX = 'allow-scripts allow-forms allow-same-origin allow-popups'
+
+function buildIframeSrc(url, widgetId) {
+  if (!url || !widgetId) return url
+  try {
+    /* URL constructor handles relative, absolute, and hash-bearing URLs.
+       Append ?wid (or &wid) without disturbing existing query / hash. */
+    const u = new URL(url, window.location.origin)
+    u.searchParams.set('wid', widgetId)
+    return u.toString()
+  } catch {
+    /* Fallback: malformed URL, append best-effort. */
+    const sep = url.includes('?') ? '&' : '?'
+    return `${url}${sep}wid=${encodeURIComponent(widgetId)}`
+  }
+}
+
 const VARIANT_META = {
   partner_form: {
     icon: ExternalLink,
@@ -165,6 +182,10 @@ function EmbeddedWebviewSheet({
   const [phase, setPhase] = useState('entering')
   const closingRef = useRef(false)
   const closeBtnRef = useRef(null)
+
+  const [iframeState, setIframeState] = useState('loading')   // 'loading' | 'live' | 'error'
+  const iframeRef = useRef(null)
+
   const portalTarget = typeof document !== 'undefined'
     ? document.getElementById('chat-modal-root')
     : null
@@ -227,8 +248,26 @@ function EmbeddedWebviewSheet({
           </button>
         </header>
 
-        <div className={styles.shBody} aria-busy="true">
-          {/* Iframe lands in Task 6 */}
+        <div className={styles.shBody} aria-busy={iframeState === 'loading'}>
+          {iframeState === 'loading' && (
+            <div className={styles.shLoader} role="status" aria-live="polite">
+              <Loader2 className={styles.shSpinner} size={28} strokeWidth={2} aria-hidden />
+              <span className={styles.srOnly}>Loading {payload?.domain_label}…</span>
+            </div>
+          )}
+
+          <iframe
+            ref={iframeRef}
+            className={cx(styles.shIframe, iframeState !== 'live' && styles.shIframe_hidden)}
+            src={buildIframeSrc(payload?.url, payload?.widget_id)}
+            sandbox={payload?.sandbox ?? DEFAULT_SANDBOX}
+            allow={payload?.allow ?? ''}
+            referrerPolicy="strict-origin-when-cross-origin"
+            loading="lazy"
+            title={payload?.title ?? 'Embedded content'}
+            onLoad={() => setIframeState('live')}
+            onError={() => setIframeState('error')}
+          />
         </div>
       </div>
     </div>,
