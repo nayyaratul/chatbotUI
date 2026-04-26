@@ -129,7 +129,6 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const totalOpenMsRef = useRef(0)
   const lastOpenedAtRef = useRef(0)
 
-  const cardRef = useRef(null)
   const posterRef = useRef(null)
   const [liftState, setLiftState] = useState(null)
   /* liftState shape:
@@ -185,7 +184,7 @@ export function EmbeddedWebview({ payload, onSubmit }) {
     if (sourceRect && rootRect) {
       const currentTarget = liftState?.targetRect
         ?? {
-          x: rootRect.width * 0,
+          x: 0,
           y: rootRect.height * 0.18,
           width: rootRect.width,
           height: rootRect.height * 0.62,
@@ -262,10 +261,10 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const showSuccess = cardState === 'completed'
 
   return (
-    <article ref={cardRef} className={cx(styles.card, styles[`card_${variant}`], styles[`card_${cardState}`])}>
+    <article className={cx(styles.card, styles[`card_${variant}`], styles[`card_${cardState}`])}>
       <header className={styles.header}>
-        <span className={styles.iconBadge}>
-          <Icon size={18} strokeWidth={2} aria-hidden />
+        <span className={styles.iconBadge} aria-hidden>
+          <Icon size={18} strokeWidth={2} />
         </span>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>{eyebrow}</p>
@@ -648,6 +647,12 @@ function LiftClone({ sourceRect, targetRect, posterUrl, faviconUrl, domainLabel,
   const fromRect = direction === 'reverse' ? targetRect : sourceRect
   const toRect   = direction === 'reverse' ? sourceRect : targetRect
   const rect = phase === 'start' ? fromRect : toRect
+  /* Poster has rounded corners (radius-150); iframe-frame has square
+     corners. Morph the radius alongside the rect interpolation so the
+     end of the lift doesn't snap. */
+  const fromRadius = direction === 'reverse' ? '0' : 'var(--radius-150)'
+  const toRadius   = direction === 'reverse' ? 'var(--radius-150)' : '0'
+  const radius = phase === 'start' ? fromRadius : toRadius
 
   return createPortal(
     <div
@@ -658,6 +663,7 @@ function LiftClone({ sourceRect, targetRect, posterUrl, faviconUrl, domainLabel,
         top: rect.y + 'px',
         width: rect.width + 'px',
         height: rect.height + 'px',
+        borderRadius: radius,
         '--lift-tint': tint || 'transparent',
       }}
     >
