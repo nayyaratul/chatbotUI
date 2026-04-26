@@ -82,8 +82,8 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   return (
     <article className={cx(styles.card, styles[`card_${variant}`])}>
       <header className={styles.header}>
-        <span className={styles.iconBadge}>
-          <Icon size={18} strokeWidth={2} aria-hidden />
+        <span className={styles.iconBadge} aria-hidden>
+          <Icon size={18} strokeWidth={2} />
         </span>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>{eyebrow}</p>
