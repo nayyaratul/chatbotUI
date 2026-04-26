@@ -98,6 +98,10 @@ export function AudioPlayer({ payload }) {
   const playRafRef = useRef(null)
   const speedLabelRef = useRef(null)
   const progressThumbRef = useRef(null)
+  /* Drag-scrub state. `true` between pointerdown and pointerup on
+     the progress bar; pointermove only seeks while this is set, so
+     hover-by-pointer doesn't accidentally scrub. */
+  const isDraggingRef = useRef(false)
   /* Gates async setState after unmount. Mirrors VR's pattern: set
      true on every effect setup (StrictMode runs setup → cleanup →
      setup on first mount; without resetting on setup the cleanup
@@ -286,21 +290,18 @@ export function AudioPlayer({ payload }) {
     el.playbackRate = next
   }, [speedIndex, speeds])
 
-  /* Tap-to-seek on the progress bar. Computes the seek fraction from
-     the click position relative to the bar's bounding rect. The fill
-     and thumb both inherit `--play-progress` from the bar's inline
-     style, so the snap is purely a CSS variable update — no manual
-     position math beyond the seek fraction.
-
-     If currently paused or ended, the seek auto-resumes playback —
-     matches WhatsApp / Telegram audio-message behavior. */
-  const handleProgressSeek = useCallback((e) => {
+  /* Apply a pointer-event's clientX to the audio playhead. Shared
+     between pointerdown (tap or drag-start) and pointermove (drag
+     in progress). Computes the fraction from the click position
+     relative to the bar's bounding rect — robust against the
+     pointer leaving the bar's box mid-drag because setPointerCapture
+     keeps the events flowing to this same container. */
+  const applyPointerSeek = useCallback((clientX, container) => {
     const el = audioElRef.current
-    const container = e.currentTarget
     if (!el || !container) return
     const rect = container.getBoundingClientRect()
     if (rect.width <= 0) return
-    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
     const dur = el.duration || duration || propDuration
     if (!Number.isFinite(dur) || dur <= 0) return
 
@@ -310,15 +311,53 @@ export function AudioPlayer({ payload }) {
     const pct = fraction * 100
     setListenPercentage((prev) => (pct > prev ? pct : prev))
     if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
-    /* Re-fire the thumb-snap keyframe on the live thumb element.
-       The bar isn't remounted (keyboard focus survives), the thumb
-       just gets its springy halo expansion via classList toggle. */
+  }, [duration, propDuration, fireCompletion])
+
+  /* Pointerdown — tap or drag-start. Captures the pointer so move
+     events keep flowing even if the cursor leaves the bar's bounds
+     (drag past the right edge while heading further right is
+     normal scrubbing UX). Seeks immediately to the press position
+     and fires the thumb-snap keyframe as gesture acknowledgment.
+
+     If currently paused or ended, the seek auto-resumes playback
+     — matches WhatsApp / Telegram audio-message behavior. */
+  const handleProgressPointerDown = useCallback((e) => {
+    if (hasError) return
+    const el = audioElRef.current
+    const container = e.currentTarget
+    if (!el || !container) return
+
+    if (e.pointerId !== undefined && container.setPointerCapture) {
+      try { container.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+    }
+    isDraggingRef.current = true
+
+    applyPointerSeek(e.clientX, container)
     flashKeyframe(progressThumbRef.current, styles.progressThumbSnap)
 
     if (el.paused) {
       el.play().catch(() => { /* autoplay policy ok after gesture */ })
     }
-  }, [duration, propDuration, fireCompletion])
+  }, [hasError, applyPointerSeek])
+
+  /* Pointermove — drag in progress. Only seeks while isDraggingRef
+     is set; without that gate, every hover-pointer crossing the
+     bar would scrub. No thumb-snap keyframe per move — the snap
+     fires once on pointerdown, the rest of the drag is smooth
+     thumb-tracking. */
+  const handleProgressPointerMove = useCallback((e) => {
+    if (!isDraggingRef.current) return
+    applyPointerSeek(e.clientX, e.currentTarget)
+  }, [applyPointerSeek])
+
+  /* Pointerup / pointercancel — drag ends. Browsers auto-release
+     the captured pointer at this point; no explicit
+     releasePointerCapture call needed. The final position was
+     already committed by the last pointermove (or by pointerdown
+     if the user just tapped). */
+  const handleProgressPointerEnd = useCallback(() => {
+    isDraggingRef.current = false
+  }, [])
 
   /* Lifecycle — set mountedRef true on every effect setup (StrictMode
      setup → cleanup → setup pattern requires this), pause any
@@ -410,8 +449,16 @@ export function AudioPlayer({ payload }) {
               hasError && styles.progressBarDisabled,
             )}
             style={{ '--play-progress': hasError ? 0 : playProgress }}
-            onClick={handleProgressSeek}
+            onPointerDown={handleProgressPointerDown}
+            onPointerMove={handleProgressPointerMove}
+            onPointerUp={handleProgressPointerEnd}
+            onPointerCancel={handleProgressPointerEnd}
             disabled={hasError}
+            /* Removed from keyboard focus order — Enter on a focused
+               bar would seek to position 0 (no clientX in keyboard
+               events). Keyboard scrubbing lives on the play button's
+               ArrowLeft/Right handler (±5s) instead. */
+            tabIndex={-1}
             aria-label="Seek audio position"
           >
             <span className={styles.progressFill} aria-hidden="true" />

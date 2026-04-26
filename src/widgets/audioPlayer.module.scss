@@ -219,6 +219,19 @@
      the box-shadow rings extend beyond the thumb's box, especially
      during apwThumbHalo and apwThumbSnap. */
   overflow: visible;
+  /* Suppress browser default touch handling on the bar so a finger
+     drag scrubs instead of triggering page scroll / pinch-zoom on
+     mobile. The pointer events handle the gesture explicitly. */
+  touch-action: none;
+  user-select: none;
+}
+
+/* Cursor feedback during an active drag — desktop signal that the
+   pointer is "carrying" the playhead. The :active selector matches
+   any pointer-down state, which aligns with isDraggingRef being
+   true in JS (both are cleared on pointerup). */
+.progressBar:active:not(:disabled) {
+  cursor: grabbing;
 }
 
 /* Track base — slim grey-10 line, rounded-full, centered vertically
