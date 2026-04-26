@@ -389,14 +389,25 @@ function BreakdownRow({ idx, label, current, target, unit }) {
 }
 
 /* ─── Leaderboard body ───────────────────────────────────────────
-   Top-5 ranked list. The user's row carries a §8 ledger stripe that
-   springs in last on the springy curve — the "you are here" beat
-   that's the signature for this variant. */
+   Top-3 render as a podium feature (PodiumStage). Ranks 4-5 fall
+   through to the existing list (RankRow). The user's row carries a
+   §8 ledger stripe that springs in last on the springy curve when
+   they're in the rest list; podium-level user emphasis is handled
+   inside PodiumColumn instead. */
 
 const RANK_ICON = {
   1: Crown,
   2: Medal,
   3: Award,
+}
+
+/* Derive a single-character initial from the row's name for the
+   podium disc. Anonymized handles like "Worker 4821" become "W". */
+function deriveInitial(name) {
+  if (!name) return '?'
+  const trimmed = String(name).trim()
+  if (!trimmed) return '?'
+  return trimmed[0].toUpperCase()
 }
 
 function LeaderboardBody({ payload }) {
@@ -405,23 +416,93 @@ function LeaderboardBody({ payload }) {
   const unit = typeof payload?.unit === 'string' ? payload.unit : ''
   const userInTop = rows.some((r) => r?.is_user)
 
+  const podium   = rows.filter((r) => (r?.rank ?? 0) <= 3)
+  const restList = rows.filter((r) => (r?.rank ?? 0) > 3)
+
   return (
     <div className={styles.leaderboardBody}>
-      <ol className={styles.rankList}>
-        {rows.map((row, idx) => (
-          <RankRow
-            key={`${row?.rank ?? idx}-${row?.name ?? idx}`}
-            idx={idx}
-            row={row}
-            unit={unit}
-          />
-        ))}
-      </ol>
+      {podium.length > 0 && <PodiumStage podium={podium} unit={unit} />}
+      {restList.length > 0 && (
+        <ol className={styles.rankList}>
+          {restList.map((row, idx) => (
+            <RankRow
+              key={`${row?.rank ?? idx}-${row?.name ?? idx}`}
+              idx={idx}
+              row={row}
+              unit={unit}
+            />
+          ))}
+        </ol>
+      )}
       {!userInTop && userPosition && (
         <p className={styles.userPosition}>
           You're #{userPosition.rank} of {userPosition.out_of}
         </p>
       )}
+    </div>
+  )
+}
+
+/* PodiumStage — top-3 in the visual order #2 / #1 / #3 so the tallest
+   block sits center. Each column has a player block (disc + name +
+   score) on top and a tiered podium block at the bottom; flex-end
+   bottom-alignment makes the player content sit at varying heights
+   matched to its block. The ghosted rank number on the block face
+   uses font-size-700 — sanctioned per §12 as a "specialised
+   subordinate element" (semi-transparent, never the focal point).  */
+function PodiumStage({ podium, unit }) {
+  const ordered = [
+    podium.find((r) => r?.rank === 2),
+    podium.find((r) => r?.rank === 1),
+    podium.find((r) => r?.rank === 3),
+  ].filter(Boolean)
+
+  return (
+    <div className={styles.podiumStage} aria-label="Podium — top 3">
+      {ordered.map((row) => (
+        <PodiumColumn key={row.rank} row={row} unit={unit} />
+      ))}
+    </div>
+  )
+}
+
+function PodiumColumn({ row, unit }) {
+  const isUser = !!row.is_user
+  const initial = deriveInitial(row.name)
+  const scoreCopy = unit ? `${row.score} ${unit}` : `${row.score}`
+  const displayName = isUser ? 'You' : row.name
+
+  return (
+    <div
+      className={cx(styles.podiumColumn, isUser && styles.podiumColumn_user)}
+      data-rank={row.rank}
+    >
+      <div className={styles.podiumPlayer}>
+        <div className={styles.podiumDiscWrap}>
+          <span
+            className={styles.podiumDisc}
+            role="img"
+            aria-label={`${displayName} avatar`}
+          >
+            <span className={styles.podiumDiscInitial} aria-hidden="true">
+              {initial}
+            </span>
+          </span>
+          <span
+            className={styles.podiumRankBadge}
+            aria-label={`Rank ${row.rank}`}
+          >
+            {row.rank}
+          </span>
+        </div>
+        <div className={styles.podiumName} title={displayName}>
+          {displayName}
+        </div>
+        <div className={styles.podiumScore}>{scoreCopy}</div>
+      </div>
+      <div className={styles.podiumBlock} aria-hidden="true">
+        <span className={styles.podiumBlockNumber}>{row.rank}</span>
+      </div>
     </div>
   )
 }
