@@ -58,9 +58,16 @@ import styles from './mediaPlayerControls.module.scss'
                            hasPlayed flag, etc.).
      listenedLabel         label inside the listened chip (default
                            'Listened'). Video Player uses 'Completed'.
+     mediaSlot             optional ReactNode rendered ABOVE the
+                           controls row inside the same bordered
+                           player-row chrome. Video Player passes its
+                           16:9 media region (poster + video element
+                           + play overlay + completion chip); Audio
+                           Player omits this prop so the player row
+                           is just the controls.
      trailing              ReactNode rendered at the right end of the
-                           row, after the speed pill. Used by Video
-                           Player for the Fullscreen button.
+                           controls row, after the speed pill. Used
+                           by Video Player for the Fullscreen button.
 
    ──────────────────────────────────────────────────────────────── */
 
@@ -97,6 +104,7 @@ export function MediaPlayerControls({
   onCompletionEdge,
   onPlayChange,
   listenedLabel = 'Listened',
+  mediaSlot,
   trailing,
 }) {
   const speeds = Array.isArray(speedsProp) && speedsProp.length > 0
@@ -353,22 +361,24 @@ export function MediaPlayerControls({
       hasError && styles.playerRowError,
       completed && styles.playerRowListened,
     )}>
-      <button
-        type="button"
-        className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
-        onClick={handlePlayPause}
-        onKeyDown={handlePlayKeyDown}
-        disabled={hasError}
-        aria-label={playLabel}
-      >
-        {isPlaying
-          ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
-          : completed
-            ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
-            : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
-      </button>
+      {mediaSlot}
+      <div className={styles.controlsRow}>
+        <button
+          type="button"
+          className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
+          onClick={handlePlayPause}
+          onKeyDown={handlePlayKeyDown}
+          disabled={hasError}
+          aria-label={playLabel}
+        >
+          {isPlaying
+            ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
+            : completed
+              ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
+              : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+        </button>
 
-      <div className={styles.track}>
+        <div className={styles.track}>
         <button
           type="button"
           className={cx(
@@ -423,28 +433,29 @@ export function MediaPlayerControls({
         </div>
       </div>
 
-      {enforceSpeedLock ? (
-        <span
-          className={cx(styles.speedBtn, styles.speedBtnLocked)}
-          aria-label={`Speed locked at ${lockedSpeedLabel}`}
-        >
-          <span className={styles.speedLabel}>{lockedSpeedLabel}</span>
-        </span>
-      ) : (
-        <button
-          type="button"
-          className={styles.speedBtn}
-          onClick={handleSpeedCycle}
-          disabled={hasError}
-          aria-label={`Playback speed ${speedLabel}, tap to change`}
-        >
-          <span ref={speedLabelRef} className={styles.speedLabel}>
-            {speedLabel}
+        {enforceSpeedLock ? (
+          <span
+            className={cx(styles.speedBtn, styles.speedBtnLocked)}
+            aria-label={`Speed locked at ${lockedSpeedLabel}`}
+          >
+            <span className={styles.speedLabel}>{lockedSpeedLabel}</span>
           </span>
-        </button>
-      )}
+        ) : (
+          <button
+            type="button"
+            className={styles.speedBtn}
+            onClick={handleSpeedCycle}
+            disabled={hasError}
+            aria-label={`Playback speed ${speedLabel}, tap to change`}
+          >
+            <span ref={speedLabelRef} className={styles.speedLabel}>
+              {speedLabel}
+            </span>
+          </button>
+        )}
 
-      {trailing}
+        {trailing}
+      </div>
     </div>
   )
 }
