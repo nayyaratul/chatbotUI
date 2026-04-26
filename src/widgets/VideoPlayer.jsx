@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { PlaySquare, Play, Maximize } from 'lucide-react'
+import { PlaySquare, Play, Pause, Maximize } from 'lucide-react'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import { MediaPlayerControls } from './MediaPlayerControls.jsx'
 import styles from './videoPlayer.module.scss'
@@ -63,6 +63,15 @@ export function VideoPlayer({ payload }) {
   const [hasPlayed, setHasPlayed] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [hasError, setHasError] = useState(false)
+  /* YouTube-style transient overlay flash. Once the video has been
+     played at least once, clicking the video frame to toggle play/
+     pause briefly shows an icon in the center, then fades out — it
+     does NOT stay visible like the initial pre-play overlay does.
+     `flashIcon` carries which icon to show ('play' | 'pause' | null);
+     `flashTick` bumps on every flash so React remounts the element
+     and the CSS keyframe re-fires on rapid consecutive clicks. */
+  const [flashIcon, setFlashIcon] = useState(null)
+  const [flashTick, setFlashTick] = useState(0)
   /* Maximum watched fraction surfaced to the controls component as
      `maxSeekFraction`. Lifted into state (not just the ref) so a
      React re-render bumps the prop when maxWatched advances. */
@@ -131,12 +140,30 @@ export function VideoPlayer({ payload }) {
   const handleMediaClick = useCallback(() => {
     const vid = videoRef.current
     if (!vid) return
+    /* Set the flash icon BEFORE toggling so the visual matches the
+       action just performed: pressing play shows a play icon, pressing
+       pause shows a pause icon. Bumping flashTick remounts the flash
+       element so the keyframe re-fires on rapid consecutive clicks. */
     if (vid.paused) {
+      setFlashIcon('play')
+      setFlashTick((t) => t + 1)
       vid.play().catch(() => { /* autoplay / network failure — silent */ })
     } else {
+      setFlashIcon('pause')
+      setFlashTick((t) => t + 1)
       vid.pause()
     }
   }, [])
+
+  /* Auto-clear the flash after the keyframe completes so React stops
+     rendering the (now-invisible) flash element. The flash keyframe
+     runs 600ms; we clear shortly after to be safe against timing
+     drift. */
+  useEffect(() => {
+    if (!flashIcon) return undefined
+    const timer = setTimeout(() => setFlashIcon(null), 700)
+    return () => clearTimeout(timer)
+  }, [flashIcon, flashTick])
 
   const requestFullscreen = useCallback(() => {
     const vid = videoRef.current
@@ -224,12 +251,17 @@ export function VideoPlayer({ payload }) {
               legible regardless of underlying video content. Same
               pattern YouTube uses on its mobile player. */}
           <div className={styles.controlsScrim} aria-hidden />
-          {!playing && (
+          {/* Persistent play overlay — shown only BEFORE the first
+              play. Once the video has played, the centered icon
+              becomes a YouTube-style transient flash (below)
+              triggered by clicks on the video frame, not a
+              persistent affordance. */}
+          {!hasPlayed && (
             <button
               type="button"
               className={styles.playOverlay}
               onClick={(e) => { e.stopPropagation(); handleMediaClick() }}
-              aria-label={hasPlayed ? 'Resume video' : 'Play video'}
+              aria-label="Play video"
             >
               <Play
                 size={20}
@@ -239,6 +271,25 @@ export function VideoPlayer({ payload }) {
                 aria-hidden
               />
             </button>
+          )}
+          {/* Transient flash — appears briefly when the user clicks
+              the video frame to play/pause (post-first-play), then
+              fades. Pointer-events:none so clicks pass through to
+              the underlying media region. The `key` remounts the
+              element on every flashTick bump so the keyframe
+              re-fires on rapid consecutive clicks. */}
+          {hasPlayed && flashIcon && (
+            <div
+              key={`flash-${flashTick}`}
+              className={styles.playOverlayFlash}
+              aria-hidden="true"
+            >
+              {flashIcon === 'play' ? (
+                <Play size={20} strokeWidth={2} fill="currentColor" />
+              ) : (
+                <Pause size={20} strokeWidth={2} fill="currentColor" />
+              )}
+            </div>
           )}
           {/* No top-right "Completed" chip — completion is signalled
               by the seekbar and play button turning success-tone

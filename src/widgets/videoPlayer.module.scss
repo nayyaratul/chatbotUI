@@ -318,6 +318,56 @@
   margin-left: var(--size-02);
 }
 
+/* ─── Transient flash overlay — YouTube-style brief icon shown when
+   the user clicks the video frame to toggle play/pause (post first
+   play). Fades in from a slight scale-up, holds, fades out with a
+   small additional grow. pointer-events:none so clicks pass through
+   to the underlying media region (the centered flash isn't itself
+   the affordance — the whole video frame is). */
+.playOverlayFlash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* The keyframe owns the transform; the base position is just a
+     starting point that the keyframe overrides. */
+  transform: translate(-50%, -50%);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-56);
+  height: var(--size-56);
+  border-radius: var(--radius-full);
+
+  background: rgba(8, 8, 8, 0.6);
+  border: var(--border-width-100) solid rgba(255, 255, 255, 0.4);
+  color: var(--white);
+  pointer-events: none;
+  /* Above the scrim, below the controls overlay (which is z-index:2). */
+  z-index: 2;
+
+  animation: vplOverlayFlash 600ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes vplOverlayFlash {
+  0% {
+    opacity: var(--opacity-000);
+    transform: translate(-50%, -50%) scale(0.84);
+  }
+  20% {
+    opacity: var(--opacity-100);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  60% {
+    opacity: var(--opacity-100);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: var(--opacity-000);
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}
+
 /* ─── Controls overlay — absolute-positioned at the bottom of
    the media region. Floats over the video with a gradient scrim
    underneath for legibility. Inset from the media edges so the
@@ -417,7 +467,8 @@
 @media (prefers-reduced-motion: reduce) {
   .card { animation-duration: 0.01ms; animation-delay: 0ms; }
   .playOverlay::after,
-  .media_completed::after {
+  .media_completed::after,
+  .playOverlayFlash {
     animation: none !important;
   }
 }
