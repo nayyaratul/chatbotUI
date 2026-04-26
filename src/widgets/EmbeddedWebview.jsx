@@ -94,6 +94,36 @@ export function EmbeddedWebview({ payload, onSubmit }) {
         </div>
       </header>
 
+      <div
+        className={cx(styles.poster, !payload?.poster_url && styles.poster_empty)}
+        aria-hidden
+      >
+        {payload?.poster_url
+          ? (
+            <img
+              className={styles.posterImg}
+              src={payload.poster_url}
+              alt=""
+              loading="lazy"
+            />
+          )
+          : (
+            <Globe className={styles.posterFallbackGlyph} size={36} strokeWidth={1.5} aria-hidden />
+          )
+        }
+        <div className={styles.trustCapsule}>
+          {payload?.favicon_url
+            ? <img className={styles.faviconImg} src={payload.favicon_url} alt="" />
+            : <Globe size={14} strokeWidth={2} aria-hidden />
+          }
+          <span className={styles.faviconDomain}>{payload?.domain_label}</span>
+        </div>
+      </div>
+
+      {payload?.estimated_minutes != null && (
+        <p className={styles.estimate}>Approx. {payload.estimated_minutes} min</p>
+      )}
+
       <div className={styles.ctaRow}>
         <Button
           variant="primary"
