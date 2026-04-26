@@ -235,89 +235,6 @@
   opacity: var(--opacity-000);  /* don't scrim actively-playing video */
 }
 
-/* Big centered play overlay — visible when idle / paused.
-
-   Pass 2 hover choreography:
-     • transform scales 1.0 → 1.04 (state curve, 180ms) — as before.
-     • background brightens from brand-60/92 → brand-60/78 (more
-       white mixed in) for a subtle shimmer on hover-enter.
-     • a one-shot sonar-ping ring via the `::after` pseudo pulses
-       outward from spread-radius 0 → var(--size-04), fading from
-       opacity-100 → opacity-000 across 280ms on the springy curve.
-       The pseudo is painted behind the button (z-index: -1) so the
-       glyph stays crisp. */
-.playOverlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--size-56);
-  height: var(--size-56);
-  border-radius: var(--radius-full);
-
-  background: color-mix(in srgb, var(--brand-60) 92%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--white) 40%, transparent);
-  color: var(--white);
-  cursor: pointer;
-  isolation: isolate;  /* contain the ::after pulse under this button */
-
-  transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    background-color 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    opacity 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.playOverlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 40%, transparent);
-  opacity: var(--opacity-000);
-  pointer-events: none;
-  z-index: -1;
-}
-
-.media:hover .playOverlay {
-  transform: translate(-50%, -50%) scale(1.04);
-  background: color-mix(in srgb, var(--brand-60) 78%, var(--white));
-}
-
-.media:hover .playOverlay::after {
-  animation: vplPlayPing 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
-}
-
-@keyframes vplPlayPing {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 40%, transparent);
-    opacity: var(--opacity-100);
-  }
-  to {
-    box-shadow: 0 0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 40%, transparent);
-    opacity: var(--opacity-000);
-  }
-}
-
-.media_playing .playOverlay {
-  opacity: var(--opacity-000);
-  pointer-events: none;
-}
-
-.playOverlay:focus-visible {
-  outline: var(--border-width-200) solid var(--white);
-  outline-offset: var(--size-02);
-  box-shadow: 0 0 0 var(--border-width-300) color-mix(in srgb, var(--brand-60) 60%, transparent);
-}
-
-.playOverlayGlyph {
-  /* Nudge the triangle slightly right so it reads as centered inside
-     the circle (Play glyphs are optically left-heavy). */
-  margin-left: var(--size-02);
-}
-
 /* ─── Transient flash overlay — YouTube-style brief icon shown when
    the user clicks the video frame to toggle play/pause (post first
    play). Fades in from a slight scale-up, holds, fades out with a
@@ -372,8 +289,7 @@
    the media region. Floats over the video with a gradient scrim
    underneath for legibility. Inset from the media edges so the
    controls don't visually butt against the rounded corners.
-   z-index 2 keeps it above the scrim and the (paused-state)
-   big play overlay. */
+   z-index 2 keeps it above the scrim (which is z-index 1). */
 .controlsOverlay {
   position: absolute;
   left: 0;
@@ -466,7 +382,6 @@
    motion overrides in mediaPlayerControls.module.scss. */
 @media (prefers-reduced-motion: reduce) {
   .card { animation-duration: 0.01ms; animation-delay: 0ms; }
-  .playOverlay::after,
   .media_completed::after,
   .playOverlayFlash {
     animation: none !important;

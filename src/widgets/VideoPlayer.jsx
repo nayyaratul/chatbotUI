@@ -251,34 +251,17 @@ export function VideoPlayer({ payload }) {
               legible regardless of underlying video content. Same
               pattern YouTube uses on its mobile player. */}
           <div className={styles.controlsScrim} aria-hidden />
-          {/* Persistent play overlay — shown only BEFORE the first
-              play. Once the video has played, the centered icon
-              becomes a YouTube-style transient flash (below)
-              triggered by clicks on the video frame, not a
-              persistent affordance. */}
-          {!hasPlayed && (
-            <button
-              type="button"
-              className={styles.playOverlay}
-              onClick={(e) => { e.stopPropagation(); handleMediaClick() }}
-              aria-label="Play video"
-            >
-              <Play
-                size={20}
-                strokeWidth={2}
-                fill="currentColor"
-                className={styles.playOverlayGlyph}
-                aria-hidden
-              />
-            </button>
-          )}
-          {/* Transient flash — appears briefly when the user clicks
-              the video frame to play/pause (post-first-play), then
-              fades. Pointer-events:none so clicks pass through to
-              the underlying media region. The `key` remounts the
-              element on every flashTick bump so the keyframe
-              re-fires on rapid consecutive clicks. */}
-          {hasPlayed && flashIcon && (
+          {/* Transient play/pause flash — the ONLY centered overlay
+              on the video. Appears briefly each time the user clicks
+              the video frame to toggle playback, then fades. There
+              is no persistent overlay, even before the first play —
+              the bottom play button is the discoverable affordance
+              for "this is playable", and clicking the video frame
+              anywhere also toggles. pointer-events:none on the flash
+              so clicks pass through to the underlying media region.
+              key={`flash-${flashTick}`} remounts on every click so
+              the keyframe re-fires on rapid consecutive toggles. */}
+          {flashIcon && (
             <div
               key={`flash-${flashTick}`}
               className={styles.playOverlayFlash}
