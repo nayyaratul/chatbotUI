@@ -189,35 +189,15 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       lastOpenedAtRef.current = 0
     }
 
-    if (!prefersReducedMotion()) {
-      /* Capture rects for reverse FLIP. */
-      const sourceRect = posterRef.current?.getBoundingClientRect()
-      const modalRoot = document.getElementById('chat-modal-root')
-      const rootRect = modalRoot?.getBoundingClientRect()
-      if (sourceRect && rootRect) {
-        const currentTarget = liftState?.targetRect
-          ?? {
-            x: 0,
-            y: rootRect.height * 0.18,
-            width: rootRect.width,
-            height: rootRect.height * 0.62,
-          }
-        setLiftState({
-          direction: 'reverse',
-          sourceRect: {
-            x: sourceRect.left - rootRect.left,
-            y: sourceRect.top - rootRect.top,
-            width: sourceRect.width,
-            height: sourceRect.height,
-          },
-          targetRect: currentTarget,
-          tint: liftState?.tint ?? 'transparent',
-        })
-      }
-    }
+    /* Reverse FLIP intentionally NOT fired on close. The sheet's own
+       320ms slide-down + scrim fade is the close gesture; running a
+       reverse-clone afterwards re-introduces the poster image
+       mid-screen and animates it to the card, which reads as a
+       second, disconnected animation. The forward lift is the
+       signature moment; close stays simple. */
 
     setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))
-  }, [liftState])
+  }, [])
 
   const handleCompleted = useCallback((data, method) => {
     if (lastOpenedAtRef.current) {

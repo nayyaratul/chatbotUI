@@ -96,9 +96,10 @@
   gap: var(--space-100);
 }
 
+/* No flex:1 / text-align:left — let the Nexus Button's default
+   flex centering put text + arrow as one centred group. */
 .ctaLabel {
-  flex: 1;
-  text-align: left;
+  /* intentionally empty */
 }
 
 /* ─── Pass 1 region 3: poster + trust capsule + caption ─────────────── */
@@ -201,10 +202,10 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* Sheet height: phone-sized chat-frames hit the 90% cap; desktops hit
-     the content cap (semantic differs from §4 card min-height floors). */
-  height: min(36rem, 90%);
-  min-height: 24rem;
+  /* Full-page sheet — fills the chat-frame edge-to-edge. Rounded top
+     corners stay so the sheet still reads as "from below" rather than
+     a hard fullscreen takeover. */
+  height: 100%;
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-bottom: 0;
