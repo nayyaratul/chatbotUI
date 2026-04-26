@@ -365,6 +365,27 @@
   animation-delay: 900ms;
 }
 
+/* Target-hit brightness settle — `.ringFrame` filter dips 1 → 0.97 → 1
+   in sync with the halo's expansion. Borrowed verbatim from Earnings'
+   `earnTotalSettle` — same "tally lands" vocabulary, applied to the
+   ring container so the ring reads as locking in rather than the
+   animation merely finishing. Pairs with the halo as one coordinated
+   beat. */
+.ringWrap_success .ringFrame {
+  animation: lbRingFrameSettle 360ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation-delay: 900ms;
+}
+
+/* Target-hit count-up tint wash — the value briefly shifts toward
+   --color-text-success at the halo's peak (~940ms), then resolves back
+   to --grey-90. ~320ms total. Reads as "the score is achieved" without
+   permanently retoning the digit (which would compete with the verdict
+   word's own success tone below). */
+.ringWrap_success .ringValue {
+  animation: lbRingValueWash 320ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation-delay: 940ms;
+}
+
 /* Trophy iconBadge retones success on target-hit. The retone fires
    at 520ms — earlier than the halo, so the icon reads as "this card
    has flipped" before the celebratory beat lands. */
@@ -508,6 +529,25 @@
   opacity: var(--opacity-000);
   transform: scaleY(0.5);
   animation: lbStripeIn 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
+  animation-delay: var(--lb-stripe-delay, 380ms);
+}
+
+/* "You are here" tint pulse — fires the same frame the stripe latches.
+   `::after` is a transient brand-60 wash overlaid on top of the row's
+   resting 6% tint; the wash fades from 4% extra to 0% over 280ms,
+   resolving cleanly to the static base. One beat, no persistent
+   primitive — the row's resting background is unchanged. Same single-
+   coordinated-beat shape as Earnings' container sheen. Inset matches
+   the row's border-radius so the pulse hugs the row outline. */
+.rankRow_user::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 4%, transparent);
+  opacity: var(--opacity-000);
+  pointer-events: none;
+  animation: lbUserRowTintPulse 280ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
   animation-delay: var(--lb-stripe-delay, 380ms);
 }
 
@@ -729,6 +769,35 @@
   to   { opacity: var(--opacity-100); transform: scaleY(1); }
 }
 
+/* Ring frame brightness settle — `filter: brightness` dips 0.97 mid-
+   cycle, returning to 1. Borrowed from Earnings' `earnTotalSettle`.
+   Plays alongside the halo so the ring reads as "locking in" instead
+   of the animation just finishing. */
+@keyframes lbRingFrameSettle {
+  0%   { filter: brightness(1); }
+  50%  { filter: brightness(0.97); }
+  100% { filter: brightness(1); }
+}
+
+/* Ring value tint wash — count-up number briefly shifts toward
+   --color-text-success at the halo's peak, then resolves to --grey-90.
+   The 50% color-mix lands at the brightest moment of the halo. */
+@keyframes lbRingValueWash {
+  0%   { color: var(--grey-90); }
+  50%  { color: color-mix(in srgb, var(--color-text-success) 70%, var(--grey-90)); }
+  100% { color: var(--grey-90); }
+}
+
+/* User-row tint pulse — transient brand-60 wash overlaid on the row's
+   resting 6% base. Fades 0 → 0.72 → 0 in 280ms, dissipating cleanly so
+   the row resolves to its static rest state with no persistent
+   primitive added. */
+@keyframes lbUserRowTintPulse {
+  0%   { opacity: var(--opacity-000); }
+  40%  { opacity: var(--opacity-072); }
+  100% { opacity: var(--opacity-000); }
+}
+
 /* ─── Reduced motion ────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -738,12 +807,15 @@
   .ringFill,
   .ringVerdict,
   .ringWrap_success .ringVerdict,
+  .ringWrap_success .ringFrame,
   .ringWrap_success .ringFrame::before,
+  .ringWrap_success .ringValue,
   .card_tone-success .iconBadge,
   .breakdownRow,
   .breakdownFill,
   .rankRow,
   .rankRow_user::before,
+  .rankRow_user::after,
   .userPosition {
     animation: none !important;
     animation-delay: 0ms !important;
@@ -764,8 +836,17 @@
     border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
     color: var(--color-text-success);
   }
+  .ringWrap_success .ringFrame {
+    filter: brightness(1);
+  }
+  .ringWrap_success .ringValue {
+    color: var(--grey-90);
+  }
   .rankRow_user::before {
     opacity: var(--opacity-100);
     transform: scaleY(1);
+  }
+  .rankRow_user::after {
+    opacity: var(--opacity-000);
   }
 }
