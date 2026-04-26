@@ -116,15 +116,23 @@ export function AudioPlayer({ payload }) {
         aria-hidden="true"
       />
 
-      <MediaPlayerControls
-        mediaRef={audioElRef}
-        speeds={speeds}
-        completed={completed}
-        hasError={hasError}
-        completionThreshold={COMPLETION_THRESHOLD}
-        onCompletionEdge={handleCompletionEdge}
-        listenedLabel="Listened"
-      />
+      {/* Light bordered card wraps the controls — gives the audio
+          player its own self-contained surface (since there's no
+          media region to overlay). MediaPlayerControls itself no
+          longer renders this chrome; for video the controls overlay
+          the media region directly. */}
+      <div className={styles.playerRow}>
+        <MediaPlayerControls
+          mediaRef={audioElRef}
+          theme="light"
+          speeds={speeds}
+          completed={completed}
+          hasError={hasError}
+          completionThreshold={COMPLETION_THRESHOLD}
+          onCompletionEdge={handleCompletionEdge}
+          listenedLabel="Listened"
+        />
+      </div>
     </div>
   )
 }

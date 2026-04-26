@@ -89,11 +89,36 @@
   color: var(--grey-60);
 }
 
+/* ─── Player row chrome — the light bordered card that wraps the
+   shared controls primitive. Audio Player needs this because there
+   is no media region to overlay; the controls live as their own
+   self-contained surface. Video Player skips this wrapper and
+   overlays the controls directly on its 16:9 media region. */
+.playerRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-150) var(--space-150) var(--space-125);
+  width: 100%;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
 /* ─── Reduced motion — collapse the card-mount stagger. The shared
    controls primitive handles its own reduced-motion overrides. */
 @media (prefers-reduced-motion: reduce) {
   .card {
     animation-duration: 0.01ms;
     animation-delay: 0ms;
+  }
+
+  .playerRow {
+    transition-duration: 0.01ms;
   }
 }

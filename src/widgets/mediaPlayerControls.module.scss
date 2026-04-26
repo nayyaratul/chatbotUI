@@ -1,50 +1,28 @@
 /* ─── MediaPlayerControls — shared between Audio Player (#25) and
-   Video Player (#16). Slim progress track with a luminous brand-60
-   thumb that breathes a soft halo while playing, plus play/pause +
-   cycling speed pill + time labels under the bar.
+   Video Player (#16). Renders just the controls row (play btn +
+   slim track + time chip + volume + speed pill + trailing slot).
 
-   Owns its own white-card chrome (border, padding, radius) so the
-   parent widgets don't need to box it. Trailing slot at the right
-   accepts an optional extra control (e.g., Video Player's
-   fullscreen button).
+   Two theme variants:
+     • themeLight — brand-60 chrome on white. Audio Player wraps the
+       row in a light bordered card.
+     • themeDark — translucent-black chrome with white glyphs. Video
+       Player overlays the row on the bottom of its 16:9 media region
+       above a YouTube-style scrim gradient.
+
+   No card chrome of its own — the parent owns the wrapper. The row
+   itself is a horizontal flex with vertical-center items.
    ──────────────────────────────────────────────────────────────── */
 
-/* ─── Player row chrome ──────────────────────────────────────────
-   Vertical container holding (optional) media slot on top + the
-   horizontal controls row below. Standardised between Audio Player
-   and Video Player: audio passes no media slot and the row holds
-   just the controls; video passes its 16:9 region as the slot.
-   The bordered/padded chrome wraps both, giving the family a
-   single nested-card visual instead of two adjacent cards. */
-.playerRow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-150);
-  padding: var(--space-150) var(--space-150) var(--space-125);
-  width: 100%;
+/* ─── Controls row ──────────────────────────────────────────── */
 
-  background: var(--white);
-  border: var(--border-width-100) solid var(--grey-10);
-  border-radius: var(--radius-200);
-
-  animation: mpcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 80ms both;
-
-  transition:
-    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-/* Horizontal row inside the player-row container: play btn + track
-   + speed pill + trailing slot. No padding/border of its own — the
-   parent .playerRow owns the chrome. */
 .controlsRow {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: var(--space-150);
   width: 100%;
+
+  animation: mpcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 80ms both;
 }
 
 @keyframes mpcRiseUp {
@@ -52,7 +30,74 @@
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
-/* ─── Play / pause button — circular brand-60 ─────────────────── */
+/* ─── Theme variables ─────────────────────────────────────────
+   Each control reads its colours from these CSS variables so the
+   theme variants only have to flip the variable values, not
+   re-declare every selector. */
+
+.themeLight {
+  --mpc-btn-bg:           var(--brand-60);
+  --mpc-btn-bg-hover:     color-mix(in srgb, var(--brand-60) 88%, black);
+  --mpc-btn-border:       color-mix(in srgb, var(--brand-60) 88%, black);
+  --mpc-btn-fg:           var(--white);
+
+  --mpc-secondary-bg:     var(--white);
+  --mpc-secondary-bg-hover: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  --mpc-secondary-border: color-mix(in srgb, var(--brand-60) 36%, transparent);
+  --mpc-secondary-border-hover: color-mix(in srgb, var(--brand-60) 56%, transparent);
+  --mpc-secondary-fg:     var(--brand-60);
+
+  --mpc-neutral-bg:       var(--white);
+  --mpc-neutral-border:   var(--grey-20);
+  --mpc-neutral-border-hover: var(--grey-30);
+  --mpc-neutral-fg:       var(--grey-80);
+  --mpc-neutral-fg-hover: var(--grey-90);
+
+  --mpc-track-base:       var(--grey-10);
+  --mpc-track-fill:       var(--brand-60);
+  --mpc-thumb-fill:       var(--brand-60);
+  --mpc-thumb-border:     color-mix(in srgb, var(--brand-60) 88%, black);
+  --mpc-thumb-halo-tight: color-mix(in srgb, var(--brand-60) 22%, transparent);
+  --mpc-thumb-halo-soft:  color-mix(in srgb, var(--brand-60) 26%, transparent);
+
+  --mpc-chip-bg:          color-mix(in srgb, var(--grey-90) 6%, var(--white));
+  --mpc-chip-border:      var(--grey-20);
+  --mpc-chip-fg:          var(--grey-90);
+  --mpc-chip-fg-muted:    var(--grey-50);
+}
+
+.themeDark {
+  --mpc-btn-bg:           rgba(8, 8, 8, 0.6);
+  --mpc-btn-bg-hover:     rgba(8, 8, 8, 0.78);
+  --mpc-btn-border:       rgba(8, 8, 8, 0.38);
+  --mpc-btn-fg:           var(--white);
+
+  --mpc-secondary-bg:     rgba(8, 8, 8, 0.6);
+  --mpc-secondary-bg-hover: rgba(8, 8, 8, 0.78);
+  --mpc-secondary-border: rgba(8, 8, 8, 0.38);
+  --mpc-secondary-border-hover: rgba(255, 255, 255, 0.32);
+  --mpc-secondary-fg:     var(--white);
+
+  --mpc-neutral-bg:       rgba(8, 8, 8, 0.6);
+  --mpc-neutral-border:   rgba(8, 8, 8, 0.38);
+  --mpc-neutral-border-hover: rgba(255, 255, 255, 0.32);
+  --mpc-neutral-fg:       var(--white);
+  --mpc-neutral-fg-hover: var(--white);
+
+  --mpc-track-base:       rgba(255, 255, 255, 0.32);
+  --mpc-track-fill:       var(--white);
+  --mpc-thumb-fill:       var(--brand-60);
+  --mpc-thumb-border:     rgba(255, 255, 255, 0.6);
+  --mpc-thumb-halo-tight: rgba(45, 110, 224, 0.34);
+  --mpc-thumb-halo-soft:  rgba(45, 110, 224, 0.32);
+
+  --mpc-chip-bg:          rgba(8, 8, 8, 0.6);
+  --mpc-chip-border:      rgba(8, 8, 8, 0.38);
+  --mpc-chip-fg:          var(--white);
+  --mpc-chip-fg-muted:    rgba(255, 255, 255, 0.7);
+}
+
+/* ─── Play / pause button ─────────────────────────────────── */
 
 .playBtn {
   flex-shrink: 0;
@@ -63,10 +108,10 @@
   height: var(--size-44);
   padding: 0;
 
-  background: var(--brand-60);
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 88%, black);
+  background: var(--mpc-btn-bg);
+  border: var(--border-width-100) solid var(--mpc-btn-border);
   border-radius: var(--radius-full);
-  color: var(--white);
+  color: var(--mpc-btn-fg);
   cursor: pointer;
 
   transition:
@@ -76,9 +121,7 @@
 }
 
 .playBtn:hover {
-  background: color-mix(in srgb, var(--brand-60) 88%, black);
-  box-shadow: 0 var(--size-02) var(--size-08) 0
-    color-mix(in srgb, var(--brand-60) 32%, transparent);
+  background: var(--mpc-btn-bg-hover);
 }
 
 .playBtn:active {
@@ -93,15 +136,12 @@
 .playBtnDisabled,
 .playBtn:disabled {
   cursor: not-allowed;
-  background: var(--grey-10);
-  border-color: var(--grey-30);
-  color: var(--grey-50);
+  opacity: var(--opacity-072);
 }
 
 .playBtnDisabled:hover,
 .playBtn:disabled:hover {
-  background: var(--grey-10);
-  box-shadow: none;
+  background: var(--mpc-btn-bg);
 }
 
 .playBtnDisabled:active,
@@ -109,7 +149,7 @@
   transform: none;
 }
 
-/* ─── Track column — bar + meta. Takes flex:1 of the row. */
+/* ─── Track column ────────────────────────────────────────── */
 
 .track {
   flex: 1;
@@ -118,11 +158,6 @@
   flex-direction: column;
   gap: var(--space-075);
 }
-
-/* ─── Progress bar — seekable button. Slim size-04 track inside a
-   size-12 hit area (generous tap target, minimal visual weight).
-   Fill + thumb are positioned by `--play-progress` set as an inline
-   CSS variable. */
 
 .progressBar {
   position: relative;
@@ -136,10 +171,7 @@
   font: inherit;
   color: inherit;
   display: block;
-  /* Allow the thumb's halo to spill outside the size-12 hit area. */
   overflow: visible;
-  /* Suppress browser default touch handling so finger drags scrub
-     instead of scrolling/zooming the page. */
   touch-action: none;
   user-select: none;
 }
@@ -148,7 +180,6 @@
   cursor: grabbing;
 }
 
-/* Track base — slim grey-10 line, rounded-full, centered vertically. */
 .progressBar::before {
   content: '';
   position: absolute;
@@ -158,7 +189,7 @@
   height: var(--size-04);
   margin-top: calc(var(--size-04) / -2);
 
-  background: var(--grey-10);
+  background: var(--mpc-track-base);
   border-radius: var(--radius-full);
   pointer-events: none;
 }
@@ -169,7 +200,6 @@
   border-radius: var(--radius-full);
 }
 
-/* ─── Progress fill — brand-60, width tracks --play-progress. */
 .progressFill {
   position: absolute;
   left: 0;
@@ -178,14 +208,11 @@
   margin-top: calc(var(--size-04) / -2);
   width: calc(100% * var(--play-progress, 0));
 
-  background: var(--brand-60);
+  background: var(--mpc-track-fill);
   border-radius: var(--radius-full);
   pointer-events: none;
 }
 
-/* ─── Progress thumb — circular dot at the playhead. Signature
-   moment of the controls: a brand-60 disc whose halo breathes 2.6s
-   while playing. */
 .progressThumb {
   position: absolute;
   top: 50%;
@@ -195,15 +222,14 @@
   margin-top: calc(var(--size-12) / -2);
   margin-left: calc(var(--size-12) / -2);
 
-  background: var(--brand-60);
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 88%, black);
+  background: var(--mpc-thumb-fill);
+  border: var(--border-width-100) solid var(--mpc-thumb-border);
   border-radius: var(--radius-full);
   pointer-events: none;
 
-  /* Resting halo — present at idle/paused/ended. */
   box-shadow:
-    0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
-    0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+    0 0 0 var(--size-02) var(--mpc-thumb-halo-tight),
+    0 0 var(--size-08) 0 var(--mpc-thumb-halo-soft);
 }
 
 .progressThumbPlaying {
@@ -213,18 +239,16 @@
 @keyframes mpcThumbHalo {
   0%, 100% {
     box-shadow:
-      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
-      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+      0 0 0 var(--size-02) var(--mpc-thumb-halo-tight),
+      0 0 var(--size-08) 0 var(--mpc-thumb-halo-soft);
   }
   50% {
     box-shadow:
-      0 0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 16%, transparent),
-      0 0 var(--size-16) var(--size-02) color-mix(in srgb, var(--brand-60) 38%, transparent);
+      0 0 0 var(--size-04) var(--mpc-thumb-halo-tight),
+      0 0 var(--size-16) var(--size-02) var(--mpc-thumb-halo-soft);
   }
 }
 
-/* Tap-to-seek feedback — quick halo expansion + scale-pop, re-fired
-   imperatively on each pointerdown via classList toggle. */
 .progressThumbSnap {
   animation: mpcThumbSnap 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
 }
@@ -233,25 +257,23 @@
   0% {
     transform: scale(1);
     box-shadow:
-      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
-      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+      0 0 0 var(--size-02) var(--mpc-thumb-halo-tight),
+      0 0 var(--size-08) 0 var(--mpc-thumb-halo-soft);
   }
   50% {
     transform: scale(1.32);
     box-shadow:
-      0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 28%, transparent),
-      0 0 var(--size-16) var(--size-04) color-mix(in srgb, var(--brand-60) 32%, transparent);
+      0 0 0 var(--size-08) var(--mpc-thumb-halo-tight),
+      0 0 var(--size-16) var(--size-04) var(--mpc-thumb-halo-soft);
   }
   100% {
     transform: scale(1);
     box-shadow:
-      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
-      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+      0 0 0 var(--size-02) var(--mpc-thumb-halo-tight),
+      0 0 var(--size-08) 0 var(--mpc-thumb-halo-soft);
   }
 }
 
-/* ─── Listened state — fill + thumb retint success across the
-   bar's full width. Replay during listened keeps the seal. */
 .progressBarListened .progressFill {
   background: var(--color-text-success);
 }
@@ -265,74 +287,84 @@
   animation: none;
 }
 
-/* ─── Error state — thumb hides, fill stays at zero. */
 .progressBarDisabled {
   cursor: not-allowed;
 }
 
-.progressBarDisabled::before {
-  background: var(--grey-10);
-}
-
 .progressBarDisabled .progressFill {
-  background: var(--grey-20);
+  background: var(--mpc-track-base);
 }
 
 .progressBarDisabled .progressThumb {
   display: none;
 }
 
-/* ─── Track meta line — current/duration anchored under the bar. */
+/* ─── Time chip ─────────────────────────────────────────────
+   Single combined "current / total" pill anchored to the LEFT of
+   the meta row, just below the bar. The chip is a tooltip-style
+   indicator that lives WITH the playhead — its text updates as
+   playback progresses, but its position stays put so the eye
+   always finds it in the same spot. Replaces the previous twin
+   start/end labels. */
 .trackMeta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   min-height: var(--size-12);
 }
 
-.trackTimeStart,
-.trackTimeEnd {
+.timeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-025);
+  padding: var(--space-050) var(--space-100);
+
+  background: var(--mpc-chip-bg);
+  border: var(--border-width-100) solid var(--mpc-chip-border);
+  border-radius: var(--radius-full);
+
   font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-medium);
   line-height: 1;
-  color: var(--grey-50);
-  font-variant-numeric: tabular-nums;
   letter-spacing: var(--letter-spacing-wide);
-}
-
-.trackError {
-  flex: 1;
-  text-align: center;
+  color: var(--mpc-chip-fg);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-
-  font-family: var(--sans);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-regular);
-  line-height: 1;
-  color: var(--color-text-error);
-  letter-spacing: var(--letter-spacing-tight);
 }
 
-/* ─── Listened chip — replaces the time line after completion.
-   Sequenced inside the 600ms playerRow seal-shimmer (defined below);
-   the chip pop lands as the shimmer's traveling sheen passes over. */
-.listenedChip {
-  flex: 1;
+.timeChipCurrent {
+  color: var(--mpc-chip-fg);
+}
+
+.timeChipTotal {
+  color: var(--mpc-chip-fg-muted);
+}
+
+.timeChipSep {
+  color: var(--mpc-chip-fg-muted);
+  margin: 0 var(--space-025);
+}
+
+.timeChipError {
+  color: var(--color-text-error);
+  border-color: color-mix(in srgb, var(--color-text-error) 36%, transparent);
+}
+
+.timeChipListened {
+  color: var(--color-text-success);
+  border-color: color-mix(in srgb, var(--color-text-success) 36%, transparent);
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--mpc-chip-bg));
+
+  animation: mpcChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 200ms both;
+}
+
+.timeChipIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-050);
-  white-space: nowrap;
-
-  font-family: var(--sans);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1;
-  letter-spacing: var(--letter-spacing-tight);
-  color: var(--color-text-success);
-
-  animation: mpcChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 200ms both;
+  margin-right: var(--space-025);
+  animation: mpcChipPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 320ms both;
 }
 
 @keyframes mpcChipPop {
@@ -341,55 +373,74 @@
   100% { opacity: var(--opacity-100); transform: scale(1); }
 }
 
-.listenedChipIcon {
+/* ─── Volume button — desktop only ───────────────────────────
+   Mute / unmute toggle. Hidden on mobile via media query because
+   phones have hardware volume keys; the on-screen control is just
+   chrome on those devices. */
+.volumeBtn {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  animation: mpcChipPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 320ms both;
+  width: var(--size-44);
+  height: var(--size-44);
+  padding: 0;
+
+  background: var(--mpc-neutral-bg);
+  border: var(--border-width-100) solid var(--mpc-neutral-border);
+  border-radius: var(--radius-full);
+  color: var(--mpc-neutral-fg);
+  cursor: pointer;
+
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-/* ─── Player row state overlays ──────────────────────────────── */
-
-.playerRowError {
-  background: color-mix(in srgb, var(--color-text-error) 3%, var(--white));
-  border-color: color-mix(in srgb, var(--color-text-error) 18%, var(--grey-10));
+.volumeBtn:hover {
+  background: var(--mpc-secondary-bg-hover, var(--mpc-neutral-bg));
+  border-color: var(--mpc-neutral-border-hover);
+  color: var(--mpc-neutral-fg-hover);
 }
 
-.playerRowListened {
-  position: relative;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--color-text-success) 4%, var(--white));
-  border-color: color-mix(in srgb, var(--color-text-success) 20%, transparent);
+.volumeBtn:active {
+  transform: scale(0.96);
 }
 
-.playerRowListened::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    color-mix(in srgb, var(--white) 36%, transparent) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  background-position: -100% 0;
-  /* §16 entry curve, 600ms — documented exception above the
-     280–360ms band. Lands the "Listened" beat as it travels
-     L→R across the row. */
-  animation: mpcSealShimmer 600ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 1 forwards;
+.volumeBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
 }
 
-@keyframes mpcSealShimmer {
-  from { background-position: -100% 0; }
-  to   { background-position:  200% 0; }
+.volumeBtnDisabled,
+.volumeBtn:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-072);
 }
 
-/* ─── Speed pill — outlined brand-60 cycling button. Height matches
-   play button so the row baseline stays clean. The locked variant
-   (used by Video Player's enforced mode) is a non-interactive span
-   styled identically to the disabled state. */
+@media (max-width: 600px) {
+  .volumeBtn {
+    display: none;
+  }
+}
+
+/* ─── Listened-row tone overlay (subtle — most of the seal beat
+   now lives on the chip + thumb retint, not the row container). */
+.controlsRowError {
+  /* No row-level chrome change — the time chip carries the error
+     state via its own .timeChipError class. */
+}
+
+.controlsRowListened {
+  /* Same — the listened state is signalled by the chip + bar
+     retint. The row chrome stays neutral so the seal doesn't
+     fight the bar's success tone. */
+}
+
+/* ─── Speed pill ───────────────────────────────────────────── */
+
 .speedBtn {
   flex-shrink: 0;
   display: inline-flex;
@@ -399,10 +450,10 @@
   min-width: var(--size-44);
   padding: 0 var(--space-100);
 
-  background: var(--white);
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 36%, transparent);
+  background: var(--mpc-secondary-bg);
+  border: var(--border-width-100) solid var(--mpc-secondary-border);
   border-radius: var(--radius-full);
-  color: var(--brand-60);
+  color: var(--mpc-secondary-fg);
   cursor: pointer;
 
   font-family: var(--sans);
@@ -419,8 +470,8 @@
 }
 
 .speedBtn:hover {
-  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
-  border-color: color-mix(in srgb, var(--brand-60) 56%, transparent);
+  background: var(--mpc-secondary-bg-hover);
+  border-color: var(--mpc-secondary-border-hover);
 }
 
 .speedBtn:active {
@@ -434,9 +485,7 @@
 
 .speedBtnLocked {
   cursor: not-allowed;
-  background: color-mix(in srgb, var(--grey-50) 6%, var(--white));
-  border-color: var(--grey-20);
-  color: var(--grey-60);
+  opacity: var(--opacity-072);
 }
 
 .speedLabel {
@@ -455,29 +504,22 @@
 
 .speedBtn:disabled {
   cursor: not-allowed;
-  background: var(--grey-10);
-  border-color: var(--grey-20);
-  color: var(--grey-50);
-}
-
-.speedBtn:disabled:hover {
-  background: var(--grey-10);
-  border-color: var(--grey-20);
+  opacity: var(--opacity-072);
 }
 
 .speedBtn:disabled:active {
   transform: none;
 }
 
-/* ─── Reduced motion ───────────────────────────────────────────── */
+/* ─── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .playerRow {
+  .controlsRow {
     animation-duration: 0.01ms;
     animation-delay: 0ms;
   }
 
-  .playerRow,
   .playBtn,
+  .volumeBtn,
   .speedBtn,
   .progressBar,
   .progressFill,
@@ -487,17 +529,9 @@
 
   .progressThumbPlaying,
   .progressThumbSnap,
-  .speedLabelPulse {
-    animation: none;
-  }
-
-  .playerRowListened::after {
-    animation: none;
-    display: none;
-  }
-
-  .listenedChip,
-  .listenedChipIcon {
+  .speedLabelPulse,
+  .timeChipListened,
+  .timeChipIcon {
     animation: none;
   }
 }

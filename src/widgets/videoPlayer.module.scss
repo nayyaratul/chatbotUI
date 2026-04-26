@@ -352,10 +352,51 @@
   }
 }
 
+/* ─── Controls overlay — absolute-positioned at the bottom of
+   the media region. Floats over the video with a gradient scrim
+   underneath for legibility. Inset from the media edges so the
+   controls don't visually butt against the rounded corners.
+   z-index 2 keeps it above the scrim and the (paused-state)
+   big play overlay. */
+.controlsOverlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: var(--space-150) var(--space-150) var(--space-125);
+}
+
+/* Bottom-anchored gradient scrim — fades from transparent at top
+   to dark-translucent at the bottom edge, behind the controls.
+   Same pattern YouTube uses on its mobile player. Pure CSS
+   gradient; no image asset. The scrim intentionally extends
+   higher than the controls' actual height so the time chip /
+   thumb halo always sits on a darkened backdrop, regardless of
+   whether the video frame underneath is bright or dim. */
+.controlsScrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.08) 30%,
+    rgba(0, 0, 0, 0.32) 60%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+  border-bottom-left-radius: var(--radius-150);
+  border-bottom-right-radius: var(--radius-150);
+}
+
 /* ─── Fullscreen button — trailing slot in the shared
-   MediaPlayerControls bar. Square 44×44, neutral chrome so it
-   doesn't compete with the brand-60 play / speed controls; the
-   fullscreen affordance is secondary. */
+   MediaPlayerControls bar. Dark-themed to match the rest of the
+   video controls (Video Player only uses theme="dark"). Same
+   44×44 dimensions as the play / speed / volume buttons. */
 .fsButton {
   flex-shrink: 0;
   display: inline-flex;
@@ -365,23 +406,21 @@
   height: var(--size-44);
   padding: 0;
 
-  background: var(--white);
-  border: var(--border-width-100) solid var(--grey-20);
+  background: rgba(8, 8, 8, 0.6);
+  border: var(--border-width-100) solid rgba(8, 8, 8, 0.38);
   border-radius: var(--radius-full);
-  color: var(--grey-80);
+  color: var(--white);
   cursor: pointer;
 
   transition:
     background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
     border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .fsButton:hover {
-  background: color-mix(in srgb, var(--grey-90) 4%, var(--white));
-  border-color: var(--grey-30);
-  color: var(--grey-90);
+  background: rgba(8, 8, 8, 0.78);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 .fsButton:active {
@@ -395,15 +434,12 @@
 
 .fsButton:disabled {
   cursor: not-allowed;
-  background: var(--grey-10);
-  border-color: var(--grey-20);
-  color: var(--grey-50);
+  opacity: var(--opacity-072);
 }
 
 .fsButton:disabled:hover {
-  background: var(--grey-10);
-  border-color: var(--grey-20);
-  color: var(--grey-50);
+  background: rgba(8, 8, 8, 0.6);
+  border-color: rgba(8, 8, 8, 0.38);
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────

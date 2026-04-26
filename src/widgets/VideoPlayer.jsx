@@ -188,75 +188,89 @@ export function VideoPlayer({ payload }) {
         </div>
       </header>
 
-      <MediaPlayerControls
-        mediaRef={videoRef}
-        speeds={speeds}
-        enforceSpeedLock={isEnforced}
-        maxSeekFraction={maxSeekFraction}
-        completed={completed}
-        hasError={hasError}
-        completionThreshold={COMPLETION_THRESHOLD}
-        onCompletionEdge={handleCompletionEdge}
-        onPlayChange={handlePlayChange}
-        listenedLabel="Completed"
-        trailing={fullscreenButton}
-        mediaSlot={
-          <div
-            className={cx(
-              styles.media,
-              playing && styles.media_playing,
-              hasPlayed && styles.media_hasPlayed,
-              completed && styles.media_completed,
-            )}
-            onClick={handleMediaClick}
-          >
-            {/* Inner crop layer: children clip to the rounded media
-                box, while the .media itself is unclipped so its
-                ::after pulse ring can paint outside the border on
-                completion. */}
-            <div className={styles.mediaCrop}>
-              {thumbnail_url ? (
-                <img className={styles.poster} src={thumbnail_url} alt="" />
-              ) : (
-                <div className={styles.posterFallback} aria-hidden />
-              )}
-              <video
-                ref={videoRef}
-                className={styles.videoEl}
-                src={url}
-                preload="metadata"
-                playsInline
-                tabIndex={-1}
-                onTimeUpdate={handleVideoTimeUpdate}
-                onError={handleVideoError}
+      {/* Media region — the controls now overlay the bottom of this
+          region directly, YouTube-style, with a gradient scrim
+          behind them for legibility against bright video content.
+          No separate bordered controls card below the video. */}
+      <div
+        className={cx(
+          styles.media,
+          playing && styles.media_playing,
+          hasPlayed && styles.media_hasPlayed,
+          completed && styles.media_completed,
+        )}
+        onClick={handleMediaClick}
+      >
+        <div className={styles.mediaCrop}>
+          {thumbnail_url ? (
+            <img className={styles.poster} src={thumbnail_url} alt="" />
+          ) : (
+            <div className={styles.posterFallback} aria-hidden />
+          )}
+          <video
+            ref={videoRef}
+            className={styles.videoEl}
+            src={url}
+            preload="metadata"
+            playsInline
+            tabIndex={-1}
+            onTimeUpdate={handleVideoTimeUpdate}
+            onError={handleVideoError}
+          />
+          <div className={styles.scrim} aria-hidden />
+          {/* Bottom-anchored gradient scrim — fades from transparent
+              at top to dark-translucent at the bottom edge, ensuring
+              the dark controls and white time text are always
+              legible regardless of underlying video content. Same
+              pattern YouTube uses on its mobile player. */}
+          <div className={styles.controlsScrim} aria-hidden />
+          {!playing && (
+            <button
+              type="button"
+              className={styles.playOverlay}
+              onClick={(e) => { e.stopPropagation(); handleMediaClick() }}
+              aria-label={hasPlayed ? 'Resume video' : 'Play video'}
+            >
+              <Play
+                size={20}
+                strokeWidth={2}
+                fill="currentColor"
+                className={styles.playOverlayGlyph}
+                aria-hidden
               />
-              <div className={styles.scrim} aria-hidden />
-              {!playing && (
-                <button
-                  type="button"
-                  className={styles.playOverlay}
-                  onClick={(e) => { e.stopPropagation(); handleMediaClick() }}
-                  aria-label={hasPlayed ? 'Resume video' : 'Play video'}
-                >
-                  <Play
-                    size={20}
-                    strokeWidth={2}
-                    fill="currentColor"
-                    className={styles.playOverlayGlyph}
-                    aria-hidden
-                  />
-                </button>
-              )}
-              {completed && (
-                <span className={styles.completionChip}>
-                  <CircleCheck size={14} strokeWidth={2} aria-hidden />
-                  Completed
-                </span>
-              )}
-            </div>
+            </button>
+          )}
+          {completed && (
+            <span className={styles.completionChip}>
+              <CircleCheck size={14} strokeWidth={2} aria-hidden />
+              Completed
+            </span>
+          )}
+          {/* Controls overlay — absolute-positioned at the bottom of
+              the media region, padded inward from the edges. Stops
+              click propagation so seeking the bar doesn't toggle
+              video play/pause via the .media onClick handler. */}
+          <div
+            className={styles.controlsOverlay}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MediaPlayerControls
+              mediaRef={videoRef}
+              theme="dark"
+              speeds={speeds}
+              enforceSpeedLock={isEnforced}
+              maxSeekFraction={maxSeekFraction}
+              completed={completed}
+              hasError={hasError}
+              completionThreshold={COMPLETION_THRESHOLD}
+              onCompletionEdge={handleCompletionEdge}
+              onPlayChange={handlePlayChange}
+              listenedLabel="Completed"
+              trailing={fullscreenButton}
+            />
           </div>
-        }
-      />
+        </div>
+      </div>
     </div>
   )
 }

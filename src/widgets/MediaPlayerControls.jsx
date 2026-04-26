@@ -1,73 +1,71 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { Play, Pause, RotateCcw, CheckCircle2 } from 'lucide-react'
+import { Play, Pause, RotateCcw, CheckCircle2, Volume2, VolumeX } from 'lucide-react'
 import styles from './mediaPlayerControls.module.scss'
 
 /* ─── MediaPlayerControls ─────────────────────────────────────────────
-   Shared controls primitive used by Audio Player (#25) and Video
-   Player (#16). The whole "play button + slim track + luminous thumb
-   + speed pill" row lives here so the two widgets stay visually
-   identical. Parent widgets render their own §2 header + (for video)
-   the media region, and embed this component for the bottom row.
+   Shared controls primitive — just the row of buttons plus the slim
+   track and the combined "current/total" time chip below it. This
+   component does NOT render a card chrome around itself; the parent
+   widget decides where the row lives:
+
+     • Audio Player wraps it in a light bordered card so the row reads
+       as a self-contained control surface.
+     • Video Player positions it absolutely over the bottom of its 16:9
+       media region, with a YouTube-style gradient scrim behind it for
+       legibility against bright video content.
+
+   Theme prop drives the colour vocabulary — 'light' uses brand-60
+   chrome on white (audio); 'dark' uses translucent-black chrome with
+   white glyphs on top of video.
 
    Owns:
      • currentTime / duration / playProgress / isPlaying / speedIndex
+       / muted state
      • RAF-driven playhead update reading mediaRef.current.currentTime
      • Pointer events on the bar (drag-to-scrub via setPointerCapture)
      • Keyboard ±5s seek on the play button
-     • Speed pill cycling + imperative pulse keyframe
+     • Speed pill cycling + mute toggle
      • Listened-tone + error-state visual classes (driven by props)
 
    Does NOT own:
-     • The <audio>/<video> element itself — parent renders it with
-       its own ref (passed in via mediaRef). Parent decides where it
-       lives in the DOM (audio has nowhere visual; video lives in a
-       separate poster/scrim region above this row).
+     • Card chrome, layout shell, or media region — parent renders.
      • Completion-edge response payload — parent owns the onReply
        fire via the onCompletionEdge callback.
-     • Variant-specific logic (enforced-mode seek clamp, total-
-       watch-time accumulator) — parent passes maxSeekFraction +
-       enforceSpeedLock + onPlayChange to drive it.
 
    Props:
      mediaRef              ref to the <audio> or <video> element
+     theme                 'light' (default) or 'dark'
      speeds                playback speed array (default [1, 1.5, 2])
      enforceSpeedLock      hide cycling pill, render a locked 1×
                            indicator. Used by Video Player's
                            "enforced" compliance variant.
+     showVolume            (default true) render the mute/unmute
+                           button. Hidden on mobile via CSS regardless
+                           — desktop-only by design.
      maxSeekFraction       clamp seek position to [0, this fraction]
                            (default 1). Used by enforced video to
                            prevent skipping past the max watched
                            point.
      completed             once true, applies the listened tone to
-                           the row + bar + thumb; replaces the meta
-                           time line with a Listened chip; play
-                           button swaps Play → RotateCcw. Sticky.
+                           the row + bar + thumb; replaces the time
+                           chip with a Listened chip; play button
+                           swaps Play → RotateCcw. Sticky.
      hasError              <audio>/<video> failed to load. Disables
-                           controls; replaces meta line with an
+                           controls; replaces time chip with an
                            error message.
-     completionThreshold   default 0.95. Fraction at which
-                           onCompletionEdge fires for the first time.
+     completionThreshold   default 0.95.
      onCompletionEdge      ()=>void — called once the first time
                            playProgress crosses completionThreshold
                            (or `ended` fires, whichever lands first).
                            Parent fires onReply from this.
      onPlayChange          (playing: boolean)=>void — called on every
-                           play/pause transition. Parent uses for
-                           telemetry (total_watch_time_seconds,
-                           hasPlayed flag, etc.).
+                           play/pause transition.
      listenedLabel         label inside the listened chip (default
                            'Listened'). Video Player uses 'Completed'.
-     mediaSlot             optional ReactNode rendered ABOVE the
-                           controls row inside the same bordered
-                           player-row chrome. Video Player passes its
-                           16:9 media region (poster + video element
-                           + play overlay + completion chip); Audio
-                           Player omits this prop so the player row
-                           is just the controls.
      trailing              ReactNode rendered at the right end of the
-                           controls row, after the speed pill. Used
-                           by Video Player for the Fullscreen button.
+                           row, after the speed pill. Used by Video
+                           Player for the Fullscreen button.
 
    ──────────────────────────────────────────────────────────────── */
 
@@ -77,14 +75,9 @@ function formatTime(totalSeconds) {
   const safe = Math.max(0, Math.floor(totalSeconds))
   const m = Math.floor(safe / 60)
   const s = safe % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${String(m)}:${String(s).padStart(2, '0')}`
 }
 
-/* Imperatively re-fire a CSS keyframe on a DOM element by removing
-   the class, forcing a reflow, then re-adding it. Used for the
-   thumb-snap halo expansion + speed pill pulse — keeps focus on the
-   live element (no React `key=` remount) while still re-firing the
-   entry animation per click. */
 function flashKeyframe(el, className) {
   if (!el || !className) return
   el.classList.remove(className)
@@ -95,8 +88,10 @@ function flashKeyframe(el, className) {
 
 export function MediaPlayerControls({
   mediaRef,
+  theme = 'light',
   speeds: speedsProp,
   enforceSpeedLock = false,
+  showVolume = true,
   maxSeekFraction = 1,
   completed = false,
   hasError = false,
@@ -104,7 +99,6 @@ export function MediaPlayerControls({
   onCompletionEdge,
   onPlayChange,
   listenedLabel = 'Listened',
-  mediaSlot,
   trailing,
 }) {
   const speeds = Array.isArray(speedsProp) && speedsProp.length > 0
@@ -116,23 +110,15 @@ export function MediaPlayerControls({
   const [duration, setDuration] = useState(0)
   const [playProgress, setPlayProgress] = useState(0)
   const [speedIndex, setSpeedIndex] = useState(0)
+  const [muted, setMuted] = useState(false)
 
   const playRafRef = useRef(null)
   const speedLabelRef = useRef(null)
   const progressThumbRef = useRef(null)
-  /* Drag-scrub gate. `true` between pointerdown and pointerup on
-     the progress bar; pointermove only seeks while this is set, so
-     hover-by-pointer doesn't accidentally scrub. */
   const isDraggingRef = useRef(false)
-  /* Synchronous gate so the completion edge fires exactly once
-     across racing paths (RAF threshold, `ended` event, seek-past-
-     threshold, keyboard seek-past-threshold). */
   const completedEdgeRef = useRef(false)
   const mountedRef = useRef(true)
 
-  /* Stash the latest prop callbacks in refs so the audio-event
-     listeners (attached once via useEffect) always invoke the
-     newest version without needing to rebind on every prop change. */
   const onCompletionEdgeRef = useRef(onCompletionEdge)
   const onPlayChangeRef = useRef(onPlayChange)
   useEffect(() => {
@@ -140,8 +126,6 @@ export function MediaPlayerControls({
     onPlayChangeRef.current = onPlayChange
   })
 
-  /* Mirror props in refs so the RAF tick reads the latest values
-     without restarting on every prop change. */
   const completionThresholdRef = useRef(completionThreshold)
   const maxSeekFractionRef = useRef(maxSeekFraction)
   useEffect(() => {
@@ -163,12 +147,7 @@ export function MediaPlayerControls({
     onCompletionEdgeRef.current?.()
   }, [])
 
-  /* ─── Audio/video element event listeners ────────────────────────
-     Attached once on mount via addEventListener (NOT React JSX
-     event props) because the <audio>/<video> element is rendered
-     by the parent, not by this component. The mediaRef is stable
-     for the lifetime of the parent widget so this effect runs
-     exactly once. */
+  /* ─── Audio/video element event listeners ─────────────────────── */
   useEffect(() => {
     mountedRef.current = true
 
@@ -208,9 +187,6 @@ export function MediaPlayerControls({
       onPlayChangeRef.current?.(false)
       setPlayProgress(1)
       stopPlayRaf()
-      /* Belt-and-suspenders: `ended` always lands at 100%, so this
-         is a guaranteed completion edge. Idempotent against the
-         RAF having already fired it. */
       fireCompletionEdge()
     }
 
@@ -220,15 +196,21 @@ export function MediaPlayerControls({
       if (Number.isFinite(d) && d > 0) setDuration(d)
     }
 
+    const onVolumeChange = () => {
+      if (!mountedRef.current) return
+      setMuted(Boolean(el.muted))
+    }
+
     el.addEventListener('play', onPlay)
     el.addEventListener('pause', onPause)
     el.addEventListener('ended', onEnded)
     el.addEventListener('loadedmetadata', onLoadedMetadata)
+    el.addEventListener('volumechange', onVolumeChange)
 
-    /* Pick up duration if metadata already loaded before mount. */
     if (Number.isFinite(el.duration) && el.duration > 0) {
       setDuration(el.duration)
     }
+    setMuted(Boolean(el.muted))
 
     return () => {
       mountedRef.current = false
@@ -236,13 +218,11 @@ export function MediaPlayerControls({
       el.removeEventListener('pause', onPause)
       el.removeEventListener('ended', onEnded)
       el.removeEventListener('loadedmetadata', onLoadedMetadata)
+      el.removeEventListener('volumechange', onVolumeChange)
       stopPlayRaf()
     }
   }, [mediaRef, stopPlayRaf, fireCompletionEdge])
 
-  /* Apply playbackRate whenever the speed index changes. RAF doesn't
-     need to restart — playProgress is sourced from currentTime,
-     which scales with playbackRate automatically. */
   useEffect(() => {
     const el = mediaRef?.current
     if (!el) return
@@ -256,9 +236,6 @@ export function MediaPlayerControls({
     const el = mediaRef?.current
     if (!el) return
     if (el.paused) {
-      /* Replay-from-ended: HTML5 doesn't mandate auto-restart when
-         play() is called on a media element whose currentTime is
-         at duration. Be explicit so replay always feels the same. */
       if (el.ended || (el.duration > 0 && el.currentTime >= el.duration - 0.05)) {
         el.currentTime = 0
       }
@@ -287,7 +264,7 @@ export function MediaPlayerControls({
     flashKeyframe(progressThumbRef.current, styles.progressThumbSnap)
   }, [mediaRef, duration, fireCompletionEdge])
 
-  /* ─── Drag-to-scrub on the progress bar ──────────────────────── */
+  /* ─── Drag-to-scrub ─────────────────────────────────────────── */
 
   const applyPointerSeek = useCallback((clientX, container) => {
     const el = mediaRef?.current
@@ -295,8 +272,6 @@ export function MediaPlayerControls({
     const rect = container.getBoundingClientRect()
     if (rect.width <= 0) return
     let fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    /* Clamp at maxSeekFraction (used by enforced video to prevent
-       skipping past the max watched point). */
     if (fraction > maxSeekFractionRef.current) {
       fraction = maxSeekFractionRef.current
     }
@@ -337,12 +312,21 @@ export function MediaPlayerControls({
     isDraggingRef.current = false
   }, [])
 
-  /* ─── Speed cycle ────────────────────────────────────────────── */
+  /* ─── Speed cycle + mute toggle ───────────────────────────────── */
 
   const handleSpeedCycle = useCallback(() => {
     setSpeedIndex((i) => (i + 1) % speeds.length)
     flashKeyframe(speedLabelRef.current, styles.speedLabelPulse)
   }, [speeds.length])
+
+  const handleMuteToggle = useCallback(() => {
+    const el = mediaRef?.current
+    if (!el) return
+    el.muted = !el.muted
+    /* setMuted is also driven by the volumechange event listener,
+       but flipping it here too avoids a one-frame visual lag. */
+    setMuted(el.muted)
+  }, [mediaRef])
 
   /* ─── Render ─────────────────────────────────────────────────── */
 
@@ -355,30 +339,31 @@ export function MediaPlayerControls({
       : completed ? 'Replay'
         : 'Play'
 
+  const themeClass = theme === 'dark' ? styles.themeDark : styles.themeLight
+
   return (
     <div className={cx(
-      styles.playerRow,
-      hasError && styles.playerRowError,
-      completed && styles.playerRowListened,
+      styles.controlsRow,
+      themeClass,
+      hasError && styles.controlsRowError,
+      completed && styles.controlsRowListened,
     )}>
-      {mediaSlot}
-      <div className={styles.controlsRow}>
-        <button
-          type="button"
-          className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
-          onClick={handlePlayPause}
-          onKeyDown={handlePlayKeyDown}
-          disabled={hasError}
-          aria-label={playLabel}
-        >
-          {isPlaying
-            ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
-            : completed
-              ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
-              : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
-        </button>
+      <button
+        type="button"
+        className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
+        onClick={handlePlayPause}
+        onKeyDown={handlePlayKeyDown}
+        disabled={hasError}
+        aria-label={playLabel}
+      >
+        {isPlaying
+          ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
+          : completed
+            ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
+            : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+      </button>
 
-        <div className={styles.track}>
+      <div className={styles.track}>
         <button
           type="button"
           className={cx(
@@ -392,10 +377,6 @@ export function MediaPlayerControls({
           onPointerUp={handleProgressPointerEnd}
           onPointerCancel={handleProgressPointerEnd}
           disabled={hasError}
-          /* Removed from keyboard focus order — Enter on a focused
-             bar would seek to position 0 (no clientX in keyboard
-             events). Keyboard scrubbing lives on the play button's
-             ArrowLeft/Right handler instead. */
           tabIndex={-1}
           aria-label="Seek position"
         >
@@ -410,52 +391,75 @@ export function MediaPlayerControls({
           />
         </button>
 
+        {/* Time chip — single combined "current / total" pill anchored
+            below the bar's left edge. Replaces the previous twin
+            time labels (start/end). On error or completion the chip
+            swaps to the appropriate state-specific message. */}
         <div className={styles.trackMeta}>
           {hasError ? (
-            <span className={styles.trackError}>Unable to load</span>
+            <span className={cx(styles.timeChip, styles.timeChipError)}>
+              Unable to load
+            </span>
           ) : completed ? (
-            <span className={styles.listenedChip}>
-              <span className={styles.listenedChipIcon} aria-hidden="true">
+            <span className={cx(styles.timeChip, styles.timeChipListened)}>
+              <span className={styles.timeChipIcon} aria-hidden="true">
                 <CheckCircle2 size={12} strokeWidth={2.5} />
               </span>
               {listenedLabel}
             </span>
           ) : (
-            <>
-              <span className={styles.trackTimeStart}>
+            <span className={styles.timeChip}>
+              <span className={styles.timeChipCurrent}>
                 {formatTime(currentTime)}
               </span>
-              <span className={styles.trackTimeEnd}>
+              <span aria-hidden="true" className={styles.timeChipSep}>/</span>
+              <span className={styles.timeChipTotal}>
                 {formatTime(duration)}
               </span>
-            </>
+            </span>
           )}
         </div>
       </div>
 
-        {enforceSpeedLock ? (
-          <span
-            className={cx(styles.speedBtn, styles.speedBtnLocked)}
-            aria-label={`Speed locked at ${lockedSpeedLabel}`}
-          >
-            <span className={styles.speedLabel}>{lockedSpeedLabel}</span>
-          </span>
-        ) : (
-          <button
-            type="button"
-            className={styles.speedBtn}
-            onClick={handleSpeedCycle}
-            disabled={hasError}
-            aria-label={`Playback speed ${speedLabel}, tap to change`}
-          >
-            <span ref={speedLabelRef} className={styles.speedLabel}>
-              {speedLabel}
-            </span>
-          </button>
-        )}
+      {/* Volume — mute / unmute toggle. Hidden on mobile via CSS
+          (desktop-only by design — phones have hardware volume keys). */}
+      {showVolume && (
+        <button
+          type="button"
+          className={cx(styles.volumeBtn, hasError && styles.volumeBtnDisabled)}
+          onClick={handleMuteToggle}
+          disabled={hasError}
+          aria-label={muted ? 'Unmute audio' : 'Mute audio'}
+          aria-pressed={muted}
+        >
+          {muted
+            ? <VolumeX size={16} strokeWidth={2.25} aria-hidden="true" />
+            : <Volume2 size={16} strokeWidth={2.25} aria-hidden="true" />}
+        </button>
+      )}
 
-        {trailing}
-      </div>
+      {enforceSpeedLock ? (
+        <span
+          className={cx(styles.speedBtn, styles.speedBtnLocked)}
+          aria-label={`Speed locked at ${lockedSpeedLabel}`}
+        >
+          <span className={styles.speedLabel}>{lockedSpeedLabel}</span>
+        </span>
+      ) : (
+        <button
+          type="button"
+          className={styles.speedBtn}
+          onClick={handleSpeedCycle}
+          disabled={hasError}
+          aria-label={`Playback speed ${speedLabel}, tap to change`}
+        >
+          <span ref={speedLabelRef} className={styles.speedLabel}>
+            {speedLabel}
+          </span>
+        </button>
+      )}
+
+      {trailing}
     </div>
   )
 }
