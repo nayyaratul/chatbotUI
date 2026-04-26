@@ -373,6 +373,29 @@ function EmbeddedWebviewSheet({
             </div>
           )}
         </div>
+
+        {(variant === 'reader' || variant === 'preview') && (
+          <footer className={styles.shFooter}>
+            {variant === 'reader' && (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => onCompleted?.({}, 'attested')}
+              >
+                I've read this
+              </Button>
+            )}
+            {variant === 'preview' && (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={requestClose}
+              >
+                Done
+              </Button>
+            )}
+          </footer>
+        )}
       </div>
     </div>,
     portalTarget,

@@ -218,6 +218,11 @@
     opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
   opacity: var(--opacity-000);
   overflow: hidden;
+
+  /* Sheet portals into #chat-modal-root — outside the card's CSS scope.
+     Override action-primary here so the Nexus Button renders brand-60. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
 }
 
 .shLayer_open .shScrim {
@@ -413,4 +418,16 @@
 
 .shErrorClose:hover {
   color: var(--grey-80);
+}
+
+/* ─── Pass 1 region 9: variant-conditional sheet footer ─────────── */
+
+.shFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding: var(--space-150) var(--space-200);
+  border-top: var(--border-width-100) solid var(--grey-10);
+  background: var(--white);
+  flex-shrink: 0;
 }
