@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   Trophy,
+  Crown,
+  Medal,
+  Award,
+  ArrowUp,
+  ArrowDown,
+  Minus,
   ArrowRight,
 } from 'lucide-react'
 /* eslint-disable react-refresh/only-export-components */
@@ -355,9 +361,107 @@ function BreakdownRow({ idx, label, current, target, unit }) {
   )
 }
 
-/* Region 3 — to be filled in. */
-function LeaderboardBody() {
-  return null
+/* ─── Leaderboard body ───────────────────────────────────────────
+   Top-5 ranked list. The user's row carries a §8 ledger stripe that
+   springs in last on the springy curve — the "you are here" beat
+   that's the signature for this variant. */
+
+const RANK_ICON = {
+  1: Crown,
+  2: Medal,
+  3: Award,
+}
+
+function LeaderboardBody({ payload }) {
+  const rows = Array.isArray(payload?.leaderboard) ? payload.leaderboard.slice(0, 5) : []
+  const userPosition = payload?.user_position ?? null
+  const unit = typeof payload?.unit === 'string' ? payload.unit : ''
+  const userInTop = rows.some((r) => r?.is_user)
+
+  return (
+    <div className={styles.leaderboardBody}>
+      <ol className={styles.rankList}>
+        {rows.map((row, idx) => (
+          <RankRow
+            key={`${row?.rank ?? idx}-${row?.name ?? idx}`}
+            idx={idx}
+            row={row}
+            unit={unit}
+          />
+        ))}
+      </ol>
+      {!userInTop && userPosition && (
+        <p className={styles.userPosition}>
+          You're #{userPosition.rank} of {userPosition.out_of}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RankRow({ idx, row, unit }) {
+  const rank   = row?.rank ?? idx + 1
+  const name   = row?.name ?? '—'
+  const score  = row?.score
+  const isUser = !!row?.is_user
+  const delta  = row?.delta
+  const RankIcon = RANK_ICON[rank] ?? null
+
+  /* Stagger §11 — 60ms steps starting at 200ms.
+     User-row stripe springs in 180ms after the row's own rise-up. */
+  const rowDelay    = 200 + idx * 60
+  const stripeDelay = rowDelay + 180
+  const scoreCopy   = unit ? `${score} ${unit}` : `${score}`
+  const displayName = isUser ? 'You' : name
+
+  return (
+    <li
+      className={cx(styles.rankRow, isUser && styles.rankRow_user)}
+      style={{
+        '--lb-row-delay': `${rowDelay}ms`,
+        '--lb-stripe-delay': `${stripeDelay}ms`,
+      }}
+      aria-current={isUser ? 'true' : undefined}
+    >
+      {RankIcon ? (
+        <span
+          className={cx(styles.rankPill, styles.rankPill_podium)}
+          aria-label={`Rank ${rank}`}
+        >
+          <RankIcon size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
+      ) : (
+        <span
+          className={cx(styles.rankPill, styles.rankPill_numeric)}
+          aria-label={`Rank ${rank}`}
+        >
+          {rank}
+        </span>
+      )}
+      <span className={styles.rankName}>{displayName}</span>
+      <span className={styles.rankScore}>{scoreCopy}</span>
+      {typeof delta === 'number' && <DeltaIndicator delta={delta} />}
+    </li>
+  )
+}
+
+function DeltaIndicator({ delta }) {
+  const tone =
+    delta > 0 ? 'positive' :
+    delta < 0 ? 'negative' :
+    'flat'
+  const Glyph =
+    delta > 0 ? ArrowUp :
+    delta < 0 ? ArrowDown :
+    Minus
+  const magnitude = Math.abs(delta)
+
+  return (
+    <span className={cx(styles.delta, styles[`delta_${tone}`])} aria-label={`Delta ${delta}`}>
+      <Glyph size={14} strokeWidth={2} aria-hidden="true" />
+      {magnitude > 0 && <span className={styles.deltaValue}>{magnitude}</span>}
+    </span>
+  )
 }
 
 export default Leaderboard
