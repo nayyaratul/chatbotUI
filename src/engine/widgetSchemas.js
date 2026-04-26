@@ -466,11 +466,13 @@ function buildProfilePayload(variant) {
 
 /* ─── Shared video payload builder ────────────────────────────────
    Returns a representative payload per variant for the Video Player
-   widget (#16). Both variants point at samplelib's publicly-hosted
-   15-second sample — CORS-friendly and stable. The prior URL
-   (commondatastorage.googleapis.com/gtv-videos-bucket/...) returns
-   403 now; that bucket is locked down. The new URL matches the audio
-   fixture (also samplelib) so the two demos feel like siblings.
+   widget (#16). Both variants point at MDN's flower.mp4 sample —
+   stable Mozilla CDN, ~10s clip. Critically, the host returns
+   `206 Partial Content` for Range requests (samplelib's video host
+   does not), which is required for HTML5 <video> to seek without
+   downloading the entire file first. Audio doesn't need Range
+   because MP3 can seek by frame without the moov-atom dance MP4
+   needs.
 
    The `enforced` variant differs from `standard` only in (a) the
    subtitle copy, (b) the absence of a speed picker at render time
@@ -480,9 +482,9 @@ function buildVideoPayload(variant) {
     widget_id: makeId('vid'),
     variant,
     video_id: `vid-${variant === 'enforced' ? 'harass-2026' : 'onboard-welcome'}`,
-    url: 'https://download.samplelib.com/mp4/sample-15s.mp4',
+    url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     thumbnail_url: null,
-    duration_seconds: 15,
+    duration_seconds: 10,
     playback_speeds: [0.5, 1, 1.5, 2],
     silent: false,
   }
