@@ -61,6 +61,33 @@ function clamp(min, max, v) {
   return Math.max(min, Math.min(max, v))
 }
 
+function useCountUp(target, durationMs = 280) {
+  const [value, setValue] = useState(target ?? 0)
+  const startedRef = useRef({ from: 0, to: 0, t0: 0, raf: 0 })
+
+  useEffect(() => {
+    if (target == null) return
+    cancelAnimationFrame(startedRef.current.raf)
+    startedRef.current = {
+      from: value,
+      to: target,
+      t0: performance.now(),
+      raf: requestAnimationFrame(tick),
+    }
+    function tick(now) {
+      const { from, to, t0 } = startedRef.current
+      const t = Math.min(1, (now - t0) / durationMs)
+      const eased = 1 - Math.pow(1 - t, 3)        // ease-out cubic
+      setValue(from + (to - from) * eased)
+      if (t < 1) startedRef.current.raf = requestAnimationFrame(tick)
+    }
+    return () => cancelAnimationFrame(startedRef.current.raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, durationMs])
+
+  return value
+}
+
 const VARIANT_META = {
   partner_form: {
     icon: ExternalLink,
@@ -355,6 +382,9 @@ function EmbeddedWebviewSheet({
     return () => window.removeEventListener('message', onMessage)
   }, [payload, onCompleted, onProgress, requestClose])
 
+  const animatedProgress = useCountUp(variant === 'training' ? progress : null)
+  const showProgressChip = variant === 'training' && progress != null
+
   if (!portalTarget) return null
 
   return createPortal(
@@ -374,6 +404,12 @@ function EmbeddedWebviewSheet({
             }
             <span className={styles.shDomain}>{payload?.domain_label}</span>
           </div>
+          {showProgressChip && (
+            <span className={styles.shProgressChip}>
+              <span className={styles.shProgressFill} style={{ width: `${Math.round(animatedProgress)}%` }} />
+              <span className={styles.shProgressLabel}>{Math.round(animatedProgress)}%</span>
+            </span>
+          )}
           <button
             ref={closeBtnRef}
             type="button"

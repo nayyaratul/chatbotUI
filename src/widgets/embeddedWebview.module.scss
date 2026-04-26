@@ -473,3 +473,40 @@
     border-color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
     color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4);
 }
+
+/* ─── Pass 1 region 11: training progress chip ───────────────────── */
+
+.shProgressChip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--size-64);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-60);
+  overflow: hidden;
+}
+
+.shProgressFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--brand-60) 18%, var(--white));
+  transition: width 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  z-index: 0;
+}
+
+.shProgressLabel {
+  position: relative;
+  z-index: 1;
+}
