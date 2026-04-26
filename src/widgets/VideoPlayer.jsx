@@ -1,24 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import {
-  PlaySquare,
-  Play,
-  Pause,
-  Maximize,
-  CircleCheck,
-  ChevronDown,
-  Check,
-} from 'lucide-react'
+import { PlaySquare, Play, Maximize, CircleCheck } from 'lucide-react'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
+import { MediaPlayerControls } from './MediaPlayerControls.jsx'
 import styles from './videoPlayer.module.scss'
 
 /* ─── Video Player Widget (#16) ────────────────────────────────────
    Inline training / compliance video. Two variants share one shell:
 
-     • 'standard' — free seek, speed picker (0.5×/1×/1.5×/2×), fullscreen.
-     • 'enforced' — no seek-ahead, 1× locked, hatched "must watch"
-                    overlay on the unwatched-ahead portion of the
-                    progress bar. For compliance training.
+     • 'standard' — free seek, speed picker (0.5×/1×/1.5×/2×).
+     • 'enforced' — no seek-ahead, 1× locked, completion gate at
+                    ≥99% watched. For compliance training.
+
+   Renders the §2 header chrome + 16:9 media region (poster, video,
+   play-overlay, completion chip) + the shared <MediaPlayerControls>
+   bar with a Fullscreen button in its `trailing` slot. The controls
+   primitive (slim track + luminous thumb + speed pill + drag-scrub)
+   is identical to Audio Player's — both widgets adopt the same
+   media-controls vocabulary.
 
    Commits a widget_response on first hit of ≥99% watched. Re-plays
    are allowed but don't re-fire.
@@ -32,17 +31,7 @@ const VARIANT_EYEBROW = {
   enforced: 'Compliance · Must watch in full',
 }
 
-/* Completion fires on the first timeupdate where watched ratio meets
-   this threshold. Matches the spec's "≥99% watched = done" rule. */
 const COMPLETION_THRESHOLD = 0.99
-
-function formatClockTime(seconds) {
-  if (!Number.isFinite(seconds) || seconds < 0) return '00:00'
-  const total = Math.floor(seconds)
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
 
 export function VideoPlayer({ payload }) {
   const {
@@ -60,30 +49,55 @@ export function VideoPlayer({ payload }) {
   const isEnforced = variant === 'enforced'
 
   const videoRef = useRef(null)
-  const completedRef = useRef(false)      // fire widget_response exactly once
-  const watchStartRef = useRef(null)      // wall-clock for total_watch_time_seconds
-  const accumulatedWatchRef = useRef(0)   // seconds of actual playback time
+  const completedRef = useRef(false)
+  /* Wall-clock timer for total_watch_time_seconds. Started on every
+     play, accumulated on every pause/end. */
+  const watchStartRef = useRef(null)
+  const accumulatedWatchRef = useRef(0)
+  /* Max watched fraction in [0, 1] — used for the enforced-mode
+     seek clamp. RAF inside MediaPlayerControls drives the controls
+     state; this ref tracks the high-water mark needed for the clamp. */
+  const maxWatchedRef = useRef(0)
 
   const [playing, setPlaying] = useState(false)
   const [hasPlayed, setHasPlayed] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(duration_seconds ?? 0)
-  const [maxWatched, setMaxWatched] = useState(0)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [completed, setCompleted] = useState(false)
-  const [speedMenuOpen, setSpeedMenuOpen] = useState(false)
-
-  const speedMenuRef = useRef(null)
+  const [hasError, setHasError] = useState(false)
+  /* Maximum watched fraction surfaced to the controls component as
+     `maxSeekFraction`. Lifted into state (not just the ref) so a
+     React re-render bumps the prop when maxWatched advances. */
+  const [maxSeekFraction, setMaxSeekFraction] = useState(1)
 
   const { onReply } = useChatActions()
 
-  const emitCompletion = useCallback(() => {
+  /* Track currentTime via the <video> element's timeupdate event so
+     the enforced-mode seek clamp keeps up. The shared controls have
+     their own RAF for the bar; this is a separate concern. */
+  const handleVideoTimeUpdate = useCallback(() => {
+    const vid = videoRef.current
+    if (!vid) return
+    if (vid.duration > 0) {
+      const fraction = vid.currentTime / vid.duration
+      if (fraction > maxWatchedRef.current) {
+        maxWatchedRef.current = fraction
+        if (isEnforced) {
+          setMaxSeekFraction(fraction)
+        }
+      }
+    }
+  }, [isEnforced])
+
+  /* Edge-trigger the watch-completion response. Called by
+     MediaPlayerControls on the first crossing of the threshold or
+     on `ended`. Idempotent against repeat calls. */
+  const handleCompletionEdge = useCallback(() => {
     if (completedRef.current) return
     completedRef.current = true
     setCompleted(true)
-    /* completed=true always pairs with watch_percentage=100 so downstream
-       consumers don't see the "completed but only 99% watched" edge. */
-    onReply({
+    /* Allow seeking anywhere on the bar after completion — the
+       enforced-mode clamp lifts once the gate is cleared. */
+    setMaxSeekFraction(1)
+    onReply?.({
       type: 'widget_response',
       payload: {
         widget_id: payload?.widget_id,
@@ -96,63 +110,25 @@ export function VideoPlayer({ payload }) {
     }, { silent })
   }, [onReply, payload?.widget_id, video_id, silent])
 
-  const handlePlay = useCallback(() => {
-    setPlaying(true)
-    setHasPlayed(true)
-    watchStartRef.current = Date.now()
-  }, [])
-
-  const handlePause = useCallback(() => {
-    setPlaying(false)
-    if (watchStartRef.current) {
+  /* Drive the wall-clock watch-time accumulator + the media region's
+     poster→video crossfade modifier from the controls' onPlayChange
+     callback. Fires on every play/pause edge. */
+  const handlePlayChange = useCallback((isPlayingNext) => {
+    setPlaying(isPlayingNext)
+    if (isPlayingNext) {
+      setHasPlayed(true)
+      watchStartRef.current = Date.now()
+    } else if (watchStartRef.current) {
       accumulatedWatchRef.current += (Date.now() - watchStartRef.current) / 1000
       watchStartRef.current = null
     }
   }, [])
 
-  const handleTimeUpdate = useCallback(() => {
-    const vid = videoRef.current
-    if (!vid) return
-    const t = vid.currentTime
-    setCurrentTime(t)
-    if (t > maxWatched) setMaxWatched(t)
-    if (
-      !completedRef.current &&
-      vid.duration > 0 &&
-      t >= vid.duration * COMPLETION_THRESHOLD
-    ) {
-      emitCompletion()
-    }
-  }, [maxWatched, emitCompletion])
-
-  const handleLoadedMetadata = useCallback(() => {
-    const vid = videoRef.current
-    if (vid?.duration) setDuration(vid.duration)
+  const handleVideoError = useCallback(() => {
+    setHasError(true)
   }, [])
 
-  /* Clamp seeks in enforced mode. onSeeking fires before the seek
-     paints; we reset currentTime synchronously if the user tries to
-     jump past maxWatched. */
-  const handleSeeking = useCallback(() => {
-    if (!isEnforced) return
-    const vid = videoRef.current
-    if (!vid) return
-    if (vid.currentTime > maxWatched) {
-      vid.currentTime = maxWatched
-    }
-  }, [isEnforced, maxWatched])
-
-  const handleEnded = useCallback(() => {
-    setPlaying(false)
-    if (watchStartRef.current) {
-      accumulatedWatchRef.current += (Date.now() - watchStartRef.current) / 1000
-      watchStartRef.current = null
-    }
-  }, [])
-
-  /* Toggle play/pause on media click (once the video's been shown) —
-     same affordance the poster-overlay play button gives. */
-  const toggle = useCallback(() => {
+  const handleMediaClick = useCallback(() => {
     const vid = videoRef.current
     if (!vid) return
     if (vid.paused) {
@@ -162,32 +138,6 @@ export function VideoPlayer({ payload }) {
     }
   }, [])
 
-  const setSpeed = useCallback((speed) => {
-    const vid = videoRef.current
-    if (!vid) return
-    vid.playbackRate = speed
-    setPlaybackSpeed(speed)
-    setSpeedMenuOpen(false)
-  }, [])
-
-  /* Close the speed dropdown on outside click + Escape. */
-  useEffect(() => {
-    if (!speedMenuOpen) return
-    function onDown(e) {
-      const node = speedMenuRef.current
-      if (node && !node.contains(e.target)) setSpeedMenuOpen(false)
-    }
-    function onKey(e) {
-      if (e.key === 'Escape') setSpeedMenuOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [speedMenuOpen])
-
   const requestFullscreen = useCallback(() => {
     const vid = videoRef.current
     if (!vid) return
@@ -195,20 +145,8 @@ export function VideoPlayer({ payload }) {
     else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen()
   }, [])
 
-  const handleProgressClick = useCallback(
-    (e) => {
-      const vid = videoRef.current
-      if (!vid || !duration) return
-      const rect = e.currentTarget.getBoundingClientRect()
-      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-      const target = ratio * duration
-      vid.currentTime = isEnforced ? Math.min(target, maxWatched) : target
-    },
-    [duration, isEnforced, maxWatched],
-  )
-
-  // Flush accumulated watch time on unmount so a mid-playback teardown
-  // doesn't lose its counter.
+  /* Flush accumulated watch time on unmount so a mid-playback
+     teardown doesn't lose its counter. */
   useEffect(() => {
     return () => {
       if (watchStartRef.current) {
@@ -218,15 +156,29 @@ export function VideoPlayer({ payload }) {
     }
   }, [])
 
-  const pct = duration > 0 ? (currentTime / duration) * 100 : 0
-  const maxPct = duration > 0 ? (maxWatched / duration) * 100 : 0
-
   const eyebrow = VARIANT_EYEBROW[variant] ?? 'Video'
+
+  /* Speeds: enforced mode locks to a single 1× entry. The controls'
+     enforceSpeedLock prop hides the cycling button and renders a
+     non-interactive locked indicator instead. */
+  const speeds = isEnforced ? [1] : playback_speeds
+
+  const fullscreenButton = (
+    <button
+      type="button"
+      className={styles.fsButton}
+      onClick={requestFullscreen}
+      aria-label="Enter fullscreen"
+      disabled={hasError}
+    >
+      <Maximize size={16} strokeWidth={2} aria-hidden="true" />
+    </button>
+  )
 
   return (
     <div className={styles.card}>
       <header className={styles.header}>
-        <span className={styles.iconBadge} aria-hidden>
+        <span className={styles.iconBadge} aria-hidden="true">
           <PlaySquare size={18} strokeWidth={2} />
         </span>
         <div className={styles.headerText}>
@@ -243,7 +195,7 @@ export function VideoPlayer({ payload }) {
           hasPlayed && styles.media_hasPlayed,
           completed && styles.media_completed,
         )}
-        onClick={toggle}
+        onClick={handleMediaClick}
       >
         {/* Inner crop layer: children clip to the rounded media box,
             while the .media itself is unclipped so its ::after pulse
@@ -260,20 +212,16 @@ export function VideoPlayer({ payload }) {
             src={url}
             preload="metadata"
             playsInline
-            tabIndex={-1}  /* chrome buttons own focus; keep <video> out of tab order */
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onEnded={handleEnded}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onSeeking={handleSeeking}
+            tabIndex={-1}
+            onTimeUpdate={handleVideoTimeUpdate}
+            onError={handleVideoError}
           />
           <div className={styles.scrim} aria-hidden />
           {!playing && (
             <button
               type="button"
               className={styles.playOverlay}
-              onClick={(e) => { e.stopPropagation(); toggle() }}
+              onClick={(e) => { e.stopPropagation(); handleMediaClick() }}
               aria-label={hasPlayed ? 'Resume video' : 'Play video'}
             >
               <Play
@@ -294,108 +242,19 @@ export function VideoPlayer({ payload }) {
         </div>
       </div>
 
-      <div className={styles.controls}>
-        <button
-          type="button"
-          className={styles.playButton}
-          onClick={toggle}
-          aria-label={playing ? 'Pause video' : 'Play video'}
-        >
-          {playing ? (
-            <Pause size={16} strokeWidth={2} aria-hidden />
-          ) : (
-            <Play size={16} strokeWidth={2} aria-hidden />
-          )}
-          <span>{playing ? 'Pause' : 'Play'}</span>
-        </button>
-        <span className={styles.time}>
-          {formatClockTime(currentTime)} / {formatClockTime(duration)}
-        </span>
-        <span className={styles.controlsSpacer} />
-        {isEnforced ? (
-          <span className={styles.speedLock} aria-label="Speed locked at 1×">1×</span>
-        ) : (
-          <span className={styles.speedMenuWrap} ref={speedMenuRef}>
-            <button
-              type="button"
-              className={styles.speedTrigger}
-              aria-haspopup="menu"
-              aria-expanded={speedMenuOpen}
-              aria-label={`Playback speed, currently ${playbackSpeed}×`}
-              onClick={() => setSpeedMenuOpen((o) => !o)}
-            >
-              <span className={styles.speedTriggerValue}>{playbackSpeed}×</span>
-              <ChevronDown
-                size={14}
-                strokeWidth={2}
-                aria-hidden
-                className={cx(
-                  styles.speedTriggerChevron,
-                  speedMenuOpen && styles.speedTriggerChevron_open,
-                )}
-              />
-            </button>
-            {speedMenuOpen && (
-              <ul className={styles.speedMenu} role="menu" aria-label="Playback speed">
-                {playback_speeds.map((speed) => {
-                  const active = speed === playbackSpeed
-                  return (
-                    <li key={speed} role="none">
-                      <button
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={active}
-                        className={cx(
-                          styles.speedMenuItem,
-                          active && styles.speedMenuItem_active,
-                        )}
-                        onClick={() => setSpeed(speed)}
-                      >
-                        <span className={styles.speedMenuCheck} aria-hidden>
-                          {active && <Check size={14} strokeWidth={2} />}
-                        </span>
-                        <span>{speed}×</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </span>
-        )}
-        <button
-          type="button"
-          className={styles.fsButton}
-          onClick={requestFullscreen}
-          aria-label="Enter fullscreen"
-        >
-          <Maximize size={16} strokeWidth={2} aria-hidden />
-          <span className={styles.fsLabel}>Fullscreen</span>
-        </button>
-      </div>
-
-      <div
-        className={cx(styles.progressTrack, isEnforced && styles.progressTrack_enforced)}
-        onClick={handleProgressClick}
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(pct)}
-        aria-label="Playback progress"
-      >
-        <span
-          className={styles.progressFill}
-          style={{ width: `${pct}%` }}
-          aria-hidden
-        />
-        {isEnforced && maxPct < 100 && (
-          <span
-            className={styles.progressHatch}
-            style={{ left: `${maxPct}%` }}
-            aria-hidden
-          />
-        )}
-      </div>
+      <MediaPlayerControls
+        mediaRef={videoRef}
+        speeds={speeds}
+        enforceSpeedLock={isEnforced}
+        maxSeekFraction={maxSeekFraction}
+        completed={completed}
+        hasError={hasError}
+        completionThreshold={COMPLETION_THRESHOLD}
+        onCompletionEdge={handleCompletionEdge}
+        onPlayChange={handlePlayChange}
+        listenedLabel="Completed"
+        trailing={fullscreenButton}
+      />
     </div>
   )
 }
