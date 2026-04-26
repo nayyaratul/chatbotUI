@@ -191,6 +191,21 @@ function EmbeddedWebviewSheet({
   const [iframeState, setIframeState] = useState('loading')   // 'loading' | 'live' | 'error'
   const iframeRef = useRef(null)
 
+  const [retryNonce, setRetryNonce] = useState(0)
+
+  /* 8s load watchdog. Cleared when iframe fires `load` (which flips
+     iframeState to 'live', breaking the predicate and re-running cleanup). */
+  useEffect(() => {
+    if (iframeState !== 'loading') return
+    const t = window.setTimeout(() => setIframeState('error'), 8000)
+    return () => window.clearTimeout(t)
+  }, [iframeState, retryNonce])
+
+  const handleRetry = useCallback(() => {
+    setIframeState('loading')
+    setRetryNonce((n) => n + 1)        // forces iframe key to change → re-mount
+  }, [])
+
   const portalTarget = typeof document !== 'undefined'
     ? document.getElementById('chat-modal-root')
     : null
@@ -262,6 +277,7 @@ function EmbeddedWebviewSheet({
           )}
 
           <iframe
+            key={retryNonce}
             ref={iframeRef}
             className={cx(styles.shIframe, iframeState !== 'live' && styles.shIframe_hidden)}
             src={buildIframeSrc(payload?.url, payload?.widget_id)}
@@ -273,6 +289,29 @@ function EmbeddedWebviewSheet({
             onLoad={() => setIframeState('live')}
             onError={() => setIframeState('error')}
           />
+
+          {iframeState === 'error' && (
+            <div className={styles.shError} role="alert">
+              <WifiOff className={styles.shErrorGlyph} size={36} strokeWidth={1.75} aria-hidden />
+              <p className={styles.shErrorTitle}>Couldn't load {payload?.domain_label}</p>
+              <p className={styles.shErrorBody}>
+                Check your connection or try again in a moment.
+              </p>
+              <div className={styles.shErrorActions}>
+                <Button variant="secondary" onClick={handleRetry}>
+                  <RotateCcw size={16} strokeWidth={2} aria-hidden />
+                  <span>Try again</span>
+                </Button>
+                <button
+                  type="button"
+                  className={styles.shErrorClose}
+                  onClick={requestClose}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>,

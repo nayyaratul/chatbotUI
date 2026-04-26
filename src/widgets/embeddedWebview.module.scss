@@ -358,3 +358,63 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ─── Pass 1 region 7: error sub-state panel ─────────────────────── */
+
+.shError {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-100);
+  padding: var(--space-200);
+  background: var(--white);
+  text-align: center;
+}
+
+.shErrorGlyph {
+  color: var(--color-text-error);
+  margin-bottom: var(--space-100);
+}
+
+.shErrorTitle {
+  margin: 0;
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-90);
+}
+
+.shErrorBody {
+  margin: 0;
+  font-size: var(--font-size-200);
+  color: var(--grey-60);
+  /* 28rem is a content readability cap for the error paragraph,
+     same family as the carousel slide clamp() — not a §4 floor. */
+  max-width: 28rem;
+}
+
+.shErrorActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-150);
+  margin-top: var(--space-100);
+}
+
+.shErrorClose {
+  background: transparent;
+  border: 0;
+  padding: var(--space-100);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--grey-60);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-width-100);
+  text-underline-offset: var(--border-width-300);
+}
+
+.shErrorClose:hover {
+  color: var(--grey-80);
+}
