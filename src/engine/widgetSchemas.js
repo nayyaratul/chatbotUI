@@ -1265,11 +1265,14 @@ export const widgetSchemas = {
           audio_id: 'training_hindi_safety_brief',
           title: 'Voice instruction',
           description: 'Hindi · safety brief',
-          /* Stable Chrome team CDN — CORS-friendly, ~22s clip. The
-             demo uses a generic audio file; the title framing carries
-             the "voice instruction" semantic the audience cares about. */
-          url: 'https://storage.googleapis.com/media-session/sintel/snow-fight.mp3',
-          duration_seconds: 22,
+          /* Stable samplelib CDN — CORS-friendly 15s MP3. The
+             prior URL (storage.googleapis.com/media-session/...) was
+             a guess that 404'd, which is why the widget kept entering
+             the "Unable to load audio" state on mount. Demo content
+             is generic; the title framing carries the "voice
+             instruction" semantic the audience cares about. */
+          url: 'https://samplelib.com/lib/preview/mp3/sample-15s.mp3',
+          duration_seconds: 15,
           /* Speech-shaped fallback peaks (32 normalized). The widget
              also generates these inline if waveform_data is omitted. */
           waveform_data: [
