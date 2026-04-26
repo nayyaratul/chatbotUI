@@ -33,7 +33,6 @@ import styles from './embeddedWebview.module.scss'
    ─────────────────────────────────────────────────────────────────── */
 
 const SHEET_ANIM_DURATION = 360  /* bottom-sheet open/close — matches transform 320ms + 40ms safety */
-const LIFT_DURATION       = 520  /* FLIP poster → iframe-frame morph; Task 13 */
 
 const DEFAULT_SANDBOX = 'allow-scripts allow-forms allow-same-origin allow-popups'
 
@@ -138,12 +137,6 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const totalOpenMsRef = useRef(0)
   const lastOpenedAtRef = useRef(0)
 
-  const posterRef = useRef(null)
-  const [liftState, setLiftState] = useState(null)
-  /* liftState shape:
-     { direction: 'forward' | 'reverse', sourceRect, targetRect, tint }
-     null when not lifting. */
-
   const eyebrow = payload?.category
     ? `${meta.eyebrowPrefix} · ${payload.category}`
     : meta.eyebrowPrefix
@@ -151,34 +144,6 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const handleOpen = useCallback(() => {
     if (cardState === 'completed') return                     // proof state — locked
     if (cardState === 'sheet_open') return                    // double-tap guard
-
-    if (!prefersReducedMotion()) {
-      /* Phase 1 — measure source. Sheet has not mounted yet; we use a
-         provisional target rect (the chat-modal-root's body area). The
-         sheet, when it mounts, will call back with the precise iframe
-         frame rect; the clone re-targets via setLiftState if needed. */
-      const sourceRect = posterRef.current?.getBoundingClientRect()
-      const modalRoot = document.getElementById('chat-modal-root')
-      const rootRect = modalRoot?.getBoundingClientRect()
-      const provisionalTarget = rootRect && sourceRect
-        ? {
-            x: rootRect.left,
-            y: rootRect.top + rootRect.height * 0.18,
-            width: rootRect.width,
-            height: rootRect.height * 0.62,
-          }
-        : null
-
-      if (sourceRect && provisionalTarget) {
-        setLiftState({
-          direction: 'forward',
-          sourceRect: { x: sourceRect.left - rootRect.left, y: sourceRect.top - rootRect.top, width: sourceRect.width, height: sourceRect.height },
-          targetRect: { x: provisionalTarget.x - rootRect.left, y: provisionalTarget.y - rootRect.top, width: provisionalTarget.width, height: provisionalTarget.height },
-          tint: 'transparent',
-        })
-      }
-    }
-
     lastOpenedAtRef.current = Date.now()
     setCardState('sheet_open')
   }, [cardState])
@@ -188,14 +153,6 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       totalOpenMsRef.current += Date.now() - lastOpenedAtRef.current
       lastOpenedAtRef.current = 0
     }
-
-    /* Reverse FLIP intentionally NOT fired on close. The sheet's own
-       320ms slide-down + scrim fade is the close gesture; running a
-       reverse-clone afterwards re-introduces the poster image
-       mid-screen and animates it to the card, which reads as a
-       second, disconnected animation. The forward lift is the
-       signature moment; close stays simple. */
-
     setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))
   }, [])
 
@@ -226,29 +183,6 @@ export function EmbeddedWebview({ payload, onSubmit }) {
     setLastProgress(pct)
   }, [])
 
-  const handleLiftDone = useCallback(() => {
-    setLiftState(null)
-  }, [])
-
-  const handleSheetMeasured = useCallback((iframeFrameRect, tint) => {
-    setLiftState((prev) => {
-      if (!prev || prev.direction !== 'forward') return prev
-      const modalRoot = document.getElementById('chat-modal-root')
-      const rootRect = modalRoot?.getBoundingClientRect()
-      if (!rootRect) return prev
-      return {
-        ...prev,
-        targetRect: {
-          x: iframeFrameRect.left - rootRect.left,
-          y: iframeFrameRect.top - rootRect.top,
-          width: iframeFrameRect.width,
-          height: iframeFrameRect.height,
-        },
-        tint: tint ?? prev.tint,
-      }
-    })
-  }, [])
-
   const sheetOpen = cardState === 'sheet_open'
 
   const ctaLabel = cardState === 'dismissed' ? meta.ctaReopen : meta.ctaOpen
@@ -270,11 +204,9 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       </header>
 
       <div
-        ref={posterRef}
         className={cx(
           styles.poster,
           !payload?.poster_url && styles.poster_empty,
-          liftState && styles.poster_fading,
         )}
         aria-hidden
       >
@@ -333,24 +265,9 @@ export function EmbeddedWebview({ payload, onSubmit }) {
           payload={payload}
           variant={variant}
           meta={meta}
-          lifted={!liftState || liftState.direction === 'reverse'}
           onClose={handleSheetClose}
           onCompleted={handleCompleted}
           onProgress={handleProgress}
-          onMeasured={handleSheetMeasured}
-        />
-      )}
-
-      {liftState && (
-        <LiftClone
-          sourceRect={liftState.sourceRect}
-          targetRect={liftState.targetRect}
-          posterUrl={payload?.poster_url}
-          faviconUrl={payload?.favicon_url}
-          domainLabel={payload?.domain_label}
-          direction={liftState.direction}
-          tint={liftState.tint}
-          onDone={handleLiftDone}
         />
       )}
     </article>
@@ -366,16 +283,13 @@ function EmbeddedWebviewSheet({
   payload,
   variant,
   meta,
-  lifted,
   onClose,
   onCompleted,
-  onProgress,            // ← new: forwards progress events to card state
-  onMeasured,
+  onProgress,            // ← forwards progress events to card state
 }) {
   const [phase, setPhase] = useState('entering')
   const closingRef = useRef(false)
   const closeBtnRef = useRef(null)
-  const iframeFrameRef = useRef(null)
 
   const [iframeState, setIframeState] = useState('loading')   // 'loading' | 'live' | 'error'
   const iframeRef = useRef(null)
@@ -420,18 +334,6 @@ function EmbeddedWebviewSheet({
     if (phase !== 'open') return
     closeBtnRef.current?.focus({ preventScroll: true })
   }, [phase])
-
-  useEffect(() => {
-    if (phase !== 'open') return
-    const rect = iframeFrameRef.current?.getBoundingClientRect()
-    if (rect && onMeasured) {
-      /* tint sampling: read the iframe-frame's computed background. */
-      const computed = iframeFrameRef.current
-        ? getComputedStyle(iframeFrameRef.current).backgroundColor
-        : undefined
-      onMeasured(rect, computed)
-    }
-  }, [phase, onMeasured])
 
   const requestClose = useCallback(() => {
     if (closingRef.current) return
@@ -546,8 +448,7 @@ function EmbeddedWebviewSheet({
         </header>
 
         <div
-          ref={iframeFrameRef}
-          className={cx(styles.shBody, lifted ? styles.shBody_lifted : styles.shBody_pre_lift)}
+          className={styles.shBody}
           aria-busy={iframeState === 'loading'}
         >
           {iframeState === 'loading' && (
@@ -623,72 +524,3 @@ function EmbeddedWebviewSheet({
   )
 }
 
-/* ─── LiftClone — FLIP source-element clone ──────────────────────────
-   Portaled into #chat-modal-root; animates from sourceRect → targetRect
-   over LIFT_DURATION on the family rise-up curve. Removed from the
-   tree once the animation settles.
-
-   The clone is purely visual — pointer events disabled, aria-hidden.
-   The sheet's iframe-frame and the compact card's poster sit at the
-   src + target ends with opacity 0 / 0.4 respectively while the clone
-   carries the visual. */
-
-function LiftClone({ sourceRect, targetRect, posterUrl, faviconUrl, domainLabel, direction, onDone, tint }) {
-  const portalTarget = typeof document !== 'undefined'
-    ? document.getElementById('chat-modal-root')
-    : null
-  const [phase, setPhase] = useState('start')                 // 'start' | 'end'
-
-  useEffect(() => {
-    let inner = 0
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => setPhase('end'))
-    })
-    const t = window.setTimeout(onDone, LIFT_DURATION + 40)
-    return () => {
-      cancelAnimationFrame(outer)
-      cancelAnimationFrame(inner)
-      window.clearTimeout(t)
-    }
-  }, [onDone])
-
-  if (!portalTarget || !sourceRect || !targetRect) return null
-
-  const fromRect = direction === 'reverse' ? targetRect : sourceRect
-  const toRect   = direction === 'reverse' ? sourceRect : targetRect
-  const rect = phase === 'start' ? fromRect : toRect
-  /* Poster has rounded corners (radius-150); iframe-frame has square
-     corners. Morph the radius alongside the rect interpolation so the
-     end of the lift doesn't snap. */
-  const fromRadius = direction === 'reverse' ? '0' : 'var(--radius-150)'
-  const toRadius   = direction === 'reverse' ? 'var(--radius-150)' : '0'
-  const radius = phase === 'start' ? fromRadius : toRadius
-
-  return createPortal(
-    <div
-      className={styles.liftClone}
-      aria-hidden
-      style={{
-        left: rect.x + 'px',
-        top: rect.y + 'px',
-        width: rect.width + 'px',
-        height: rect.height + 'px',
-        borderRadius: radius,
-        '--lift-tint': tint || 'transparent',
-      }}
-    >
-      {posterUrl
-        ? <img src={posterUrl} alt="" className={styles.liftCloneImg} />
-        : <span className={styles.liftCloneFallback}><Globe size={36} strokeWidth={1.5} aria-hidden /></span>
-      }
-      <div className={styles.trustCapsule}>
-        {faviconUrl
-          ? <img className={styles.faviconImg} src={faviconUrl} alt="" />
-          : <Globe size={14} strokeWidth={2} aria-hidden />
-        }
-        <span className={styles.faviconDomain}>{domainLabel}</span>
-      </div>
-    </div>,
-    portalTarget,
-  )
-}
