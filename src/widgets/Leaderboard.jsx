@@ -170,7 +170,14 @@ export function Leaderboard({ payload }) {
               onClick={() => handleLink(link)}
             >
               {link.label}
-              <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
+              {/* Caret only on the navigational link. `how_calculated`
+                  is explanatory, not directional — an arrow there
+                  reads as "go to" when the link is really "tell me
+                  about". Same pattern Profile uses on its admin
+                  view-full vs. its other actions. */}
+              {link.id === 'view_full' && (
+                <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
+              )}
             </button>
           ))}
         </footer>
