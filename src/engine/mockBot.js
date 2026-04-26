@@ -182,6 +182,20 @@ registerRule({
   build: () => ({ type: 'earnings', payload: getVariantPayload('earnings', 'advance') }),
 })
 
+// ─── Leaderboard — personal default ──────────────────────────────
+// Trigger: "leaderboard", "incentive", "my rank", "my standing", "my performance"
+registerRule({
+  match: /^(leaderboard|incentive|my rank|my standing|my performance)$/i,
+  build: () => ({ type: 'leaderboard', payload: getVariantPayload('leaderboard', 'personal') }),
+})
+
+// ─── Leaderboard — top-5 variant ─────────────────────────────────
+// Trigger: "top 5", "rankings", "standings", "leaderboard top"
+registerRule({
+  match: /^(top( ?5)?|rankings|standings|leaderboard top( ?5)?)$/i,
+  build: () => ({ type: 'leaderboard', payload: getVariantPayload('leaderboard', 'leaderboard') }),
+})
+
 // ─── Comparison — candidate match default ────────────────────────
 // Trigger: "comparison", "side by side", "match", "vs", "compare"
 registerRule({

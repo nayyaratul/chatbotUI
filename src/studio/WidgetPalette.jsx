@@ -34,6 +34,7 @@ import {
   Pencil,
   Signature,
   ExternalLink,
+  Trophy,
 } from 'lucide-react'
 import styles from './widgetPalette.module.scss'
 
@@ -69,6 +70,7 @@ const WIDGET_ICONS = {
   audio:              Volume2,
   signature:          Signature,
   embedded_webview:   ExternalLink,
+  leaderboard:        Trophy,
 }
 
 /**

@@ -29,6 +29,7 @@ import { VoiceRecording } from '../widgets/VoiceRecording.jsx'
 import { AudioPlayer } from '../widgets/AudioPlayer.jsx'
 import { EmbeddedWebview } from '../widgets/EmbeddedWebview.jsx'
 import { SignatureCapture } from '../widgets/SignatureCapture.jsx'
+import { Leaderboard } from '../widgets/Leaderboard.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -62,4 +63,5 @@ export const registry = {
   audio: AudioPlayer,
   signature: SignatureCapture,
   embedded_webview: EmbeddedWebview,
+  leaderboard: Leaderboard,
 }

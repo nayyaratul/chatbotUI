@@ -464,6 +464,67 @@ function buildProfilePayload(variant) {
   throw new Error(`buildProfilePayload: unknown variant "${variant}"`)
 }
 
+/* ─── Incentive / Leaderboard (#30) — payload builder ────────────
+   `personal` ships ring + breakdown + tier; `leaderboard` ships a
+   top-5 list with the user landing at #4 so the §8 ledger-stripe
+   signature beat fires by default. Use-case framing (Reliance shift
+   incentive) carried as period/metric copy on the payload, not a
+   variant. */
+function buildLeaderboardPayload(variant) {
+  const base = {
+    widget_id: makeId('lb'),
+    variant,
+    period_label: 'April · Week 3',
+    metric_label: 'Shifts completed',
+    unit: '',
+    links: [
+      { id: 'view_full',      label: 'View full leaderboard' },
+      { id: 'how_calculated', label: 'How is this calculated?' },
+    ],
+  }
+
+  if (variant === 'personal') {
+    return {
+      ...base,
+      target: { target_value: 24, current_value: 18 },
+      breakdown: [
+        { label: 'Attendance',        current: 18, target: 22 },
+        { label: 'On-time arrivals',  current: 16, target: 18 },
+        { label: 'Hours logged',      current: 142, target: 168 },
+        { label: 'QC pass rate',      current: 92, target: 95, unit: '%' },
+      ],
+      tier: {
+        current: 'Bronze',
+        next: 'Silver',
+        rungs: ['Bronze', 'Silver', 'Gold'],
+        distance: 6,
+        distance_unit: 'shifts to Silver',
+      },
+      leaderboard: null,
+      user_position: null,
+    }
+  }
+
+  if (variant === 'leaderboard') {
+    return {
+      ...base,
+      target: null,
+      breakdown: null,
+      tier: null,
+      leaderboard: [
+        { rank: 1, name: 'Worker 4821', score: 28, is_user: false, delta: 3 },
+        { rank: 2, name: 'Worker 6133', score: 26, is_user: false, delta: -1 },
+        { rank: 3, name: 'Worker 2087', score: 24, is_user: false, delta: 2 },
+        { rank: 4, name: 'You',         score: 22, is_user: true,  delta: 4 },
+        { rank: 5, name: 'Worker 7702', score: 21, is_user: false, delta: 0 },
+      ],
+      user_position: null,
+    }
+  }
+
+  throw new Error(`buildLeaderboardPayload: unknown variant "${variant}"`)
+}
+
 /* ─── Shared video payload builder ────────────────────────────────
    Returns a representative payload per variant for the Video Player
    widget (#16). Both variants point at MDN's flower.mp4 sample —
@@ -1975,6 +2036,15 @@ export const widgetSchemas = {
     variants: [
       { id: 'worker', label: 'Worker', payload: () => buildProfilePayload('worker') },
       { id: 'admin',  label: 'Admin',  payload: () => buildProfilePayload('admin') },
+    ],
+  },
+
+  leaderboard: {
+    label: 'Leaderboard',
+    category: 'display',
+    variants: [
+      { id: 'personal',    label: 'Personal', payload: () => buildLeaderboardPayload('personal') },
+      { id: 'leaderboard', label: 'Top 5',    payload: () => buildLeaderboardPayload('leaderboard') },
     ],
   },
 
