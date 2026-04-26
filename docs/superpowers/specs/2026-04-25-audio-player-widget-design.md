@@ -74,7 +74,7 @@ The `widget_response` is fired exactly once per widget instance — on the first
 
 After the first time playback reaches the 95% threshold, the `.playerRow` container retints success and a one-cycle 600ms sheen sweeps L→R across it (the `vrcSealShimmer` mechanism, renamed `apwSealShimmer`). A small `Listened` badge appears in the meta cell beside the duration. The play button stays brand-60.
 
-**Card shell.** §1 verbatim — symmetric `space-200` padding, `grey-10` border, hover-only shadow, `radius-200`, `width: 100%`. `min-height: var(--size-176)` floor for the inner block; the outer card is shorter than VR's 24rem because there's no prompt headline + no action bar — the player row is the body.
+**Card shell.** §1 verbatim — symmetric `space-200` padding, `grey-10` border, hover-only shadow, `radius-200`, `width: 100%`. **No min-height floor** on either the card or the inner player row: unlike VR, this widget has no swappable state blocks (idle, error, and listened all render the same row geometry, only the meta cell content + tone shift). The row's natural height is dominated by the 44px play button; adding a 176px floor would balloon it to 2× its natural size for no functional reason.
 
 **Header.** §2 verbatim — `Volume2` Lucide glyph (size 18) inside the 36×36 brand-tinted badge, title at `font-size-400`, optional description at `grey-60`. `Volume2` chosen over `AudioLines` because the bar waveform itself is the audio-line metaphor; the badge needs a contrasting "audio" glyph that doesn't double up on the primitive.
 

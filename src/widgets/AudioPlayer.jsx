@@ -113,6 +113,125 @@ export function AudioPlayer({ payload }) {
 
   const audioElRef = useRef(null)
   const playRafRef = useRef(null)
+  /* Gates async setState after unmount. Mirrors VR's pattern: set
+     true on every effect setup (StrictMode runs setup → cleanup →
+     setup on first mount; without resetting on setup the cleanup
+     pass would leave it false for the rest of the lifetime). */
+  const mountedRef = useRef(true)
+
+  const stopPlayRaf = useCallback(() => {
+    if (playRafRef.current) {
+      cancelAnimationFrame(playRafRef.current)
+      playRafRef.current = null
+    }
+  }, [])
+
+  /* Edge-trigger for completion. Fires on the first crossing of the
+     95% threshold OR on the audio element's `ended` event,
+     whichever lands first. Idempotent against repeat calls — the
+     `completedRef` guard means a second crossing (replay-then-end,
+     scrub-back-then-forward, etc.) is a no-op. The `onReply` fire
+     is part of this single edge — never repeats. */
+  const fireCompletion = useCallback(() => {
+    if (completedRef.current) return
+    if (!mountedRef.current) return
+    completedRef.current = true
+    const at = Date.now()
+    setCompleted(true)
+    setListenedAt(at)
+    setListenPercentage(100)
+    onReply?.(
+      {
+        type: 'widget_response',
+        payload: {
+          source_type: 'audio_player',
+          source_widget_id: widgetId,
+          data: {
+            audio_id: audioId,
+            listen_percentage: 100,
+            completed: true,
+            listened_at: at,
+          },
+        },
+      },
+      { silent: isSilent },
+    )
+  }, [onReply, widgetId, audioId, isSilent])
+
+  const handleAudioPlay = useCallback(() => {
+    if (!mountedRef.current) return
+    /* Belt-and-suspenders: cancel any prior RAF chain before
+       scheduling a new one. Without this, a rapid pause→resume can
+       stack two recursive ticks (the older chain keeps writing
+       state because playRafRef.current only tracks the most recent
+       id). */
+    stopPlayRaf()
+    setIsPlaying(true)
+    /* RAF loop drives the sweep — much smoother than the audio
+       element's 4Hz timeupdate. Reads currentTime on every frame,
+       pushes a [0, 1] progress value into state, and updates
+       listen_percentage as the running monotonic max. Crosses the
+       95% threshold → fires the completion edge once. */
+    const tick = () => {
+      if (!mountedRef.current || !playRafRef.current) return
+      const el = audioElRef.current
+      if (!el) return
+      const dur = el.duration || duration || propDuration
+      const progress = dur > 0 ? Math.min(1, el.currentTime / dur) : 0
+      setPlayProgress(progress)
+      setCurrentTime(el.currentTime || 0)
+      const pct = progress * 100
+      setListenPercentage((prev) => (pct > prev ? pct : prev))
+      if (progress >= COMPLETION_THRESHOLD) fireCompletion()
+      /* Once we've reached the end, stop scheduling — `ended` will
+         land within a frame or two and finalize via handleAudioEnded.
+         Continuing to schedule writes identical state values for no
+         visual benefit. */
+      if (progress >= 1) return
+      playRafRef.current = requestAnimationFrame(tick)
+    }
+    playRafRef.current = requestAnimationFrame(tick)
+  }, [duration, propDuration, fireCompletion, stopPlayRaf])
+
+  const handleAudioPause = useCallback(() => {
+    if (!mountedRef.current) return
+    setIsPlaying(false)
+    stopPlayRaf()
+  }, [stopPlayRaf])
+
+  const handleAudioEnded = useCallback(() => {
+    if (!mountedRef.current) return
+    setIsPlaying(false)
+    setPlayProgress(1)
+    stopPlayRaf()
+    /* Belt-and-suspenders against the RAF tick missing the final
+       95% crossing on very short clips — `ended` always lands at
+       100%, so this is a guaranteed completion edge. Idempotent
+       against the RAF having already fired it. */
+    fireCompletion()
+  }, [stopPlayRaf, fireCompletion])
+
+  /* `loadedmetadata` may give a more accurate duration than the
+     `payload.duration_seconds` prop. Swap silently when it lands. */
+  const handleLoadedMetadata = useCallback(() => {
+    if (!mountedRef.current) return
+    const el = audioElRef.current
+    if (!el) return
+    const d = el.duration
+    if (Number.isFinite(d) && d > 0) setDuration(d)
+  }, [])
+
+  /* The <audio> element fires `error` for URL 404, codec failures,
+     network drops, etc. Degrade the row in place rather than swap to
+     a separate state block — keeps the geometry stable and signals
+     "this clip won't play" without taking the user out of the chat
+     flow. */
+  const handleAudioError = useCallback(() => {
+    if (!mountedRef.current) return
+    setHasError(true)
+    setIsPlaying(false)
+    stopPlayRaf()
+  }, [stopPlayRaf])
 
   /* ─── Playback toggle ─────────────────────────────────────────── */
 
@@ -120,6 +239,13 @@ export function AudioPlayer({ payload }) {
     const el = audioElRef.current
     if (!el) return
     if (el.paused) {
+      /* Replay-from-ended: HTML5 doesn't mandate auto-restart when
+         you call play() on a media element whose currentTime is
+         already at duration. Some browsers no-op; others restart.
+         Be explicit so replay always feels the same. */
+      if (el.ended || (el.duration > 0 && el.currentTime >= el.duration - 0.05)) {
+        el.currentTime = 0
+      }
       el.play().catch(() => { /* autoplay policy — usually fine after user gesture */ })
     } else {
       el.pause()
@@ -150,102 +276,6 @@ export function AudioPlayer({ payload }) {
     setListenPercentage((prev) => (pct > prev ? pct : prev))
     if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
   }, [duration, propDuration, fireCompletion])
-
-  const stopPlayRaf = useCallback(() => {
-    if (playRafRef.current) {
-      cancelAnimationFrame(playRafRef.current)
-      playRafRef.current = null
-    }
-  }, [])
-
-  /* Edge-trigger for completion. Fires on the first crossing of the
-     95% threshold OR on the audio element's `ended` event,
-     whichever lands first. Idempotent against repeat calls — the
-     `completedRef` guard means a second crossing (replay-then-end,
-     scrub-back-then-forward, etc.) is a no-op. The `onReply` fire
-     is part of this single edge — never repeats. */
-  const fireCompletion = useCallback(() => {
-    if (completedRef.current) return
-    completedRef.current = true
-    const at = Date.now()
-    setCompleted(true)
-    setListenedAt(at)
-    setListenPercentage(100)
-    onReply?.(
-      {
-        type: 'widget_response',
-        payload: {
-          source_type: 'audio_player',
-          source_widget_id: widgetId,
-          data: {
-            audio_id: audioId,
-            listen_percentage: 100,
-            completed: true,
-            listened_at: at,
-          },
-        },
-      },
-      { silent: isSilent },
-    )
-  }, [onReply, widgetId, audioId, isSilent])
-
-  const handleAudioPlay = useCallback(() => {
-    setIsPlaying(true)
-    /* RAF loop drives the sweep — much smoother than the audio
-       element's 4Hz timeupdate. Reads currentTime on every frame,
-       pushes a [0, 1] progress value into state, and updates
-       listen_percentage as the running monotonic max. Crosses the
-       95% threshold → fires the completion edge once. */
-    const tick = () => {
-      const el = audioElRef.current
-      if (!el) return
-      const dur = el.duration || duration || propDuration
-      const progress = dur > 0 ? Math.min(1, el.currentTime / dur) : 0
-      setPlayProgress(progress)
-      setCurrentTime(el.currentTime || 0)
-      const pct = progress * 100
-      setListenPercentage((prev) => (pct > prev ? pct : prev))
-      if (progress >= COMPLETION_THRESHOLD) fireCompletion()
-      playRafRef.current = requestAnimationFrame(tick)
-    }
-    playRafRef.current = requestAnimationFrame(tick)
-  }, [duration, propDuration, fireCompletion])
-
-  const handleAudioPause = useCallback(() => {
-    setIsPlaying(false)
-    stopPlayRaf()
-  }, [stopPlayRaf])
-
-  const handleAudioEnded = useCallback(() => {
-    setIsPlaying(false)
-    setPlayProgress(1)
-    stopPlayRaf()
-    /* Belt-and-suspenders against the RAF tick missing the final
-       95% crossing on very short clips — `ended` always lands at
-       100%, so this is a guaranteed completion edge. Idempotent
-       against the RAF having already fired it. */
-    fireCompletion()
-  }, [stopPlayRaf, fireCompletion])
-
-  /* `loadedmetadata` may give a more accurate duration than the
-     `payload.duration_seconds` prop. Swap silently when it lands. */
-  const handleLoadedMetadata = useCallback(() => {
-    const el = audioElRef.current
-    if (!el) return
-    const d = el.duration
-    if (Number.isFinite(d) && d > 0) setDuration(d)
-  }, [])
-
-  /* The <audio> element fires `error` for URL 404, codec failures,
-     network drops, etc. Degrade the row in place rather than swap to
-     a separate state block — keeps the geometry stable and signals
-     "this clip won't play" without taking the user out of the chat
-     flow. */
-  const handleAudioError = useCallback(() => {
-    setHasError(true)
-    setIsPlaying(false)
-    stopPlayRaf()
-  }, [stopPlayRaf])
 
   const handleSpeedCycle = useCallback(() => {
     setSpeedIndex((i) => (i + 1) % speeds.length)
@@ -291,9 +321,15 @@ export function AudioPlayer({ payload }) {
     }
   }, [duration, propDuration, fireCompletion])
 
-  /* Cleanup on unmount — pause any in-flight playback, cancel RAF. */
+  /* Lifecycle — set mountedRef true on every effect setup (StrictMode
+     setup → cleanup → setup pattern requires this), pause any
+     in-flight playback on unmount, cancel RAF. The mountedRef.current
+     = false MUST come before el.pause() so the synchronous `pause`
+     event handler bails before touching React state. */
   useEffect(() => {
+    mountedRef.current = true
     return () => {
+      mountedRef.current = false
       const el = audioElRef.current
       if (el) {
         try { el.pause() } catch { /* ignore */ }
@@ -348,13 +384,13 @@ export function AudioPlayer({ payload }) {
           aria-label={
             hasError ? 'Audio unavailable'
               : isPlaying ? 'Pause audio'
-                : completed && !isPlaying ? 'Replay audio'
+                : completed ? 'Replay audio'
                   : 'Play audio'
           }
         >
           {isPlaying
             ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
-            : completed && !isPlaying
+            : completed
               ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
               : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
         </button>

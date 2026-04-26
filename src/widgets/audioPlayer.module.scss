@@ -472,6 +472,17 @@
     animation-delay: 0ms;
   }
 
+  /* Collapse hover/state transitions on the row + interactive
+     controls. Color shifts between idle / error / listened still
+     happen, just instantly — the tone is the signal, the
+     transition was decoration. */
+  .playerRow,
+  .playBtn,
+  .speedBtn,
+  .waveform {
+    transition-duration: 0.01ms;
+  }
+
   .bar {
     transition-duration: 0.01ms;
   }
