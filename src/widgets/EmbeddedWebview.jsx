@@ -293,7 +293,7 @@ function EmbeddedWebviewSheet({
           {iframeState === 'error' && (
             <div className={styles.shError} role="alert">
               <WifiOff className={styles.shErrorGlyph} size={36} strokeWidth={1.75} aria-hidden />
-              <p className={styles.shErrorTitle}>Couldn't load {payload?.domain_label}</p>
+              <p className={styles.shErrorTitle}>Couldn't load {payload?.domain_label}.</p>
               <p className={styles.shErrorBody}>
                 Check your connection or try again in a moment.
               </p>

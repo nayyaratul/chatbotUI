@@ -376,7 +376,6 @@
 
 .shErrorGlyph {
   color: var(--color-text-error);
-  margin-bottom: var(--space-100);
 }
 
 .shErrorTitle {
@@ -390,9 +389,6 @@
   margin: 0;
   font-size: var(--font-size-200);
   color: var(--grey-60);
-  /* 28rem is a content readability cap for the error paragraph,
-     same family as the carousel slide clamp() — not a §4 floor. */
-  max-width: 28rem;
 }
 
 .shErrorActions {
