@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Partner BGV — Mock</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #111;
+      background: #fafafa;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h1 { font-size: 18px; margin: 0 0 16px; }
+    p  { font-size: 14px; line-height: 1.5; color: #555; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #444; margin: 16px 0 4px; }
+    input, select {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px;
+      font-size: 14px; background: white;
+    }
+    button {
+      margin-top: 24px; width: 100%;
+      padding: 12px 16px; font-size: 14px; font-weight: 600;
+      background: #1459c7; color: white; border: 0; border-radius: 8px; cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>Identity verification</h1>
+  <p>Partner mock page. Submitting posts a <code>complete</code> message back to the chat.</p>
+
+  <form id="bgv">
+    <label>Full name</label>
+    <input name="name" required />
+    <label>Date of birth</label>
+    <input type="date" name="dob" required />
+    <label>Document type</label>
+    <select name="doc">
+      <option>Aadhaar</option>
+      <option>PAN</option>
+      <option>Passport</option>
+    </select>
+    <label>Document number</label>
+    <input name="docNumber" required />
+    <button type="submit">Submit verification</button>
+  </form>
+
+  <script>
+    const params = new URLSearchParams(location.search)
+    const wid = params.get('wid')
+
+    const form = document.getElementById('bgv')
+    form.addEventListener('submit', (e) => {
+      e.preventDefault()
+      const data = Object.fromEntries(new FormData(form))
+      window.parent.postMessage(
+        { source: 'embedded_webview', widget_id: wid, event: 'complete', data },
+        '*'                                  /* dev-fixture only — partners use exact origin */
+      )
+    })
+  </script>
+</body>
+</html>
