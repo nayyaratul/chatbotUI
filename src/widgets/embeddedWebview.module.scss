@@ -201,10 +201,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* Spec: min(36rem, 90% of chat-frame). On a phone-sized chat-frame
-     the 90% cap dominates; on tall desktops the 36rem cap dominates so
-     the sheet doesn't run away vertically. The 36rem here is a content
-     CAP, not a §4 floor — different semantic from card min-heights. */
+  /* Sheet height: phone-sized chat-frames hit the 90% cap; desktops hit
+     the content cap (semantic differs from §4 card min-height floors). */
   height: min(36rem, 90%);
   min-height: 24rem;
   background: var(--white);
@@ -342,6 +340,14 @@
   justify-content: center;
   pointer-events: none;
   color: var(--brand-60);
+  /* Sweeps in on a tiny rise as the lift clone fades out — visual
+     continuity instead of a pop at handoff. */
+  animation: ewvLoaderRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+@keyframes ewvLoaderRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--size-04)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
 .shSpinner {
@@ -464,7 +470,23 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Success "seal" — the favicon-chip → Check chip swap is the moment
+   §10 success acknowledges; it should feel stamped, not faded.
+   240ms scale-pulse on the springy curve (matches Signature Capture's
+   seal pattern) plus a one-shot halo that scales out + fades. */
+@keyframes ewvSealPulse {
+  0%   { transform: scale(0.9); }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ewvSealHalo {
+  0%   { opacity: var(--opacity-040); transform: translate(-50%, -50%) scale(0.8); }
+  100% { opacity: var(--opacity-000); transform: translate(-50%, -50%) scale(1.6); }
+}
+
 .trustCapsule_done {
+  position: absolute;     /* override re-asserts the .trustCapsule absolute positioning */
   background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
   border-color: color-mix(in srgb, var(--color-text-success) 24%, transparent);
   color: var(--color-text-success);
@@ -472,6 +494,25 @@
     background 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
     border-color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
     color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4);
+  animation: ewvSealPulse 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+/* Halo ring — a single-shot expanding ring centered on the capsule.
+   ::after sits behind via z-index: -1 so the ring appears to pulse out
+   from underneath the chip, then dissolves. Matches the family's
+   springy-seal pattern (§16). */
+.trustCapsule_done::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-500);
+  border: var(--border-width-150) solid color-mix(in srgb, var(--color-text-success) 60%, transparent);
+  pointer-events: none;
+  z-index: -1;
+  animation: ewvSealHalo 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
 }
 
 /* ─── Pass 1 region 11: training progress chip ───────────────────── */
@@ -506,12 +547,88 @@
   z-index: 0;
 }
 
+/* Leading-edge intensification — the right-most slice of the fill is
+   brighter than the body. As the fill grows and lands at the new value,
+   this highlight rides with the edge so the chip feels "responsive"
+   instead of "computed". Constant gradient on ::after means it tracks
+   any width change without RAF orchestration. */
+.shProgressFill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--size-12);
+  background: linear-gradient(
+    to right,
+    transparent 0,
+    color-mix(in srgb, var(--brand-60) 28%, var(--white)) 100%
+  );
+  pointer-events: none;
+}
+
 .shProgressLabel {
   position: relative;
   z-index: 1;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  /* Each new integer percent re-mounts the label (React key change),
+     re-running this animation. Subtle baseline tick that reads as a
+     digit roll without stealing focus. Springy curve (§16) at 220ms. */
+  animation: ewvDigitTick 220ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+@keyframes ewvDigitTick {
+  0%   { transform: translateY(calc(-1 * var(--size-02))); opacity: var(--opacity-072); }
+  100% { transform: translateY(0);                          opacity: var(--opacity-100); }
 }
 
 /* ─── Pass 1 region 13: FLIP lift clone + iframe-frame opacity gate ── */
+
+/* Scale flourish — clone breathes briefly oversized at the apex of the
+   lift, then settles. Paired with the box-shadow + capsule-fade keyframe
+   below to read as cinematic rather than mechanical.
+   Curve: rise-up (§16). Range: 1.00 → 1.02 → 1.00 over the 520ms window. */
+@keyframes ewvLiftFlourish {
+  0%   { transform: scale(1);    }
+  48%  { transform: scale(1.02); }
+  100% { transform: scale(1);    }
+}
+
+/* Drop-shadow grows as the clone rises off the card and fades as it
+   settles into the iframe-frame. Same rise-up timing as the flourish so
+   shadow + scale read as one gesture. The terminal "0 0 0 transparent"
+   is what makes the handoff feel weightless rather than a thump. */
+@keyframes ewvLiftShadow {
+  0% {
+    box-shadow: 0 0 0 transparent;
+  }
+  44% {
+    box-shadow:
+      0 calc(var(--size-08))  calc(var(--size-24)) color-mix(in srgb, var(--grey-90) 24%, transparent),
+      0 calc(var(--size-02))  calc(var(--size-06)) color-mix(in srgb, var(--grey-90) 14%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+/* Trust capsule on the clone fades out late so the sheet header (which
+   already shows favicon + domain top-left) doesn't double-bill with the
+   capsule (bottom-left of poster). They reconcile rather than overlap. */
+@keyframes ewvLiftCapsuleFade {
+  0%, 55% { opacity: var(--opacity-100); transform: translateY(0); }
+  100%    { opacity: var(--opacity-000); transform: translateY(calc(-1 * var(--size-04))); }
+}
+
+/* Clone holds full opacity through ~85% of the lift, then fades out so
+   it overlaps the iframe-frame's cross-fade rather than hard-cutting.
+   Combined with .shBody_lifted's 280ms cross-fade, the handoff lands as
+   a single ~120ms blend rather than a pop. */
+@keyframes ewvLiftFade {
+  0%, 82% { opacity: var(--opacity-100); }
+  100%    { opacity: var(--opacity-000); }
+}
 
 .liftClone {
   position: absolute;
@@ -524,13 +641,19 @@
   overflow: hidden;
   pointer-events: none;
   z-index: 3;
-  /* width / height / left / top / border-radius interpolate. */
+  transform-origin: 50% 50%;
+  /* width / height / left / top / border-radius interpolate via transition;
+     scale + shadow run as keyframe animations layered on top. */
   transition:
     left 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
     top 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
     width 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
     height 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
     border-radius 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+  animation:
+    ewvLiftFlourish 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both,
+    ewvLiftShadow   520ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both,
+    ewvLiftFade     520ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 .liftCloneImg {
@@ -552,15 +675,33 @@
   opacity: var(--opacity-024);
 }
 
-/* While the lift is in flight, the sheet's iframe-frame sits invisible
-   so the clone owns the visual. The clone's onDone callback flips a
-   `lifted` flag on the sheet which restores the iframe-frame's opacity. */
+/* The clone's own trust capsule fades during the lift so it doesn't
+   collide with the sheet header's favicon + domain. .trustCapsule on
+   the compact card stays put; only the cloned instance gets the fade. */
+.liftClone .trustCapsule {
+  animation: ewvLiftCapsuleFade 520ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+/* Iframe-frame visibility during the lift. Two pieces working together:
+   - `_pre_lift` sits at opacity 0 then auto-fades up via an animation
+     timed so its head overlaps the clone's tail (~120ms shared window).
+     The clone's ewvLiftFade starts dropping at 82% of 520ms = 426ms;
+     this fade-in begins at 76% of 560ms = 425ms. Same crossfade window
+     either way the parent flips `lifted`.
+   - `_lifted` is the final-state snap once the clone has actually
+     unmounted; it sits at opacity 1 with no transition because the
+     fade-in animation has already done the visual work. */
 .shBody_pre_lift {
   opacity: var(--opacity-000);
+  animation: ewvFrameFadeIn 560ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .shBody_lifted {
   opacity: var(--opacity-100);
-  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes ewvFrameFadeIn {
+  0%, 76% { opacity: var(--opacity-000); }
+  100%    { opacity: var(--opacity-100); }
 }
 
 .poster_fading {
@@ -579,12 +720,17 @@
   .shBody_pre_lift,
   .shBody_lifted,
   .liftClone,
+  .liftClone .trustCapsule,
   .trustCapsule_done,
+  .trustCapsule_done::after,
   .shProgressFill,
+  .shProgressLabel,
+  .shLoader,
   .poster_fading {
     transition: none !important;
     animation: none !important;
   }
 
+  .trustCapsule_done::after { display: none !important; }
   .shSpinner { animation: none !important; }
 }

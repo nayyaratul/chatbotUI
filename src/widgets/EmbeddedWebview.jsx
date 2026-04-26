@@ -543,7 +543,11 @@ function EmbeddedWebviewSheet({
           {showProgressChip && (
             <span className={styles.shProgressChip}>
               <span className={styles.shProgressFill} style={{ width: `${Math.round(animatedProgress)}%` }} />
-              <span className={styles.shProgressLabel}>{Math.round(animatedProgress)}%</span>
+              {/* Re-key per integer so the digit-tick keyframe re-runs on
+                 each percent change — reads as a digit roll, not a swap. */}
+              <span key={Math.round(animatedProgress)} className={styles.shProgressLabel}>
+                {Math.round(animatedProgress)}%
+              </span>
             </span>
           )}
           <button
