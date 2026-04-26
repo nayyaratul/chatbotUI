@@ -462,18 +462,22 @@ registerRule({
 })
 
 // ─── Embedded Webview — training variant ───────────────────────
+// Trigger: "webview training", "training webview", "embedded training", "webview compliance"
+//          (plain "training"/"compliance" stay with training_scenario / video enforced)
 registerRule({
   match: /^(webview training|training webview|embedded training|webview compliance)$/i,
   build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'training') }),
 })
 
 // ─── Embedded Webview — reader variant ─────────────────────────
+// Trigger: "webview reader", "reader webview", "embedded reader", "read this", "policy webview"
 registerRule({
   match: /^(webview reader|reader webview|embedded reader|read this|policy webview)$/i,
   build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'reader') }),
 })
 
 // ─── Embedded Webview — preview variant ────────────────────────
+// Trigger: "webview preview", "preview webview", "embedded preview"
 registerRule({
   match: /^(webview preview|preview webview|embedded preview)$/i,
   build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'preview') }),
