@@ -110,7 +110,11 @@ export function MediaPlayerControls({
   const [duration, setDuration] = useState(0)
   const [playProgress, setPlayProgress] = useState(0)
   const [speedIndex, setSpeedIndex] = useState(0)
-  const [muted, setMuted] = useState(false)
+  /* Volume in [0, 1]. Mirrors mediaRef.current.volume so the slider
+     visual follows external changes (e.g., set programmatically by
+     the bot). volume === 0 reads as muted in the icon. */
+  const [volume, setVolume] = useState(1)
+  const [volumePopoverOpen, setVolumePopoverOpen] = useState(false)
 
   const playRafRef = useRef(null)
   const speedLabelRef = useRef(null)
@@ -118,6 +122,8 @@ export function MediaPlayerControls({
   const isDraggingRef = useRef(false)
   const completedEdgeRef = useRef(false)
   const mountedRef = useRef(true)
+  const volumeWrapRef = useRef(null)
+  const volumeSliderDraggingRef = useRef(false)
 
   const onCompletionEdgeRef = useRef(onCompletionEdge)
   const onPlayChangeRef = useRef(onPlayChange)
@@ -198,7 +204,12 @@ export function MediaPlayerControls({
 
     const onVolumeChange = () => {
       if (!mountedRef.current) return
-      setMuted(Boolean(el.muted))
+      /* Treat .muted as volume=0 for the visual; the actual control
+         model is volume-only so the user has a single concept to
+         reason about. The slider drives volume, dragging to 0
+         effectively mutes. */
+      const next = el.muted ? 0 : el.volume
+      setVolume(Math.max(0, Math.min(1, next)))
     }
 
     el.addEventListener('play', onPlay)
@@ -210,7 +221,7 @@ export function MediaPlayerControls({
     if (Number.isFinite(el.duration) && el.duration > 0) {
       setDuration(el.duration)
     }
-    setMuted(Boolean(el.muted))
+    setVolume(el.muted ? 0 : el.volume)
 
     return () => {
       mountedRef.current = false
@@ -319,14 +330,80 @@ export function MediaPlayerControls({
     flashKeyframe(speedLabelRef.current, styles.speedLabelPulse)
   }, [speeds.length])
 
-  const handleMuteToggle = useCallback(() => {
+  /* ─── Volume slider (popover) ─────────────────────────────────
+     Click the volume button → opens a small slider above it. Drag
+     the slider to set volume in [0, 1]. Click outside / Escape /
+     click the volume button again → closes. The volume button's
+     icon swaps Volume2 ↔ VolumeX based on whether volume is > 0. */
+
+  const setVolumeValue = useCallback((next) => {
+    const clamped = Math.max(0, Math.min(1, next))
+    setVolume(clamped)
     const el = mediaRef?.current
     if (!el) return
-    el.muted = !el.muted
-    /* setMuted is also driven by the volumechange event listener,
-       but flipping it here too avoids a one-frame visual lag. */
-    setMuted(el.muted)
+    el.volume = clamped
+    /* If user drags to 0, also flip .muted so subsequent direct
+       volume reads stay coherent. If they drag back up, unmute so
+       audio actually plays. */
+    if (clamped === 0) {
+      el.muted = true
+    } else if (el.muted) {
+      el.muted = false
+    }
   }, [mediaRef])
+
+  const handleVolumeBtnClick = useCallback(() => {
+    setVolumePopoverOpen((open) => !open)
+  }, [])
+
+  const applyVolumePointerSeek = useCallback((clientY, container) => {
+    const rect = container.getBoundingClientRect()
+    if (rect.height <= 0) return
+    /* Vertical slider: top of track = full volume (1), bottom = 0.
+       Invert the Y fraction so dragging UP increases volume. */
+    const fromTop = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+    setVolumeValue(1 - fromTop)
+  }, [setVolumeValue])
+
+  const handleVolumePointerDown = useCallback((e) => {
+    const container = e.currentTarget
+    if (e.pointerId !== undefined && container.setPointerCapture) {
+      try { container.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+    }
+    volumeSliderDraggingRef.current = true
+    applyVolumePointerSeek(e.clientY, container)
+  }, [applyVolumePointerSeek])
+
+  const handleVolumePointerMove = useCallback((e) => {
+    if (!volumeSliderDraggingRef.current) return
+    applyVolumePointerSeek(e.clientY, e.currentTarget)
+  }, [applyVolumePointerSeek])
+
+  const handleVolumePointerEnd = useCallback(() => {
+    volumeSliderDraggingRef.current = false
+  }, [])
+
+  /* Outside click + Escape close the volume popover. The handler is
+     only attached while the popover is open so we don't pay for it
+     on every render of every audio/video player on the page. */
+  useEffect(() => {
+    if (!volumePopoverOpen) return undefined
+    function onDown(e) {
+      const wrap = volumeWrapRef.current
+      if (wrap && !wrap.contains(e.target)) {
+        setVolumePopoverOpen(false)
+      }
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setVolumePopoverOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [volumePopoverOpen])
 
   /* ─── Render ─────────────────────────────────────────────────── */
 
@@ -421,21 +498,55 @@ export function MediaPlayerControls({
         </div>
       </div>
 
-      {/* Volume — mute / unmute toggle. Hidden on mobile via CSS
-          (desktop-only by design — phones have hardware volume keys). */}
+      {/* Volume — click opens a small popover with a vertical slider.
+          Hidden on mobile via CSS (desktop-only by design — phones
+          have hardware volume keys). */}
       {showVolume && (
-        <button
-          type="button"
-          className={cx(styles.volumeBtn, hasError && styles.volumeBtnDisabled)}
-          onClick={handleMuteToggle}
-          disabled={hasError}
-          aria-label={muted ? 'Unmute audio' : 'Mute audio'}
-          aria-pressed={muted}
-        >
-          {muted
-            ? <VolumeX size={16} strokeWidth={2.25} aria-hidden="true" />
-            : <Volume2 size={16} strokeWidth={2.25} aria-hidden="true" />}
-        </button>
+        <div className={styles.volumeWrap} ref={volumeWrapRef}>
+          <button
+            type="button"
+            className={cx(styles.volumeBtn, hasError && styles.volumeBtnDisabled)}
+            onClick={handleVolumeBtnClick}
+            disabled={hasError}
+            aria-label={
+              volume === 0
+                ? 'Volume — muted, tap to adjust'
+                : `Volume ${Math.round(volume * 100)}%, tap to adjust`
+            }
+            aria-haspopup="dialog"
+            aria-expanded={volumePopoverOpen}
+          >
+            {volume === 0
+              ? <VolumeX size={16} strokeWidth={2.25} aria-hidden="true" />
+              : <Volume2 size={16} strokeWidth={2.25} aria-hidden="true" />}
+          </button>
+          {volumePopoverOpen && (
+            <div
+              className={styles.volumePopover}
+              role="dialog"
+              aria-label="Volume control"
+            >
+              <div
+                className={styles.volumeSlider}
+                style={{ '--volume-progress': volume }}
+                onPointerDown={handleVolumePointerDown}
+                onPointerMove={handleVolumePointerMove}
+                onPointerUp={handleVolumePointerEnd}
+                onPointerCancel={handleVolumePointerEnd}
+                role="slider"
+                aria-orientation="vertical"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(volume * 100)}
+                aria-label="Volume"
+                tabIndex={-1}
+              >
+                <span className={styles.volumeFill} aria-hidden="true" />
+                <span className={styles.volumeThumb} aria-hidden="true" />
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {enforceSpeedLock ? (
