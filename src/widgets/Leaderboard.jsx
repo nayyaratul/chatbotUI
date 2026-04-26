@@ -78,7 +78,11 @@ function useCountUp(target, { duration, delay }) {
 }
 
 /* Ring + breakdown share the same threshold table — keeps the visual
-   cue identical across the two regions in the personal body. */
+   cue identical across the two regions in the personal body.
+   `target <= 0` is a defensive path for malformed payloads (the
+   schema builder always provides a positive target); we resolve
+   it to neutral so the brand-60 ring + "No target" verdict at
+   least renders something instead of throwing. */
 function progressTone(current, target) {
   if (target <= 0) return 'neutral'
   const ratio = current / target
@@ -103,10 +107,17 @@ export function Leaderboard({ payload }) {
   const widgetId    = payload?.widget_id
   const variant     = payload?.variant === 'leaderboard' ? 'leaderboard' : 'personal'
   const periodLabel = payload?.period_label ?? ''
+  const metricLabel = payload?.metric_label ?? ''
   const links       = useMemo(
     () => (Array.isArray(payload?.links) ? payload.links : []),
     [payload?.links],
   )
+
+  /* Description copy — period plus optional metric framing. The
+     middle-dot separator matches JobCard subtitle convention. Either
+     piece can be missing; we render whichever is present. */
+  const descriptionParts = [periodLabel, metricLabel].filter(Boolean)
+  const description = descriptionParts.join(' · ')
 
   /* Card-level tone — only meaningful in personal mode where the ring
      drives it. Leaderboard mode stays neutral (brand-60). */
@@ -150,7 +161,7 @@ export function Leaderboard({ payload }) {
         </span>
         <div className={styles.headerText}>
           <h3 className={styles.title}>{title}</h3>
-          {periodLabel && <p className={styles.description}>{periodLabel}</p>}
+          {description && <p className={styles.description}>{description}</p>}
         </div>
       </header>
 
@@ -247,16 +258,21 @@ function TierRung({ tier }) {
           if (idx < currentIdx) state = 'completed'
           else if (idx === currentIdx) state = 'current'
           const isLastTopRung = atTop && idx === rungs.length - 1
+          /* When the user has reached the top tier, drop the state
+             class entirely — `rungPill_topPulse` carries its own
+             success-tinted background and the springy pulse. Avoids
+             the `current` (half-saturation) and `topPulse` rules
+             racing for the same property. */
           return (
             <span
               key={rung}
               className={cx(
                 styles.rungPill,
-                styles[`rungPill_${state}`],
+                !isLastTopRung && styles[`rungPill_${state}`],
                 isLastTopRung && styles.rungPill_topPulse,
               )}
-              data-state={state}
-              aria-label={`${rung}, ${state}`}
+              data-state={isLastTopRung ? 'top-reached' : state}
+              aria-label={`${rung}, ${isLastTopRung ? 'top reached' : state}`}
             />
           )
         })}
@@ -428,7 +444,7 @@ function RankRow({ idx, row, unit }) {
         '--lb-row-delay': `${rowDelay}ms`,
         '--lb-stripe-delay': `${stripeDelay}ms`,
       }}
-      aria-current={isUser ? 'true' : undefined}
+      aria-current={isUser ? 'location' : undefined}
     >
       {RankIcon ? (
         <span

@@ -180,7 +180,7 @@ You're #12 of 184
 
 ### Footer (both variants — optional)
 
-`display: flex; justify-content: flex-start; gap: var(--space-200)`. Plain `<button type="button">` text-links — **no new Button styles**, mirrors Profile's "View full profile" pattern and JobCard's "View details" pattern. Copy reads "View full leaderboard →" / "How is this calculated?". Styling per §12 caption rules: `font-size-100`, `font-weight-medium`, `--grey-60`, `text-decoration: underline`, `text-underline-offset: var(--border-width-300)`, hover-state retones to `--brand-60`. Lucide `ChevronRight` at `size={14}` follows the first link copy.
+`display: flex; justify-content: flex-start; gap: var(--space-200)`. Plain `<button type="button">` text-links — **no new Button styles**, matches Profile's `.viewFullLink` and JobCard's `.viewDetailsLink` precedents exactly: `font-size-200`, `font-weight-medium`, resting color `--brand-60` with no underline, hover wash `color-mix(--brand-60 10%, transparent)` + text retones to `--brand-70`, active wash deeper, focus-visible outline `--border-width-200` brand-60. Copy reads "View full leaderboard" / "How is this calculated?". Lucide `ArrowRight` at `size={12}` follows **only** the navigational link (`view_full`); `how_calculated` is explanatory, not directional, so an arrow there would mislead.
 
 When `payload.links` is empty, the footer is omitted entirely (the `min-height: 24rem` floor still holds the card from collapsing).
 
