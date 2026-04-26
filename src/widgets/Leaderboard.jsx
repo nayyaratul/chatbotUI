@@ -4,6 +4,7 @@ import {
   Trophy,
   ArrowRight,
 } from 'lucide-react'
+/* eslint-disable react-refresh/only-export-components */
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './leaderboard.module.scss'
 
@@ -70,6 +71,26 @@ function useCountUp(target, { duration, delay }) {
   return value
 }
 
+/* Ring + breakdown share the same threshold table — keeps the visual
+   cue identical across the two regions in the personal body. */
+function progressTone(current, target) {
+  if (target <= 0) return 'neutral'
+  const ratio = current / target
+  if (ratio >= 1.0) return 'success'
+  if (ratio >= 0.6) return 'neutral'   /* on-track default — brand-60 */
+  return 'warning'                     /* behind — yellow-60 */
+}
+
+function progressVerdict(current, target) {
+  if (target <= 0) return 'No target'
+  const ratio = current / target
+  if (ratio >= 1.0)  return 'Target hit'
+  if (ratio >= 0.85) return 'Almost there'
+  if (ratio >= 0.6)  return 'On track'
+  if (ratio >= 0.3)  return 'Catching up'
+  return 'Behind'
+}
+
 export function Leaderboard({ payload }) {
   const { onReply } = useChatActions()
 
@@ -80,6 +101,12 @@ export function Leaderboard({ payload }) {
     () => (Array.isArray(payload?.links) ? payload.links : []),
     [payload?.links],
   )
+
+  /* Card-level tone — only meaningful in personal mode where the ring
+     drives it. Leaderboard mode stays neutral (brand-60). */
+  const personalTone = variant === 'personal' && payload?.target
+    ? progressTone(payload.target.current_value ?? 0, payload.target.target_value ?? 0)
+    : 'neutral'
 
   const handleLink = useCallback((link) => {
     onReply?.({
@@ -101,8 +128,13 @@ export function Leaderboard({ payload }) {
 
   return (
     <div
-      className={cx(styles.card, styles[`card_${variant}`])}
+      className={cx(
+        styles.card,
+        styles[`card_${variant}`],
+        styles[`card_tone-${personalTone}`],
+      )}
       data-variant={variant}
+      data-tone={personalTone}
       role="article"
       aria-label={title}
     >
@@ -141,20 +173,191 @@ export function Leaderboard({ payload }) {
   )
 }
 
-/* Region 2 — to be filled in next commit. */
-function PersonalBody() {
-  return null
+/* ─── Personal body ──────────────────────────────────────────────
+   Tier rung eyebrow → ring + breakdown two-column. Container query
+   collapses to stacked at narrow slot widths. */
+function PersonalBody({ payload }) {
+  const target    = payload?.target ?? null
+  const breakdown = Array.isArray(payload?.breakdown) ? payload.breakdown : []
+  const tier      = payload?.tier ?? null
+  const unit      = typeof payload?.unit === 'string' ? payload.unit : ''
+
+  return (
+    <div className={styles.personalBody}>
+      {tier && <TierRung tier={tier} />}
+      {target && (
+        <div className={styles.metricRow}>
+          <ProgressRing
+            current={target.current_value ?? 0}
+            target={target.target_value ?? 0}
+            unit={unit}
+          />
+          {breakdown.length > 0 && (
+            <ul className={styles.breakdown}>
+              {breakdown.slice(0, 4).map((row, idx) => (
+                <BreakdownRow
+                  key={`${row.label ?? 'row'}-${idx}`}
+                  idx={idx}
+                  label={row.label ?? ''}
+                  current={row.current ?? 0}
+                  target={row.target ?? 0}
+                  unit={row.unit ?? unit}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* Tier rung — chip + 3-pill segmented rung + distance caption.
+   §6 segmented-pills vocabulary. When `distance === null` (top tier
+   reached), the right-most pill takes a success tint with a one-cycle
+   springy pulse and the caption swaps to "Top tier reached". */
+function TierRung({ tier }) {
+  const rungs   = Array.isArray(tier?.rungs) ? tier.rungs : []
+  const current = tier?.current ?? ''
+  const currentIdx = rungs.findIndex((r) => r === current)
+  const atTop = tier?.distance == null
+  const distanceCopy = atTop
+    ? 'Top tier reached'
+    : `${tier?.distance ?? 0} ${tier?.distance_unit ?? ''}`.trim()
+
+  return (
+    <div className={styles.tierRow} role="group" aria-label="Tier progress">
+      <span className={styles.tierChip}>{current}</span>
+      <span className={styles.rungs} aria-hidden="true">
+        {rungs.map((rung, idx) => {
+          let state = 'upcoming'
+          if (idx < currentIdx) state = 'completed'
+          else if (idx === currentIdx) state = 'current'
+          const isLastTopRung = atTop && idx === rungs.length - 1
+          return (
+            <span
+              key={rung}
+              className={cx(
+                styles.rungPill,
+                styles[`rungPill_${state}`],
+                isLastTopRung && styles.rungPill_topPulse,
+              )}
+              data-state={state}
+              aria-label={`${rung}, ${state}`}
+            />
+          )
+        })}
+      </span>
+      <span className={styles.distanceCaption}>{distanceCopy}</span>
+    </div>
+  )
+}
+
+/* Progress ring — full circle, 64×64 viewBox. SVG rotated -90deg so
+   the stroke begins at 12 o'clock and sweeps clockwise. Two
+   concentric circles: track (grey-10) + fill (--tone-color, animates
+   stroke-dashoffset 0 → target). Center: count-up number + quiet
+   `/ target` reference. Verdict word below. */
+function ProgressRing({ current, target, unit }) {
+  const ratio = target > 0 ? Math.max(0, Math.min(1, current / target)) : 0
+  const RADIUS = 28
+  const CIRC = 2 * Math.PI * RADIUS               // ≈ 175.93
+  const targetOffset = CIRC * (1 - ratio)
+  const tone = progressTone(current, target)
+  const verdict = progressVerdict(current, target)
+  const display = useCountUp(current, {
+    duration: COUNT_UP_MS,
+    delay: COUNT_UP_DELAY_MS,
+  })
+  const valueLabel = unit
+    ? `Progress: ${current} of ${target} ${unit}`
+    : `Progress: ${current} of ${target}`
+
+  return (
+    <div
+      className={cx(styles.ringWrap, styles[`ringWrap_${tone}`])}
+      role="img"
+      aria-label={valueLabel}
+    >
+      <div className={styles.ringFrame}>
+        <svg
+          className={styles.ring}
+          viewBox="0 0 64 64"
+          aria-hidden="true"
+        >
+          <circle
+            className={styles.ringTrack}
+            cx="32"
+            cy="32"
+            r={RADIUS}
+            fill="none"
+          />
+          <circle
+            className={styles.ringFill}
+            cx="32"
+            cy="32"
+            r={RADIUS}
+            fill="none"
+            style={{
+              '--lb-ring-circ': `${CIRC}`,
+              '--lb-ring-target': `${targetOffset}`,
+            }}
+          />
+        </svg>
+        <div className={styles.ringCenter}>
+          <span className={styles.ringValue}>{display}</span>
+          <span className={styles.ringDenominator}>
+            / {target}{unit ? ` ${unit}` : ''}
+          </span>
+        </div>
+      </div>
+      <span className={styles.ringVerdict}>{verdict}</span>
+    </div>
+  )
+}
+
+/* Breakdown row — label + value + §6 linear-fill mini-bar. Per-row
+   tone independent of the ring tone (a row can be on track while the
+   overall target is behind, or vice-versa). */
+function BreakdownRow({ idx, label, current, target, unit }) {
+  const ratio = target > 0 ? Math.max(0, Math.min(1, current / target)) : 0
+  const tone = progressTone(current, target)
+  const valueCopy = unit
+    ? `${current} / ${target} ${unit}`
+    : `${current} / ${target}`
+  /* Stagger §11 — start 240ms after card mount, +60ms per row.
+     Capped at 4 rows so we never approach §18 #12's 8-child ceiling. */
+  const delay = 240 + idx * 60
+
+  return (
+    <li
+      className={cx(styles.breakdownRow, styles[`breakdownRow_${tone}`])}
+      style={{ '--lb-row-delay': `${delay}ms` }}
+    >
+      <div className={styles.breakdownTopRow}>
+        <span className={styles.breakdownLabel}>{label}</span>
+        <span className={styles.breakdownValue}>{valueCopy}</span>
+      </div>
+      <div
+        className={styles.breakdownTrack}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuenow={current}
+        aria-label={label}
+      >
+        <span
+          className={styles.breakdownFill}
+          style={{ '--lb-fill-target': `${ratio * 100}%` }}
+        />
+      </div>
+    </li>
+  )
 }
 
 /* Region 3 — to be filled in. */
 function LeaderboardBody() {
   return null
 }
-
-/* Surface useCountUp + the count-up timing tuning to the section
-   components below. */
-Leaderboard.useCountUp = useCountUp
-Leaderboard.COUNT_UP_MS = COUNT_UP_MS
-Leaderboard.COUNT_UP_DELAY_MS = COUNT_UP_DELAY_MS
 
 export default Leaderboard

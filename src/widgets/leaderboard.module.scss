@@ -114,6 +114,329 @@
   white-space: nowrap;
 }
 
+/* ─── Tone-color ladder ────────────────────────────────────────
+   `--tone-color` drives the ring stroke + verdict word + halo. */
+
+.card_tone-success { --tone-color: var(--color-text-success); }
+.card_tone-neutral { --tone-color: var(--brand-60); }
+.card_tone-warning { --tone-color: var(--yellow-60); }
+
+/* Card hover lifts to brand-30 by default, but on success retones
+   into the achievement color so the card carries through its
+   verdict on hover. */
+.card_tone-success:hover {
+  border-color: color-mix(in srgb, var(--color-text-success) 35%, var(--grey-20));
+}
+
+/* ─── Personal body ────────────────────────────────────────────
+   Tier rung row + ring/breakdown two-column. The two-column
+   collapses to a stack at narrow slot widths via container query
+   on `.personalBody`. */
+
+.personalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  container-type: inline-size;
+  container-name: lb-personal;
+}
+
+.metricRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-200);
+  min-width: 0;
+}
+
+@container lb-personal (max-width: 28rem) {
+  .metricRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-150);
+  }
+}
+
+/* ─── Tier rung ────────────────────────────────────────────────
+   Chip + 3-pill segmented rung + distance caption.
+   §6 segmented-pills vocabulary, §7 tone for the chip. */
+
+.tierRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  flex-wrap: wrap;
+  min-width: 0;
+
+  animation: lbRowRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 120ms;
+}
+
+.tierChip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.rungs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+}
+
+.rungPill {
+  display: inline-block;
+  width: var(--size-32);
+  height: var(--size-08);
+  border-radius: var(--radius-full);
+  background: var(--grey-20);
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.rungPill_completed { background: var(--brand-60); }
+.rungPill_current   { background: color-mix(in srgb, var(--brand-60) 60%, var(--white)); }
+.rungPill_upcoming  { background: var(--grey-20); }
+
+/* Top-tier reached — last pill retones success + one-cycle springy
+   pulse. Fires once on mount; resolves to a static success-tinted
+   pill. */
+.rungPill_topPulse {
+  background: var(--color-text-success);
+  animation: lbTopRungPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
+  animation-delay: 360ms;
+}
+
+.distanceCaption {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--grey-50);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Progress ring ────────────────────────────────────────────
+   64×64 SVG, two concentric circles. SVG is rotated -90deg so the
+   stroke begins at 12 o'clock and sweeps clockwise. The fill
+   animates stroke-dashoffset 0 → target over 720ms with 180ms
+   delay; the count-up runs in parallel. */
+
+.ringWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-075);
+  flex: 0 0 auto;
+  padding: var(--space-100);
+}
+
+.ringFrame {
+  position: relative;
+  width: var(--size-64);
+  height: var(--size-64);
+}
+
+.ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringTrack {
+  stroke: var(--grey-10);
+  stroke-width: var(--border-width-300);
+  fill: none;
+}
+
+.ringFill {
+  stroke: var(--tone-color);
+  stroke-width: var(--border-width-300);
+  stroke-linecap: round;
+  fill: none;
+  stroke-dasharray: var(--lb-ring-circ);
+  stroke-dashoffset: var(--lb-ring-circ);
+
+  animation: lbRingFill 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 180ms;
+}
+
+.ringCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-025);
+  pointer-events: none;
+}
+
+.ringValue {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.ringDenominator {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--grey-50);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Verdict word — title-case, tone-tinted. Slides up 80ms after the
+   ring stroke completes (180ms delay + 720ms duration → 1000ms +
+   80ms = 1080ms). Matches Profile's verdict timing. */
+.ringVerdict {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--tone-color);
+  text-align: center;
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050));
+  animation: lbVerdictRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 1080ms;
+}
+
+/* Target-hit verdict pop — additional springy scale beat layered on
+   top of the rise. Lands on the same 1080ms delay; success tone
+   lifts to scale 1.06 then settles. */
+.ringWrap_success .ringVerdict {
+  animation:
+    lbVerdictRise 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards,
+    lbVerdictPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
+  animation-delay: 1080ms, 1080ms;
+}
+
+/* Target-hit halo — Earnings sheen vocabulary. The ringFrame's
+   ::before is a layered radial that pulses out at 900ms (the frame
+   the ring stroke completes), reading as "you crossed the line." */
+.ringFrame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  box-shadow: 0 0 0 0 transparent;
+}
+
+.ringWrap_success .ringFrame::before {
+  animation: lbRingHalo 720ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation-delay: 900ms;
+}
+
+/* Trophy iconBadge retones success on target-hit. The retone fires
+   at 520ms — earlier than the halo, so the icon reads as "this card
+   has flipped" before the celebratory beat lands. */
+.card_tone-success .iconBadge {
+  animation: lbIconBadgeSuccess 280ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  animation-delay: 520ms;
+}
+
+/* ─── Breakdown rows ────────────────────────────────────────────
+   §6 linear-fill mini-bars. Per-row tone independent of ring tone. */
+
+.breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-125);
+}
+
+.breakdownRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  min-width: 0;
+
+  opacity: var(--opacity-000);
+  transform: translateY(var(--space-050));
+  animation: lbRowRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: var(--lb-row-delay, 240ms);
+}
+
+.breakdownTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-100);
+  min-width: 0;
+}
+
+.breakdownLabel {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-300);
+  color: var(--grey-80);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdownValue {
+  flex: 0 0 auto;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdownTrack {
+  width: 100%;
+  height: var(--size-04);
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.breakdownFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--brand-60);   /* base tone — overridden by row tone */
+
+  /* Width animates from 0 → target on row mount. Bound to a per-row
+     CSS var so each bar settles at its own ratio. */
+  width: 0;
+  animation: lbBarFill 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: calc(var(--lb-row-delay, 240ms) + 120ms);
+}
+
+.breakdownRow_success .breakdownFill { background: var(--color-text-success); }
+.breakdownRow_neutral .breakdownFill { background: var(--brand-60); }
+.breakdownRow_warning .breakdownFill { background: var(--yellow-60); }
+
 /* ─── Footer link buttons ─────────────────────────────────────────
    Plain <button> text-links — no new Button styles. Mirrors
    JobCard's `.viewDetailsLink` and Profile's `.viewFullLink` —
@@ -175,14 +498,89 @@
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
+@keyframes lbRowRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes lbRingFill {
+  from { stroke-dashoffset: var(--lb-ring-circ); }
+  to   { stroke-dashoffset: var(--lb-ring-target, 0); }
+}
+
+@keyframes lbBarFill {
+  from { width: 0; }
+  to   { width: var(--lb-fill-target, 0%); }
+}
+
+@keyframes lbVerdictRise {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+@keyframes lbVerdictPop {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(0) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Target-hit halo — tone-colored box-shadow expands 0 → size-16 and
+   dissipates. One beat, no loop. Same shape as Profile's
+   pcdRingSuccessHalo but scoped to the ringFrame's circle. */
+@keyframes lbRingHalo {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone-color) 36%, transparent); }
+  55%  { box-shadow: 0 0 0 var(--size-16) color-mix(in srgb, var(--tone-color) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Top-tier rung pill pulse — last pill scales 1 → 1.06 → 1 once. */
+@keyframes lbTopRungPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* iconBadge tone retone — pure interpolation between brand-tinted
+   resting state and the success-tinted target-hit state. Forwards
+   pins the final frame so the badge stays success-tinted. */
+@keyframes lbIconBadgeSuccess {
+  to {
+    background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
+    border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
+    color: var(--color-text-success);
+  }
+}
+
 /* ─── Reduced motion ────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .card {
+  .card,
+  .tierRow,
+  .rungPill_topPulse,
+  .ringFill,
+  .ringVerdict,
+  .ringWrap_success .ringVerdict,
+  .ringWrap_success .ringFrame::before,
+  .card_tone-success .iconBadge,
+  .breakdownRow,
+  .breakdownFill {
     animation: none !important;
     animation-delay: 0ms !important;
     transition: none !important;
     opacity: var(--opacity-100);
     transform: none;
+  }
+
+  /* Static end-states — ring fully drawn, bar at its target width. */
+  .ringFill {
+    stroke-dashoffset: var(--lb-ring-target, 0);
+  }
+  .breakdownFill {
+    width: var(--lb-fill-target, 0%);
+  }
+  .card_tone-success .iconBadge {
+    background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
+    border-color: color-mix(in srgb, var(--color-text-success) 28%, transparent);
+    color: var(--color-text-success);
   }
 }
