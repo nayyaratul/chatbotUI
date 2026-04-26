@@ -263,6 +263,9 @@ function TierRung({ tier }) {
              success-tinted background and the springy pulse. Avoids
              the `current` (half-saturation) and `topPulse` rules
              racing for the same property. */
+          /* Cascade-climb stagger — each pill paints toward its state
+             color 80ms after the prior pill, reading as the user
+             climbing the rungs from grey-20 to their current tier. */
           return (
             <span
               key={rung}
@@ -273,6 +276,7 @@ function TierRung({ tier }) {
               )}
               data-state={isLastTopRung ? 'top-reached' : state}
               aria-label={`${rung}, ${isLastTopRung ? 'top reached' : state}`}
+              style={{ '--lb-rung-delay': `${idx * 80}ms` }}
             />
           )
         })}

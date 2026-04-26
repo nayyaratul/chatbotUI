@@ -212,8 +212,11 @@
   width: var(--size-32);
   height: var(--size-08);
   border-radius: var(--radius-full);
-  background: var(--grey-20);
-  /* Transition reserved for Pass 2 — if the rung becomes interactive
+  /* `--rung-target-color` is set by each state class below. The base
+     fallback is grey-20, so an unstyled pill renders as "upcoming"
+     by default. */
+  background: var(--rung-target-color, var(--grey-20));
+  /* Transition reserved for Pass 2+ — if the rung becomes interactive
      (e.g. tap-to-explain) these properties are the ones it'll
      animate. Dead-code today; harmless because pills don't change
      class at runtime. */
@@ -222,20 +225,37 @@
     transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.rungPill_completed { background: var(--brand-60); }
-.rungPill_current   { background: color-mix(in srgb, var(--brand-60) 60%, var(--white)); }
-.rungPill_upcoming  { background: var(--grey-20); }
+.rungPill_completed { --rung-target-color: var(--brand-60); }
+.rungPill_current   { --rung-target-color: color-mix(in srgb, var(--brand-60) 60%, var(--white)); }
+.rungPill_upcoming  { --rung-target-color: var(--grey-20); }
+
+/* Cascade-climb on mount — each populated rung pill paints from
+   grey-20 toward its target color with an 80ms stagger keyed off
+   `--lb-rung-delay` (set inline in JSX). Reads as the user climbing
+   the rungs to their current tier. `backwards` fill-mode applies the
+   `from` keyframe during the delay window so each pill stays grey-20
+   until its turn. The implicit `to` is the rule's own static
+   background (the var resolves to the state color), so the keyframe
+   composes cleanly with the per-state `--rung-target-color`. */
+.rungPill_completed,
+.rungPill_current {
+  animation: lbRungClimb 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
+  animation-delay: var(--lb-rung-delay, 0ms);
+}
 
 /* Top-tier reached — last pill retones success + one-cycle springy
    pulse. Fires once on mount; resolves to a static success-tinted
    pill. Specificity bumped via chained-class selector so the success
    tint wins regardless of source order against the state classes
    above (a future reorder shouldn't silently break the top-tier
-   visual). */
+   visual). The cascade-climb runs first (via --lb-rung-delay), then
+   the springy pulse layers 360ms later. */
 .rungPill.rungPill_topPulse {
-  background: var(--color-text-success);
-  animation: lbTopRungPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
-  animation-delay: 360ms;
+  --rung-target-color: var(--color-text-success);
+  animation:
+    lbRungClimb 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards,
+    lbTopRungPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
+  animation-delay: var(--lb-rung-delay, 0ms), calc(var(--lb-rung-delay, 0ms) + 360ms);
 }
 
 .distanceCaption {
@@ -271,6 +291,37 @@
   position: relative;
   width: var(--size-64);
   height: var(--size-64);
+  /* Establish a stacking context so the persistent backplate `::after`
+     (z-index -1) stays scoped to the ring and doesn't escape behind
+     the card body. The existing `::before` (target-hit halo) keeps
+     its default z-index and paints above the SVG. */
+  isolation: isolate;
+}
+
+/* Persistent ring backplate — soft tone-tinted radial halo behind the
+   ring stroke. Extends 16px past the SVG edge on every side (so the
+   actual halo is 96×96 around a 64×64 ring). Bloom-in alongside the
+   stroke draw, then sits permanently at the rest opacity. Reads as
+   "this ring has presence" without an animation cost at rest.
+   Tone-tinted via `--tone-color` so success / brand / yellow inherit
+   automatically. Painted at z-index -1 so it sits behind the SVG and
+   the target-hit halo. */
+.ringFrame::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--size-16));
+  border-radius: var(--radius-full);
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--tone-color) 12%, transparent) 0%,
+    transparent 65%
+  );
+  z-index: -1;
+  pointer-events: none;
+
+  opacity: var(--opacity-000);
+  animation: lbRingBackplate 720ms cubic-bezier(0.18, 0.9, 0.28, 1.04) forwards;
+  animation-delay: 180ms;
 }
 
 .ring {
@@ -789,6 +840,21 @@
   to   { opacity: var(--opacity-100); transform: scaleY(1); }
 }
 
+/* Ring backplate bloom — opacity ramp from 0 to full as the ring
+   stroke draws. Pairs with `lbRingFill` (180ms delay, 720ms duration)
+   so the backplate settles in lockstep with the stroke. */
+@keyframes lbRingBackplate {
+  from { opacity: var(--opacity-000); }
+  to   { opacity: var(--opacity-100); }
+}
+
+/* Cascade-climb rung paint — pill background animates from grey-20
+   to its rule-defined target color (via `--rung-target-color`).
+   Implicit `to` keyframe = the rule's static background. */
+@keyframes lbRungClimb {
+  from { background: var(--grey-20); }
+}
+
 /* Ring frame brightness settle — `filter: brightness` dips 0.97 mid-
    cycle, returning to 1. Borrowed from Earnings' `earnTotalSettle`.
    Plays alongside the halo so the ring reads as "locking in" instead
@@ -823,8 +889,11 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .tierRow,
+  .rungPill_completed,
+  .rungPill_current,
   .rungPill_topPulse,
   .ringFill,
+  .ringFrame::after,
   .ringVerdict,
   .ringWrap_success .ringVerdict,
   .ringWrap_success .ringFrame,
@@ -868,5 +937,8 @@
   }
   .rankRow_user::after {
     opacity: var(--opacity-000);
+  }
+  .ringFrame::after {
+    opacity: var(--opacity-100);
   }
 }
