@@ -22,6 +22,15 @@
   gap: var(--space-150);
   width: 100%;
 
+  /* Container query reference — child .volumeWrap hides when this
+     row is too narrow for the volume button to fit alongside play
+     + track + speed (+ optional fullscreen). Container queries
+     respond to the actual rendered width, so this works whether
+     the narrow width comes from a real phone viewport or from a
+     Studio mobile-mode preview on a desktop browser (where the
+     viewport-based @media query couldn't tell). */
+  container-type: inline-size;
+
   animation: mpcRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 80ms both;
 }
 
@@ -380,13 +389,15 @@
   flex-shrink: 0;
 }
 
-/* Desktop-only — phones and small tablets in portrait don't have
-   the horizontal room for a volume button alongside play / track /
-   speed / (fullscreen). Hidden on viewports ≤ 768px so the row
-   stays comfortable on narrow chat widths. Phones also have
-   hardware volume keys, so the on-screen control isn't load-
-   bearing on those devices. */
-@media (max-width: 768px) {
+/* Desktop-only — phones, small tablets in portrait, and Studio
+   mobile-mode previews don't have the horizontal room for a
+   volume button alongside play / track / speed / (fullscreen).
+   Hidden when the controls row itself is ≤ 380px wide so the
+   row stays comfortable on narrow chat widths regardless of
+   whether the constraint comes from the device or a simulated
+   viewport. Phones also have hardware volume keys, so the
+   on-screen control isn't load-bearing on those devices. */
+@container (max-width: 380px) {
   .volumeWrap {
     display: none;
   }
