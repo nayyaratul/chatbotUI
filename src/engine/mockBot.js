@@ -461,6 +461,24 @@ registerRule({
   build: () => ({ type: 'progress', payload: getVariantPayload('progress', 'default') }),
 })
 
+// ─── Embedded Webview — training variant ───────────────────────
+registerRule({
+  match: /^(webview training|training webview|embedded training|webview compliance)$/i,
+  build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'training') }),
+})
+
+// ─── Embedded Webview — reader variant ─────────────────────────
+registerRule({
+  match: /^(webview reader|reader webview|embedded reader|read this|policy webview)$/i,
+  build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'reader') }),
+})
+
+// ─── Embedded Webview — preview variant ────────────────────────
+registerRule({
+  match: /^(webview preview|preview webview|embedded preview)$/i,
+  build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'preview') }),
+})
+
 // ─── Embedded Webview — partner_form default ───────────────────
 // Trigger: "webview", "embed", "partner form", "embedded webview"
 registerRule({
