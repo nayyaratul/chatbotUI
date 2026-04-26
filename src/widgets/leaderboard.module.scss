@@ -32,7 +32,20 @@
      24rem comfortably covers both. */
   min-height: 24rem;
 
-  background: var(--white);
+  /* Atmospheric corner gradient — soft tone-tinted halo radiating from
+     the top-left, fading to transparent. Reads as "this card has
+     weight" without texture noise. Profile precedent at
+     `profile.module.scss:36-42`. The `var(--tone-color)` reference
+     means the gradient automatically retones with the card's tone:
+     success → green halo, warning → yellow, neutral → brand-60. No
+     per-tone overrides needed. */
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      color-mix(in srgb, var(--tone-color) 4%, transparent) 0%,
+      transparent 40%
+    ),
+    var(--white);
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-200);
 
