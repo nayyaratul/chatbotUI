@@ -249,12 +249,19 @@ function EmbeddedWebviewSheet({
      on close. Three-check origin gate; one console warn per reason
      per widget instance. */
   useEffect(() => {
+    function warnOnce(reason) {
+      if (droppedReasonsRef.current.has(reason)) return
+      droppedReasonsRef.current.add(reason)
+      console.warn(`[EmbeddedWebview] postMessage dropped: ${reason}`)
+    }
+
     function onMessage(event) {
       const allowedOrigin = payload?.allowed_origin
       const expectedId = payload?.widget_id
 
-      if (allowedOrigin && event.origin !== allowedOrigin) {
-        warnOnce('origin mismatch')
+      /* Fail-closed: if allowed_origin is missing or mismatched, drop. */
+      if (!allowedOrigin || event.origin !== allowedOrigin) {
+        warnOnce(allowedOrigin ? 'origin mismatch' : 'allowed_origin missing')
         return
       }
       if (event.data?.source !== 'embedded_webview') {
@@ -267,7 +274,8 @@ function EmbeddedWebviewSheet({
 
       switch (event.data.event) {
         case 'progress': {
-          const pct = clamp(0, 100, Number(event.data.data?.percent ?? 0))
+          const raw = Number(event.data.data?.percent ?? 0)
+          const pct = clamp(0, 100, Number.isFinite(raw) ? raw : 0)
           setProgress(pct)
           return
         }
@@ -280,16 +288,10 @@ function EmbeddedWebviewSheet({
           return
         }
         default: {
-          warnOnce(`unknown event "${event.data.event}"`)
+          warnOnce(`unknown event "${event.data.event ?? '(none)'}"`)
           return
         }
       }
-    }
-
-    function warnOnce(reason) {
-      if (droppedReasonsRef.current.has(reason)) return
-      droppedReasonsRef.current.add(reason)
-      console.warn(`[EmbeddedWebview] postMessage dropped: ${reason}`)
     }
 
     window.addEventListener('message', onMessage)
