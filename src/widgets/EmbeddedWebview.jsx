@@ -46,9 +46,14 @@ function buildIframeSrc(url, widgetId) {
     u.searchParams.set('wid', widgetId)
     return u.toString()
   } catch {
-    /* Fallback: malformed URL, append best-effort. */
-    const sep = url.includes('?') ? '&' : '?'
-    return `${url}${sep}wid=${encodeURIComponent(widgetId)}`
+    /* Fallback: malformed URL the URL constructor refused. Insert wid
+       BEFORE any hash fragment so it reaches the server (a query placed
+       after `#` becomes part of the fragment and is dropped). */
+    const hashIdx = url.indexOf('#')
+    const base    = hashIdx !== -1 ? url.slice(0, hashIdx) : url
+    const hash    = hashIdx !== -1 ? url.slice(hashIdx)    : ''
+    const sep     = base.includes('?') ? '&' : '?'
+    return `${base}${sep}wid=${encodeURIComponent(widgetId)}${hash}`
   }
 }
 
@@ -251,7 +256,7 @@ function EmbeddedWebviewSheet({
         <div className={styles.shBody} aria-busy={iframeState === 'loading'}>
           {iframeState === 'loading' && (
             <div className={styles.shLoader} role="status" aria-live="polite">
-              <Loader2 className={styles.shSpinner} size={28} strokeWidth={2} aria-hidden />
+              <Loader2 className={styles.shSpinner} size={28} strokeWidth={1.75} aria-hidden />
               <span className={styles.srOnly}>Loading {payload?.domain_label}…</span>
             </div>
           )}
