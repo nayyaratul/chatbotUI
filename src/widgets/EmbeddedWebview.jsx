@@ -32,8 +32,8 @@ import styles from './embeddedWebview.module.scss'
    See docs/superpowers/specs/2026-04-26-embedded-webview-widget-design.md
    ─────────────────────────────────────────────────────────────────── */
 
-const SHEET_ANIM_DURATION = 360
-const LIFT_DURATION = 520
+const SHEET_ANIM_DURATION = 360  /* bottom-sheet open/close — matches transform 320ms + 40ms safety */
+const LIFT_DURATION       = 520  /* FLIP poster → iframe-frame morph; Task 13 */
 
 const VARIANT_META = {
   partner_form: {
