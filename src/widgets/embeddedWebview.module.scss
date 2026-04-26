@@ -171,3 +171,139 @@
   line-height: var(--line-height-200);
   color: var(--grey-50);
 }
+
+/* ─── Portal sheet ─────────────────────────────────────────────── */
+
+.shLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.shScrim {
+  position: absolute;
+  inset: 0;
+  background: var(--grey-90);
+  opacity: var(--opacity-000);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition:
+    opacity 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    -webkit-backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shSheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* Spec: min(36rem, 90% of chat-frame). On a phone-sized chat-frame
+     the 90% cap dominates; on tall desktops the 36rem cap dominates so
+     the sheet doesn't run away vertically. The 36rem here is a content
+     CAP, not a §4 floor — different semantic from card min-heights. */
+  height: min(36rem, 90%);
+  min-height: 24rem;
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-bottom: 0;
+  border-radius: var(--radius-300) var(--radius-300) 0 0;
+  box-shadow: 0 calc(-1 * var(--size-12)) var(--size-32) color-mix(in srgb, var(--grey-90) 18%, transparent);
+  transform: translateY(100%);
+  transition:
+    transform 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  opacity: var(--opacity-000);
+  overflow: hidden;
+}
+
+.shLayer_open .shScrim {
+  opacity: var(--opacity-056);
+  backdrop-filter: blur(var(--size-04));
+  -webkit-backdrop-filter: blur(var(--size-04));
+}
+
+.shLayer_open .shSheet {
+  transform: translateY(0);
+  opacity: var(--opacity-100);
+}
+
+.shLayer_exiting .shScrim {
+  opacity: var(--opacity-000);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
+.shLayer_exiting .shSheet {
+  transform: translateY(100%);
+  opacity: var(--opacity-000);
+}
+
+.shHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-150);
+  padding: var(--space-150) var(--space-200);
+  border-bottom: var(--border-width-100) solid var(--grey-10);
+  flex-shrink: 0;
+}
+
+.shHeaderText {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  min-width: 0;
+  flex: 1;
+  color: var(--grey-80);
+}
+
+.shFavicon {
+  display: block;
+  width: var(--size-16);   /* Nexus has no --size-14; scale jumps 12 → 16 */
+  height: var(--size-16);
+  border-radius: var(--radius-100);
+  flex-shrink: 0;
+}
+
+.shDomain {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--grey-80);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-100);
+  background: transparent;
+  border: var(--border-width-100) solid transparent;
+  color: var(--grey-80);
+  cursor: pointer;
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.shClose:hover {
+  background: var(--grey-10);
+  border-color: var(--grey-20);
+}
+
+.shBody {
+  position: relative;
+  flex: 1;
+  background: var(--grey-10);
+  overflow: hidden;
+}

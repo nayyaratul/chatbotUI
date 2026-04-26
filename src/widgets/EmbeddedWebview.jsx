@@ -71,13 +71,24 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const meta = VARIANT_META[variant] ?? VARIANT_META.partner_form
   const Icon = meta.icon
 
+  const [sheetOpen, setSheetOpen] = useState(false)
+
   const eyebrow = payload?.category
     ? `${meta.eyebrowPrefix} · ${payload.category}`
     : meta.eyebrowPrefix
 
-  const handleOpen = () => {
-    /* Sheet wiring lands in Task 5. */
-  }
+  const handleOpen = useCallback(() => {
+    setSheetOpen(true)
+  }, [])
+
+  const handleSheetClose = useCallback(() => {
+    setSheetOpen(false)
+  }, [])
+
+  const handleCompleted = useCallback((data, method) => {
+    /* Submission wiring lands in Task 9. For now, just close. */
+    setSheetOpen(false)
+  }, [])
 
   return (
     <article className={cx(styles.card, styles[`card_${variant}`])}>
@@ -100,12 +111,7 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       >
         {payload?.poster_url
           ? (
-            <img
-              className={styles.posterImg}
-              src={payload.poster_url}
-              alt=""
-              loading="lazy"
-            />
+            <img className={styles.posterImg} src={payload.poster_url} alt="" loading="lazy" />
           )
           : (
             <Globe className={styles.posterFallbackGlyph} size={36} strokeWidth={1.5} aria-hidden />
@@ -125,15 +131,107 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       )}
 
       <div className={styles.ctaRow}>
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={handleOpen}
-        >
+        <Button variant="primary" fullWidth onClick={handleOpen}>
           <span className={styles.ctaLabel}>{meta.ctaOpen}</span>
           <ArrowRight size={16} strokeWidth={2} aria-hidden />
         </Button>
       </div>
+
+      {sheetOpen && (
+        <EmbeddedWebviewSheet
+          payload={payload}
+          variant={variant}
+          meta={meta}
+          onClose={handleSheetClose}
+          onCompleted={handleCompleted}
+        />
+      )}
     </article>
+  )
+}
+
+/* ─── EmbeddedWebviewSheet — portaled bottom-sheet ─────────────────
+   Same chat-frame containment pattern as JobDetailsModal /
+   SignatureSheet: portaled into #chat-modal-root, three-phase
+   animation, scrim + Esc + close ×, single in-flight close guard. */
+
+function EmbeddedWebviewSheet({
+  payload,
+  variant,
+  meta,
+  onClose,
+  onCompleted,
+}) {
+  const [phase, setPhase] = useState('entering')
+  const closingRef = useRef(false)
+  const closeBtnRef = useRef(null)
+  const portalTarget = typeof document !== 'undefined'
+    ? document.getElementById('chat-modal-root')
+    : null
+
+  /* Two RAFs so the initial styles paint before transition kicks in. */
+  useEffect(() => {
+    const r = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPhase('open'))
+    })
+    return () => cancelAnimationFrame(r)
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'open') return
+    closeBtnRef.current?.focus({ preventScroll: true })
+  }, [phase])
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return
+    closingRef.current = true
+    setPhase('exiting')
+    window.setTimeout(onClose, SHEET_ANIM_DURATION)
+  }, [onClose])
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') requestClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [requestClose])
+
+  if (!portalTarget) return null
+
+  return createPortal(
+    <div
+      className={cx(styles.shLayer, styles[`shLayer_${phase}`])}
+      role="dialog"
+      aria-modal="true"
+      aria-label={payload?.title}
+    >
+      <div className={styles.shScrim} onClick={requestClose} aria-hidden="true" />
+      <div className={styles.shSheet}>
+        <header className={styles.shHeader}>
+          <div className={styles.shHeaderText}>
+            {payload?.favicon_url
+              ? <img className={styles.shFavicon} src={payload.favicon_url} alt="" />
+              : <Globe size={14} strokeWidth={2} aria-hidden />
+            }
+            <span className={styles.shDomain}>{payload?.domain_label}</span>
+          </div>
+          <button
+            ref={closeBtnRef}
+            type="button"
+            className={styles.shClose}
+            onClick={requestClose}
+            aria-label="Close"
+          >
+            <XIcon size={18} strokeWidth={2} aria-hidden />
+          </button>
+        </header>
+
+        <div className={styles.shBody} aria-busy="true">
+          {/* Iframe lands in Task 6 */}
+        </div>
+      </div>
+    </div>,
+    portalTarget,
   )
 }
