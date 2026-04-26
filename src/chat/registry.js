@@ -27,6 +27,7 @@ import { Earnings } from '../widgets/Earnings.jsx'
 import { Profile } from '../widgets/Profile.jsx'
 import { VoiceRecording } from '../widgets/VoiceRecording.jsx'
 import { AudioPlayer } from '../widgets/AudioPlayer.jsx'
+import { EmbeddedWebview } from '../widgets/EmbeddedWebview.jsx'
 import { SignatureCapture } from '../widgets/SignatureCapture.jsx'
 
 export const registry = {
@@ -60,4 +61,5 @@ export const registry = {
   voice_recording: VoiceRecording,
   audio: AudioPlayer,
   signature: SignatureCapture,
+  embedded_webview: EmbeddedWebview,
 }

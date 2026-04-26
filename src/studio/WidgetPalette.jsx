@@ -33,6 +33,7 @@ import {
   Package,
   Pencil,
   Signature,
+  ExternalLink,
 } from 'lucide-react'
 import styles from './widgetPalette.module.scss'
 
@@ -67,6 +68,7 @@ const WIDGET_ICONS = {
   voice_recording:    Mic,
   audio:              Volume2,
   signature:          Signature,
+  embedded_webview:   ExternalLink,
 }
 
 /**

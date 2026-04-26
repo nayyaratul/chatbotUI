@@ -550,6 +550,83 @@ function buildSignaturePayload(variant) {
   throw new Error(`buildSignaturePayload: unknown variant "${variant}"`)
 }
 
+/* ─── Embedded Webview (#27) — payload builder ────────────────────────
+   Four variants: partner_form / training / reader / preview. Each
+   ships its own preset for icon/eyebrow/completion. URL fixtures live
+   under /public/embed-fixtures/ so the postMessage variants can be
+   demoed end-to-end without external dependencies. */
+function buildEmbeddedWebviewPayload(variant) {
+  const base = {
+    widget_id: makeId('webv'),
+    variant,
+    sandbox: null,                                  // null → component default
+    allow: null,
+    silent: false,
+  }
+
+  if (variant === 'partner_form') {
+    return {
+      ...base,
+      url: '/embed-fixtures/partner-form.html',
+      allowed_origin: window.location.origin,
+      domain_label: 'partners.bgv-co.in',
+      favicon_url: null,
+      title: 'Background verification — vendor portal',
+      description: 'Submit your details on the partner page',
+      category: 'Onboarding',
+      poster_url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1024&q=70',
+      estimated_minutes: 4,
+    }
+  }
+
+  if (variant === 'training') {
+    return {
+      ...base,
+      url: '/embed-fixtures/training.html',
+      allowed_origin: window.location.origin,
+      domain_label: 'learn.example.com',
+      favicon_url: null,
+      title: 'Anti-bribery refresher',
+      description: 'Annual compliance training — 4 short modules',
+      category: 'Compliance',
+      poster_url: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1024&q=70',
+      estimated_minutes: 8,
+    }
+  }
+
+  if (variant === 'reader') {
+    return {
+      ...base,
+      url: 'https://example.com/',
+      allowed_origin: 'https://example.com',
+      domain_label: 'example.com',
+      favicon_url: null,
+      title: 'Updated leave policy — April 2026',
+      description: 'Three changes effective from May 1st',
+      category: 'Policy',
+      poster_url: null,
+      estimated_minutes: 3,
+    }
+  }
+
+  if (variant === 'preview') {
+    return {
+      ...base,
+      url: 'https://example.com/',
+      allowed_origin: 'https://example.com',
+      domain_label: 'example.com',
+      favicon_url: null,
+      title: 'Reference site',
+      description: 'A quick look — close when you\'re done',
+      category: 'Reference',
+      poster_url: null,
+      estimated_minutes: null,
+    }
+  }
+
+  throw new Error(`buildEmbeddedWebviewPayload: unknown variant "${variant}"`)
+}
+
 export const widgetSchemas = {
 
   // ─── engine ──────────────────────────────────────────────────────
@@ -1302,6 +1379,17 @@ export const widgetSchemas = {
         label: 'Agreement',
         payload: () => buildSignaturePayload('text'),
       },
+    ],
+  },
+
+  embedded_webview: {
+    label: 'Webview',
+    category: 'advanced',
+    variants: [
+      { id: 'partner_form', label: 'Partner form', payload: () => buildEmbeddedWebviewPayload('partner_form') },
+      { id: 'training',     label: 'Training',     payload: () => buildEmbeddedWebviewPayload('training') },
+      { id: 'reader',       label: 'Reader',       payload: () => buildEmbeddedWebviewPayload('reader') },
+      { id: 'preview',      label: 'Preview',      payload: () => buildEmbeddedWebviewPayload('preview') },
     ],
   },
 

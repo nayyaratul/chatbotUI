@@ -460,3 +460,10 @@ registerRule({
   match: /^(show )?progress/i,
   build: () => ({ type: 'progress', payload: getVariantPayload('progress', 'default') }),
 })
+
+// ─── Embedded Webview — partner_form default ───────────────────
+// Trigger: "webview", "embed", "partner form", "embedded webview"
+registerRule({
+  match: /^(webview|embed(ded)?( webview)?|partner form)$/i,
+  build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'partner_form') }),
+})
