@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
-import { Volume2, Play, Pause } from 'lucide-react'
+import { Volume2, Play, Pause, RotateCcw, CheckCircle2 } from 'lucide-react'
+import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './audioPlayer.module.scss'
 
 /* ─── Audio Player Widget (CSV #25) ──────────────────────────────────
@@ -12,12 +13,19 @@ import styles from './audioPlayer.module.scss'
    State machine:
      idle → playing ↔ paused → ended → playing (replay)
 
-   Region 3: speed pill cycles 1× → 1.5× → 2× → 1× through
-   payload.speeds (default [1, 1.5, 2]); persists across replay,
-   resets only on unmount. Error degradation: <audio>'s onError
-   swaps the player row in-place — disabled play button, grey bars,
-   `Unable to load audio` meta. No separate state block.
+   Region 4: committed state. Listen tracking is monotonic — the
+   max progress reached this session, never decremented by rewind /
+   seek-back. When it first crosses 95% (or <audio> fires `ended`,
+   whichever lands first), `completed` flips true once, the row
+   gains the listened-tone treatment + 600ms one-cycle seal
+   shimmer, every bar tints success, and `onReply` fires exactly
+   once with `{audio_id, listen_percentage, completed, listened_at}`.
+   Replay after completion keeps the seal — terminal, like VR's
+   submitted row. The play button intentionally stays brand-60 (no
+   success tint) so replay reads as a normal action.
    ──────────────────────────────────────────────────────────────── */
+
+const COMPLETION_THRESHOLD = 0.95
 
 const BAR_COUNT = 32
 const DEFAULT_SPEEDS = [1, 1.5, 2]
@@ -65,8 +73,11 @@ function resampleBars(peaks) {
 /* ─── Root ──────────────────────────────────────────────────────── */
 
 export function AudioPlayer({ payload }) {
+  const { onReply } = useChatActions()
+
   const widgetId        = payload?.widget_id
   const audioId         = payload?.audio_id
+  const isSilent        = Boolean(payload?.silent)
   const url             = payload?.url || ''
   const propDuration    = Number(payload?.duration_seconds) || 0
   const title           = payload?.title || 'Voice instruction'
@@ -82,6 +93,17 @@ export function AudioPlayer({ payload }) {
   const [duration, setDuration] = useState(propDuration)
   const [speedIndex, setSpeedIndex] = useState(0)
   const [hasError, setHasError] = useState(false)
+  /* Listen tracking. `listenPercentage` is monotonic max — never
+     decremented by rewind. `completed` is a one-way flag that flips
+     true on the first crossing of COMPLETION_THRESHOLD; the
+     `onReply` fire is gated on the same edge. `listenedAt` records
+     the moment of completion for the response payload. */
+  const [listenPercentage, setListenPercentage] = useState(0)
+  const [completed, setCompleted] = useState(false)
+  const [listenedAt, setListenedAt] = useState(null)
+  /* Mirror flag in a ref so the RAF loop can short-circuit on
+     subsequent ticks without depending on stale closure state. */
+  const completedRef = useRef(false)
   /* Sweep position in [0, 1]. Sourced from audio.currentTime / duration
      on every RAF tick while playing; held frozen on pause; snaps on
      seek. Drives the `--play-progress` CSS variable on the waveform
@@ -111,11 +133,44 @@ export function AudioPlayer({ payload }) {
     }
   }, [])
 
+  /* Edge-trigger for completion. Fires on the first crossing of the
+     95% threshold OR on the audio element's `ended` event,
+     whichever lands first. Idempotent against repeat calls — the
+     `completedRef` guard means a second crossing (replay-then-end,
+     scrub-back-then-forward, etc.) is a no-op. The `onReply` fire
+     is part of this single edge — never repeats. */
+  const fireCompletion = useCallback(() => {
+    if (completedRef.current) return
+    completedRef.current = true
+    const at = Date.now()
+    setCompleted(true)
+    setListenedAt(at)
+    setListenPercentage(100)
+    onReply?.(
+      {
+        type: 'widget_response',
+        payload: {
+          source_type: 'audio_player',
+          source_widget_id: widgetId,
+          data: {
+            audio_id: audioId,
+            listen_percentage: 100,
+            completed: true,
+            listened_at: at,
+          },
+        },
+      },
+      { silent: isSilent },
+    )
+  }, [onReply, widgetId, audioId, isSilent])
+
   const handleAudioPlay = useCallback(() => {
     setIsPlaying(true)
     /* RAF loop drives the sweep — much smoother than the audio
-       element's 4Hz timeupdate. Reads currentTime on every frame
-       and pushes a [0, 1] progress value into state. */
+       element's 4Hz timeupdate. Reads currentTime on every frame,
+       pushes a [0, 1] progress value into state, and updates
+       listen_percentage as the running monotonic max. Crosses the
+       95% threshold → fires the completion edge once. */
     const tick = () => {
       const el = audioElRef.current
       if (!el) return
@@ -123,10 +178,13 @@ export function AudioPlayer({ payload }) {
       const progress = dur > 0 ? Math.min(1, el.currentTime / dur) : 0
       setPlayProgress(progress)
       setCurrentTime(el.currentTime || 0)
+      const pct = progress * 100
+      setListenPercentage((prev) => (pct > prev ? pct : prev))
+      if (progress >= COMPLETION_THRESHOLD) fireCompletion()
       playRafRef.current = requestAnimationFrame(tick)
     }
     playRafRef.current = requestAnimationFrame(tick)
-  }, [duration, propDuration])
+  }, [duration, propDuration, fireCompletion])
 
   const handleAudioPause = useCallback(() => {
     setIsPlaying(false)
@@ -137,7 +195,12 @@ export function AudioPlayer({ payload }) {
     setIsPlaying(false)
     setPlayProgress(1)
     stopPlayRaf()
-  }, [stopPlayRaf])
+    /* Belt-and-suspenders against the RAF tick missing the final
+       95% crossing on very short clips — `ended` always lands at
+       100%, so this is a guaranteed completion edge. Idempotent
+       against the RAF having already fired it. */
+    fireCompletion()
+  }, [stopPlayRaf, fireCompletion])
 
   /* `loadedmetadata` may give a more accurate duration than the
      `payload.duration_seconds` prop. Swap silently when it lands. */
@@ -194,11 +257,14 @@ export function AudioPlayer({ payload }) {
     el.currentTime = fraction * dur
     setPlayProgress(fraction)
     setCurrentTime(fraction * dur)
+    const pct = fraction * 100
+    setListenPercentage((prev) => (pct > prev ? pct : prev))
+    if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
 
     if (el.paused) {
       el.play().catch(() => { /* autoplay policy ok after gesture */ })
     }
-  }, [duration, propDuration])
+  }, [duration, propDuration, fireCompletion])
 
   /* Cleanup on unmount — pause any in-flight playback, cancel RAF. */
   useEffect(() => {
@@ -231,7 +297,11 @@ export function AudioPlayer({ payload }) {
       </div>
 
       {/* ─── Player row ──────────────────────────────────────────── */}
-      <div className={cx(styles.playerRow, hasError && styles.playerRowError)}>
+      <div className={cx(
+        styles.playerRow,
+        hasError && styles.playerRowError,
+        completed && styles.playerRowListened,
+      )}>
         <audio
           ref={audioElRef}
           src={url}
@@ -249,11 +319,18 @@ export function AudioPlayer({ payload }) {
           className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
           onClick={handlePlayPause}
           disabled={hasError}
-          aria-label={hasError ? 'Audio unavailable' : (isPlaying ? 'Pause audio' : 'Play audio')}
+          aria-label={
+            hasError ? 'Audio unavailable'
+              : isPlaying ? 'Pause audio'
+                : completed && !isPlaying ? 'Replay audio'
+                  : 'Play audio'
+          }
         >
           {isPlaying
             ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
-            : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
+            : completed && !isPlaying
+              ? <RotateCcw size={18} strokeWidth={2.25} aria-hidden="true" />
+              : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
         </button>
 
         {/* Waveform — seekable button. Two stacked .waveformLayer
@@ -282,7 +359,7 @@ export function AudioPlayer({ payload }) {
               return (
                 <span
                   key={`base-${i}`}
-                  className={cx(styles.bar, styles.barUnplayed)}
+                  className={cx(styles.bar, styles.barUnplayed, completed && styles.barListened)}
                   style={{ '--bar-norm': norm }}
                 />
               )
@@ -295,7 +372,7 @@ export function AudioPlayer({ payload }) {
               return (
                 <span
                   key={`sweep-${i}`}
-                  className={styles.bar}
+                  className={cx(styles.bar, completed && styles.barListened)}
                   style={{ '--bar-norm': norm }}
                 />
               )
@@ -306,6 +383,11 @@ export function AudioPlayer({ payload }) {
         <div className={styles.meta}>
           {hasError ? (
             <span className={styles.metaError}>Unable to load audio</span>
+          ) : completed ? (
+            <span className={styles.listenedChip}>
+              <CheckCircle2 size={12} strokeWidth={2.5} aria-hidden="true" />
+              Listened
+            </span>
           ) : (
             <span className={styles.metaTime}>
               {isPlaying || currentTime > 0
