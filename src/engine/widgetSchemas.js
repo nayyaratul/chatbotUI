@@ -1253,6 +1253,38 @@ export const widgetSchemas = {
     ],
   },
 
+  audio: {
+    label: 'Audio Player',
+    category: 'display',
+    variants: [
+      {
+        id: 'default',
+        label: 'Default',
+        payload: () => ({
+          widget_id: makeId('apw'),
+          audio_id: 'training_hindi_safety_brief',
+          title: 'Voice instruction',
+          description: 'Hindi · safety brief',
+          /* Stable Chrome team CDN — CORS-friendly, ~22s clip. The
+             demo uses a generic audio file; the title framing carries
+             the "voice instruction" semantic the audience cares about. */
+          url: 'https://storage.googleapis.com/media-session/sintel/snow-fight.mp3',
+          duration_seconds: 22,
+          /* Speech-shaped fallback peaks (32 normalized). The widget
+             also generates these inline if waveform_data is omitted. */
+          waveform_data: [
+            0.18, 0.32, 0.55, 0.78, 0.62, 0.40, 0.28, 0.48,
+            0.72, 0.85, 0.66, 0.45, 0.30, 0.50, 0.74, 0.58,
+            0.38, 0.22, 0.42, 0.68, 0.82, 0.70, 0.52, 0.36,
+            0.48, 0.64, 0.78, 0.60, 0.42, 0.28, 0.20, 0.14,
+          ],
+          speeds: [1, 1.5, 2],
+          silent: false,
+        }),
+      },
+    ],
+  },
+
   signature: {
     label: 'Signature',
     category: 'input',

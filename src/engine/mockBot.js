@@ -418,6 +418,13 @@ registerRule({
   build: () => ({ type: 'voice_recording', payload: getVariantPayload('voice_recording', 'default') }),
 })
 
+// ─── Audio Player — inline voice content ─────────────────────────
+// Trigger: "audio", "audio player", "listen", "play audio"
+registerRule({
+  match: /^(audio|audio player|listen|play audio)$/i,
+  build: () => ({ type: 'audio', payload: getVariantPayload('audio', 'default') }),
+})
+
 // ─── Signature Capture — `document` variant (default) ────────────
 // Trigger: "sign", "signature", "sign capture", "signature capture"
 registerRule({

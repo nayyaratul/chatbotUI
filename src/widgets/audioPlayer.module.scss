@@ -1,0 +1,285 @@
+/* ─── Audio Player Widget (CSV #25) ───────────────────────────────
+   Inline audio player. Single state — IDLE → PLAYING ↔ PAUSED →
+   ENDED → REPLAY. Inherits the bar+sweep+`--play-progress` audio
+   data-viz primitive from Voice Recording (#26).
+
+   Region 1: shell + §2 header + player row at IDLE. The base
+   waveform layer renders 32 bars in grey-30. Sweep layer, seek,
+   speed cycling, and the listened seal are added in later regions.
+   Nexus tokens only.
+   ──────────────────────────────────────────────────────────────── */
+
+/* ─── Card shell (§1) ──────────────────────────────────────────── */
+
+.card {
+  /* §5 — pin the primary CTA accent to brand-60 (Nexus default is
+     brand-50). Same override every other widget in the family uses. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: apwRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+@keyframes apwRiseUp {
+  from { opacity: 0; transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* ─── Header — icon badge + title + description (§2) ─────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+}
+
+.iconBadge {
+  flex-shrink: 0;
+  width: var(--size-36);
+  height: var(--size-36);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  border-radius: var(--radius-150);
+  color: var(--brand-60);
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-025);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+}
+
+.description {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+}
+
+/* ─── Player row — inner white container with the bar+sweep+meta+speed
+   primitive. Same dimensional pattern as VR's `.previewRow`: white
+   card, grey-10 border, space-125 padding, flex row.
+
+   Layout: [playBtn] [waveform] [meta] [speedBtn]. The waveform
+   takes the available middle width (flex: 1); play and speed are
+   fixed-width; meta is content-sized.
+
+   Mount stagger: 80ms after the card so the row reads as the body
+   landing inside the chrome. */
+.playerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  padding: var(--space-125);
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  animation: apwRiseUp 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) 80ms both;
+
+  transition:
+    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ─── Play / pause button — circular brand-60 ─────────────────── */
+
+.playBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-44);
+  height: var(--size-44);
+  padding: 0;
+
+  background: var(--brand-60);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 88%, black);
+  border-radius: var(--radius-full);
+  color: var(--white);
+  cursor: pointer;
+
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.playBtn:hover {
+  background: color-mix(in srgb, var(--brand-60) 88%, black);
+  box-shadow: 0 var(--size-02) var(--size-08) 0
+    color-mix(in srgb, var(--brand-60) 32%, transparent);
+}
+
+.playBtn:active {
+  transform: scale(0.96);
+}
+
+.playBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+/* ─── Waveform — 32 bars in two stacked layers (Region 1: base only).
+   Region 2 adds the sweep layer + clip-path + mask-image edge.
+   `overflow: hidden` contains the absolutely-positioned bar layers
+   so they never spill outside the wrapper's bounds. */
+.waveform {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: var(--size-32);
+  overflow: hidden;
+}
+
+.waveformLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-02);
+}
+
+.bar {
+  display: inline-block;
+  /* Responsive width — bars share the container's available width
+     equally (flex-basis 0 + flex-grow 1) and cap at size-04. On
+     narrow rows this keeps the 32 bars + 31 gaps inside the
+     waveform's bounds instead of overflowing left under the
+     play button. */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: var(--size-04);
+
+  /* Min visible silence = size-04, max peak = size-32. Linear
+     interpolation between the two via --bar-norm in [0, 1]. */
+  height: calc(var(--size-04) + var(--bar-norm, 0) * (var(--size-32) - var(--size-04)));
+
+  border-radius: var(--radius-100);
+  background: var(--brand-60);
+
+  transition: height 80ms cubic-bezier(0.2, 0.8, 0.3, 1),
+              background 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.barUnplayed {
+  background: var(--grey-30);
+}
+
+/* ─── Meta line — currentTime / duration (or just duration when
+   idle). Tabular nums so digits don't dance during playback. */
+.meta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaTime {
+  white-space: nowrap;
+}
+
+/* ─── Speed pill — outlined brand-60 cycling button. Height matches
+   the play button so the row baseline stays clean. */
+.speedBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--size-44);
+  min-width: var(--size-44);
+  padding: 0 var(--space-100);
+
+  background: var(--white);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 36%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--brand-60);
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+
+  transition:
+    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.speedBtn:hover {
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  border-color: color-mix(in srgb, var(--brand-60) 56%, transparent);
+}
+
+.speedBtn:active {
+  transform: scale(0.96);
+}
+
+.speedBtn:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────
+   Region 1 baseline — collapse the mount stagger and per-bar
+   transition smoothing. Later regions extend this block with
+   sweep/seal/end-pulse neutralizations. */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .playerRow {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+
+  .bar {
+    transition-duration: 0.01ms;
+  }
+}

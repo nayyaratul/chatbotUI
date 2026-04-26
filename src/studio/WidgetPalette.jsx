@@ -29,6 +29,7 @@ import {
   ScanSearch,
   FileCheck2,
   PlaySquare,
+  Volume2,
   Package,
   Pencil,
   Signature,
@@ -64,6 +65,7 @@ const WIDGET_ICONS = {
   earnings:           Wallet,
   profile:            UserCircle2,
   voice_recording:    Mic,
+  audio:              Volume2,
   signature:          Signature,
 }
 

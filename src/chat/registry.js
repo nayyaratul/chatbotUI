@@ -26,6 +26,7 @@ import { Comparison } from '../widgets/Comparison.jsx'
 import { Earnings } from '../widgets/Earnings.jsx'
 import { Profile } from '../widgets/Profile.jsx'
 import { VoiceRecording } from '../widgets/VoiceRecording.jsx'
+import { AudioPlayer } from '../widgets/AudioPlayer.jsx'
 import { SignatureCapture } from '../widgets/SignatureCapture.jsx'
 
 export const registry = {
@@ -57,5 +58,6 @@ export const registry = {
   earnings: Earnings,
   profile: Profile,
   voice_recording: VoiceRecording,
+  audio: AudioPlayer,
   signature: SignatureCapture,
 }
