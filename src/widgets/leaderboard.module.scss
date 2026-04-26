@@ -1,0 +1,188 @@
+/* Incentive / Leaderboard Widget (#30) — performance card.
+   Verified Nexus tokens for this widget:
+     space     : 025 050 075 100 125 150 200 300
+     size      : 04 08 12 16 20 24 28 32 36 64
+     font-size : 100 200 400
+     font-wt   : regular medium semibold   (NO bold)
+     radius    : 100 150 200 500 full
+     border-w  : 100 200 300
+     opacity   : 000 072 100
+   Token rungs not invented — `--size-14` does not exist (Lucide
+   `size={14}` PROP is a pixel value, not a CSS token).
+                                                                      */
+
+.card {
+  /* §5 — even though the widget has no Nexus Button instances today,
+     pin the accent so any future CTA falls back to brand-60. */
+  --color-action-primary: var(--brand-60);
+
+  /* Local tone-color drives the ring tone + verdict word. Defaults to
+     brand-60 (on-track). Overridden per ring tone in the body. */
+  --tone-color: var(--brand-60);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-150);
+  padding: var(--space-200);
+  width: 100%;
+
+  /* §4 mid-density floor — keeps mock-bot variant flips from jumping
+     the chat stream. Personal lands ~22rem natural, leaderboard ~20rem;
+     24rem comfortably covers both. */
+  min-height: 24rem;
+
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-200);
+
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  animation: lbRiseUp 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+}
+
+.card:hover {
+  border-color: var(--grey-30);
+  box-shadow: var(--shadow-100);
+}
+
+.card:has(:focus-visible) {
+  outline: var(--border-width-300) solid color-mix(in srgb, var(--brand-60) 40%, transparent);
+  outline-offset: var(--size-02);
+}
+
+/* ─── Header (§2) ─────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-125);
+  min-width: 0;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--size-36);
+  height: var(--size-36);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 22%, transparent);
+  color: var(--brand-60);
+
+  transition:
+    background 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-050);
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--grey-90);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-300);
+  color: var(--grey-60);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Footer link buttons ─────────────────────────────────────────
+   Plain <button> text-links — no new Button styles. Mirrors
+   JobCard's `.viewDetailsLink` and Profile's `.viewFullLink` —
+   compact, brand-60, hover wash, active state for mobile tap. */
+
+.linksRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-200);
+  margin-top: auto;   /* footer sticks to bottom regardless of body fill */
+}
+
+.linkButton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin-left: calc(-1 * var(--space-075));
+  padding: var(--space-050) var(--space-075);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--brand-60);
+  border-radius: var(--radius-100);
+  transition:
+    background 160ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.linkButton:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
+
+  > svg {
+    transform: translateX(var(--space-025));
+    transition: transform 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+}
+
+.linkButton:active {
+  background: color-mix(in srgb, var(--brand-60) 18%, transparent);
+  color: var(--brand-70);
+}
+
+.linkButton:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────── */
+
+@keyframes lbRiseUp {
+  from { opacity: var(--opacity-000); transform: translateY(var(--space-100)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transition: none !important;
+    opacity: var(--opacity-100);
+    transform: none;
+  }
+}
