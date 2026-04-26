@@ -126,6 +126,31 @@ export function AudioPlayer({ payload }) {
     }
   }, [])
 
+  /* Keyboard arrow-seek on the play button. ArrowLeft / ArrowRight
+     nudge ±5 seconds without leaving the button focus, so a
+     screen-reader / keyboard user gets a natural scrubbing path
+     they can do entirely from the primary control. Seek-forward
+     past the threshold also flips completion (consistent with the
+     mouse seek handler). */
+  const handlePlayKeyDown = useCallback((e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const el = audioElRef.current
+    if (!el) return
+    const dur = el.duration || duration || propDuration
+    if (!Number.isFinite(dur) || dur <= 0) return
+
+    e.preventDefault()
+    const delta = e.key === 'ArrowRight' ? 5 : -5
+    const next = Math.max(0, Math.min(dur, (el.currentTime || 0) + delta))
+    el.currentTime = next
+    const fraction = next / dur
+    setPlayProgress(fraction)
+    setCurrentTime(next)
+    const pct = fraction * 100
+    setListenPercentage((prev) => (pct > prev ? pct : prev))
+    if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
+  }, [duration, propDuration, fireCompletion])
+
   const stopPlayRaf = useCallback(() => {
     if (playRafRef.current) {
       cancelAnimationFrame(playRafRef.current)
@@ -318,6 +343,7 @@ export function AudioPlayer({ payload }) {
           type="button"
           className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
           onClick={handlePlayPause}
+          onKeyDown={handlePlayKeyDown}
           disabled={hasError}
           aria-label={
             hasError ? 'Audio unavailable'
