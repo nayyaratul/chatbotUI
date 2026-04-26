@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { PlaySquare, Play, Maximize, CircleCheck } from 'lucide-react'
+import { PlaySquare, Play, Maximize } from 'lucide-react'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import { MediaPlayerControls } from './MediaPlayerControls.jsx'
 import styles from './videoPlayer.module.scss'
@@ -240,12 +240,10 @@ export function VideoPlayer({ payload }) {
               />
             </button>
           )}
-          {completed && (
-            <span className={styles.completionChip}>
-              <CircleCheck size={14} strokeWidth={2} aria-hidden />
-              Completed
-            </span>
-          )}
+          {/* No top-right "Completed" chip — completion is signalled
+              by the seekbar and play button turning success-tone
+              instead. The bar tint + green play disc together carry
+              the signal. */}
           {/* Controls overlay — absolute-positioned at the bottom of
               the media region, padded inward from the edges. Stops
               click propagation so seeking the bar doesn't toggle
@@ -265,7 +263,6 @@ export function VideoPlayer({ payload }) {
               completionThreshold={COMPLETION_THRESHOLD}
               onCompletionEdge={handleCompletionEdge}
               onPlayChange={handlePlayChange}
-              listenedLabel="Completed"
               trailing={fullscreenButton}
             />
           </div>

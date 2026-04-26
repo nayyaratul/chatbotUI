@@ -130,7 +130,6 @@ export function AudioPlayer({ payload }) {
           hasError={hasError}
           completionThreshold={COMPLETION_THRESHOLD}
           onCompletionEdge={handleCompletionEdge}
-          listenedLabel="Listened"
         />
       </div>
     </div>

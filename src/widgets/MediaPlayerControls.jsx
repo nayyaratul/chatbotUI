@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import cx from 'classnames'
-import { Play, Pause, RotateCcw, CheckCircle2, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import styles from './mediaPlayerControls.module.scss'
 
 /* ─── MediaPlayerControls ─────────────────────────────────────────────
@@ -61,8 +61,6 @@ import styles from './mediaPlayerControls.module.scss'
                            Parent fires onReply from this.
      onPlayChange          (playing: boolean)=>void — called on every
                            play/pause transition.
-     listenedLabel         label inside the listened chip (default
-                           'Listened'). Video Player uses 'Completed'.
      trailing              ReactNode rendered at the right end of the
                            row, after the speed pill. Used by Video
                            Player for the Fullscreen button.
@@ -98,7 +96,6 @@ export function MediaPlayerControls({
   completionThreshold = 0.95,
   onCompletionEdge,
   onPlayChange,
-  listenedLabel = 'Listened',
   trailing,
 }) {
   const speeds = Array.isArray(speedsProp) && speedsProp.length > 0
@@ -427,7 +424,11 @@ export function MediaPlayerControls({
     )}>
       <button
         type="button"
-        className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
+        className={cx(
+          styles.playBtn,
+          hasError && styles.playBtnDisabled,
+          completed && styles.playBtnListened,
+        )}
         onClick={handlePlayPause}
         onKeyDown={handlePlayKeyDown}
         disabled={hasError}
@@ -469,20 +470,15 @@ export function MediaPlayerControls({
         </button>
 
         {/* Time chip — single combined "current / total" pill anchored
-            below the bar's left edge. Replaces the previous twin
-            time labels (start/end). On error or completion the chip
-            swaps to the appropriate state-specific message. */}
+            below the bar's left edge. Stays as the time chip across
+            all states (idle / playing / completed) — completion is
+            already signalled by the seekbar and play button turning
+            success-tone. On error the chip swaps to "Unable to
+            load" since the time is meaningless in that state. */}
         <div className={styles.trackMeta}>
           {hasError ? (
             <span className={cx(styles.timeChip, styles.timeChipError)}>
               Unable to load
-            </span>
-          ) : completed ? (
-            <span className={cx(styles.timeChip, styles.timeChipListened)}>
-              <span className={styles.timeChipIcon} aria-hidden="true">
-                <CheckCircle2 size={12} strokeWidth={2.5} />
-              </span>
-              {listenedLabel}
             </span>
           ) : (
             <span className={styles.timeChip}>

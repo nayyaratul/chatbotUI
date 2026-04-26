@@ -149,6 +149,21 @@
   transform: none;
 }
 
+/* Listened state — turns the play button success-tone after
+   completion. Combined with the bar + thumb retint, this is the
+   sole completion indicator (no separate "Completed" chip). The
+   icon swaps to RotateCcw at the JSX level so the green disc
+   reads as "tap to replay". */
+.playBtnListened {
+  background: var(--color-text-success);
+  border-color: color-mix(in srgb, var(--color-text-success) 88%, black);
+  color: var(--white);
+}
+
+.playBtnListened:hover {
+  background: color-mix(in srgb, var(--color-text-success) 88%, black);
+}
+
 /* ─── Track column ────────────────────────────────────────── */
 
 .track {
@@ -349,28 +364,6 @@
 .timeChipError {
   color: var(--color-text-error);
   border-color: color-mix(in srgb, var(--color-text-error) 36%, transparent);
-}
-
-.timeChipListened {
-  color: var(--color-text-success);
-  border-color: color-mix(in srgb, var(--color-text-success) 36%, transparent);
-  background: color-mix(in srgb, var(--color-text-success) 8%, var(--mpc-chip-bg));
-
-  animation: mpcChipPop 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 200ms both;
-}
-
-.timeChipIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: var(--space-025);
-  animation: mpcChipPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 320ms both;
-}
-
-@keyframes mpcChipPop {
-  0%   { opacity: 0; transform: scale(0.8); }
-  60%  { opacity: var(--opacity-100); transform: scale(1.06); }
-  100% { opacity: var(--opacity-100); transform: scale(1); }
 }
 
 /* ─── Volume — button + popover slider ─────────────────────────
@@ -640,8 +633,6 @@
   .progressThumbPlaying,
   .progressThumbSnap,
   .speedLabelPulse,
-  .timeChipListened,
-  .timeChipIcon,
   .volumePopover {
     animation: none;
   }
