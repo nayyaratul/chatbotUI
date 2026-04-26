@@ -61,12 +61,21 @@ function clamp(min, max, v) {
   return Math.max(min, Math.min(max, v))
 }
 
+function prefersReducedMotion() {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
 function useCountUp(target, durationMs = 280) {
   const [value, setValue] = useState(target ?? 0)
   const startedRef = useRef({ from: 0, to: 0, t0: 0, raf: 0 })
 
   useEffect(() => {
     if (target == null) return
+    if (prefersReducedMotion()) {
+      setValue(target)
+      return
+    }
     cancelAnimationFrame(startedRef.current.raf)
     startedRef.current = {
       from: value,
@@ -142,29 +151,31 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const handleOpen = useCallback(() => {
     if (cardState === 'completed') return                     // proof state — locked
 
-    /* Phase 1 — measure source. Sheet has not mounted yet; we use a
-       provisional target rect (the chat-modal-root's body area). The
-       sheet, when it mounts, will call back with the precise iframe
-       frame rect; the clone re-targets via setLiftState if needed. */
-    const sourceRect = posterRef.current?.getBoundingClientRect()
-    const modalRoot = document.getElementById('chat-modal-root')
-    const rootRect = modalRoot?.getBoundingClientRect()
-    const provisionalTarget = rootRect && sourceRect
-      ? {
-          x: rootRect.left,
-          y: rootRect.top + rootRect.height * 0.18,
-          width: rootRect.width,
-          height: rootRect.height * 0.62,
-        }
-      : null
+    if (!prefersReducedMotion()) {
+      /* Phase 1 — measure source. Sheet has not mounted yet; we use a
+         provisional target rect (the chat-modal-root's body area). The
+         sheet, when it mounts, will call back with the precise iframe
+         frame rect; the clone re-targets via setLiftState if needed. */
+      const sourceRect = posterRef.current?.getBoundingClientRect()
+      const modalRoot = document.getElementById('chat-modal-root')
+      const rootRect = modalRoot?.getBoundingClientRect()
+      const provisionalTarget = rootRect && sourceRect
+        ? {
+            x: rootRect.left,
+            y: rootRect.top + rootRect.height * 0.18,
+            width: rootRect.width,
+            height: rootRect.height * 0.62,
+          }
+        : null
 
-    if (sourceRect && provisionalTarget) {
-      setLiftState({
-        direction: 'forward',
-        sourceRect: { x: sourceRect.left - rootRect.left, y: sourceRect.top - rootRect.top, width: sourceRect.width, height: sourceRect.height },
-        targetRect: { x: provisionalTarget.x - rootRect.left, y: provisionalTarget.y - rootRect.top, width: provisionalTarget.width, height: provisionalTarget.height },
-        tint: 'transparent',
-      })
+      if (sourceRect && provisionalTarget) {
+        setLiftState({
+          direction: 'forward',
+          sourceRect: { x: sourceRect.left - rootRect.left, y: sourceRect.top - rootRect.top, width: sourceRect.width, height: sourceRect.height },
+          targetRect: { x: provisionalTarget.x - rootRect.left, y: provisionalTarget.y - rootRect.top, width: provisionalTarget.width, height: provisionalTarget.height },
+          tint: 'transparent',
+        })
+      }
     }
 
     lastOpenedAtRef.current = Date.now()
@@ -177,29 +188,31 @@ export function EmbeddedWebview({ payload, onSubmit }) {
       lastOpenedAtRef.current = 0
     }
 
-    /* Capture rects for reverse FLIP. */
-    const sourceRect = posterRef.current?.getBoundingClientRect()
-    const modalRoot = document.getElementById('chat-modal-root')
-    const rootRect = modalRoot?.getBoundingClientRect()
-    if (sourceRect && rootRect) {
-      const currentTarget = liftState?.targetRect
-        ?? {
-          x: 0,
-          y: rootRect.height * 0.18,
-          width: rootRect.width,
-          height: rootRect.height * 0.62,
-        }
-      setLiftState({
-        direction: 'reverse',
-        sourceRect: {
-          x: sourceRect.left - rootRect.left,
-          y: sourceRect.top - rootRect.top,
-          width: sourceRect.width,
-          height: sourceRect.height,
-        },
-        targetRect: currentTarget,
-        tint: liftState?.tint ?? 'transparent',
-      })
+    if (!prefersReducedMotion()) {
+      /* Capture rects for reverse FLIP. */
+      const sourceRect = posterRef.current?.getBoundingClientRect()
+      const modalRoot = document.getElementById('chat-modal-root')
+      const rootRect = modalRoot?.getBoundingClientRect()
+      if (sourceRect && rootRect) {
+        const currentTarget = liftState?.targetRect
+          ?? {
+            x: 0,
+            y: rootRect.height * 0.18,
+            width: rootRect.width,
+            height: rootRect.height * 0.62,
+          }
+        setLiftState({
+          direction: 'reverse',
+          sourceRect: {
+            x: sourceRect.left - rootRect.left,
+            y: sourceRect.top - rootRect.top,
+            width: sourceRect.width,
+            height: sourceRect.height,
+          },
+          targetRect: currentTarget,
+          tint: liftState?.tint ?? 'transparent',
+        })
+      }
     }
 
     setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))

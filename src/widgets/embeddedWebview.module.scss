@@ -567,3 +567,24 @@
   transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
   opacity: var(--opacity-040);
 }
+
+/* ─── Pass 1 region 14: reduced-motion neutralizer ──────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card:hover,
+  .shScrim,
+  .shSheet,
+  .shIframe,
+  .shBody_pre_lift,
+  .shBody_lifted,
+  .liftClone,
+  .trustCapsule_done,
+  .shProgressFill,
+  .poster_fading {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .shSpinner { animation: none !important; }
+}
