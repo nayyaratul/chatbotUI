@@ -1,12 +1,16 @@
 /* ─── Audio Player Widget (CSV #25) ───────────────────────────────
-   Inline audio player. Single state — IDLE → PLAYING ↔ PAUSED →
-   ENDED → REPLAY. Inherits the bar+sweep+`--play-progress` audio
-   data-viz primitive from Voice Recording (#26).
+   Inline audio player. Slim progress track with a luminous brand-60
+   thumb that breathes a soft halo while playing. Closer to
+   VideoPlayer's family pattern than VR's recording-side bar+sweep,
+   which the original spec leaned on; for consumption-side audio
+   the thumb-as-needle is the right primitive — functional (you see
+   where you are, you tap to seek there), iconic (the breathing
+   halo IS the audio-is-alive signal), and compact.
 
-   Region 1: shell + §2 header + player row at IDLE. The base
-   waveform layer renders 32 bars in grey-30. Sweep layer, seek,
-   speed cycling, and the listened seal are added in later regions.
-   Nexus tokens only.
+   Single state — IDLE → PLAYING ↔ PAUSED → ENDED → REPLAY. Three
+   cosmetic state-overlays on the player row (error, listened) +
+   per-gesture flash keyframes on the thumb (snap on seek) and the
+   speed label (pulse on cycle). Nexus tokens only.
    ──────────────────────────────────────────────────────────────── */
 
 /* ─── Card shell (§1) ──────────────────────────────────────────── */
@@ -94,21 +98,19 @@
   color: var(--grey-60);
 }
 
-/* ─── Player row — inner white container with the bar+sweep+meta+speed
-   primitive. Same dimensional pattern as VR's `.previewRow`: white
-   card, grey-10 border, space-125 padding, flex row.
-
-   Layout: [playBtn] [waveform] [meta] [speedBtn]. The waveform
-   takes the available middle width (flex: 1); play and speed are
-   fixed-width; meta is content-sized.
+/* ─── Player row — inner white container holding the play button,
+   track column (progress bar + time line), and speed pill. Same
+   dimensional pattern as VR's `.previewRow` so the family stays
+   visually consistent: white card, grey-10 border, space-125
+   padding, flex row aligned center.
 
    Mount stagger: 80ms after the card so the row reads as the body
    landing inside the chrome. */
 .playerRow {
   display: flex;
   align-items: center;
-  gap: var(--space-125);
-  padding: var(--space-125);
+  gap: var(--space-150);
+  padding: var(--space-150) var(--space-150) var(--space-125);
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -161,8 +163,7 @@
 
 /* Disabled treatment — used by the error degradation. Removes the
    brand affordance entirely; the button reads as a placeholder
-   that "would have been play" but isn't reachable. Also collapses
-   the hover halo + active scale so the user gets no false signal. */
+   that "would have been play" but isn't reachable. */
 .playBtnDisabled,
 .playBtn:disabled {
   cursor: not-allowed;
@@ -182,158 +183,239 @@
   transform: none;
 }
 
-/* ─── Waveform — 32 bars in two stacked layers, the second one
-   clipped + masked by --play-progress to produce the brand-60 L→R
-   sweep. The container itself is a <button> for tap-to-seek; reset
-   its native button chrome so it reads as the bar canvas, not a
-   pill. `overflow: hidden` contains the absolutely-positioned bar
-   layers so they never spill outside the wrapper's bounds. */
-.waveform {
-  position: relative;
+/* ─── Track column — bar + meta. Takes flex:1 of the row width.
+   Vertical stack: bar on top, time / status line below anchored to
+   the bar's left/right ends. */
+.track {
   flex: 1;
   min-width: 0;
-  height: var(--size-32);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-075);
+}
 
-  /* Reset <button> chrome — the row's primary affordance is "click
-     anywhere on the bars to seek there"; the button frame would
-     compete with the play button visually. */
+/* ─── Progress bar — seekable button. The visual track is a slim
+   size-04 line centered inside a size-12 hit area (generous tap
+   target, minimal visual weight). Fill + thumb are positioned by
+   `--play-progress` set as an inline CSS variable; both are
+   absolutely-positioned children, pointer-events:none so clicks
+   always hit the container.
+
+   Reset <button> chrome — the bar should read as a track, not a
+   pill. */
+.progressBar {
+  position: relative;
+  width: 100%;
+  height: var(--size-12);
   padding: 0;
+
   background: none;
   border: 0;
   cursor: pointer;
   font: inherit;
   color: inherit;
   display: block;
+  /* Allow the thumb's halo to spill outside the size-12 hit area —
+     the box-shadow rings extend beyond the thumb's box, especially
+     during apwThumbHalo and apwThumbSnap. */
+  overflow: visible;
 }
 
-.waveform:focus-visible {
-  outline: var(--border-width-200) solid var(--brand-60);
-  outline-offset: var(--size-02);
-  border-radius: var(--radius-100);
-}
-
-/* Tap-to-seek acknowledgment — soft brand-60 ring that fans out from
-   the waveform container and fades. Re-fired imperatively on each
-   click via classList remove → reflow → add (see flashKeyframe in
-   AudioPlayer.jsx). The button itself is NOT remounted — keyboard
-   focus survives the seek. State curve, 320ms (inside the entry/
-   springy band). The post-flash sweep snap is instant; the ring IS
-   the micro-feedback on the gesture. */
-.waveformSeekFlash {
-  animation: apwSeekFlash 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 1;
-}
-
-@keyframes apwSeekFlash {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 32%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 var(--size-08) transparent;
-  }
-}
-
-.waveformLayer {
+/* Track base — slim grey-10 line, rounded-full, centered vertically
+   inside the size-12 button. */
+.progressBar::before {
+  content: '';
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--size-02);
-  /* Bars are visual only — clicks pass through to the .waveform
-     container so the seek handler always receives a click whose
-     bounding rect is the container's, regardless of which bar/gap
-     was hit. */
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--size-04);
+  margin-top: calc(var(--size-04) / -2);
+
+  background: var(--grey-10);
+  border-radius: var(--radius-full);
   pointer-events: none;
 }
 
-.bar {
-  display: inline-block;
-  /* Responsive width — bars share the container's available width
-     equally (flex-basis 0 + flex-grow 1) and cap at size-04. On
-     narrow rows this keeps the 32 bars + 31 gaps inside the
-     waveform's bounds instead of overflowing left under the
-     play button. */
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: var(--size-04);
+.progressBar:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+  border-radius: var(--radius-full);
+}
 
-  /* Min visible silence = size-04, max peak = size-32. Linear
-     interpolation between the two via --bar-norm in [0, 1]. */
-  height: calc(var(--size-04) + var(--bar-norm, 0) * (var(--size-32) - var(--size-04)));
+/* ─── Progress fill — brand-60, width tracks --play-progress.
+   Sits over the track's grey-10 base, same vertical centering. */
+.progressFill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: var(--size-04);
+  margin-top: calc(var(--size-04) / -2);
+  width: calc(100% * var(--play-progress, 0));
 
-  border-radius: var(--radius-100);
   background: var(--brand-60);
-
-  transition: height 80ms cubic-bezier(0.2, 0.8, 0.3, 1),
-              background 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  border-radius: var(--radius-full);
+  pointer-events: none;
 }
 
-.barUnplayed {
-  background: var(--grey-30);
+/* ─── Progress thumb — circular dot at the playhead. THIS is the
+   signature moment of the redesign: a brand-60 disc whose halo
+   breathes 2.6s while playing, replacing VR's bar-by-bar wet-edge
+   as the "audio is alive" signal.
+
+   Positioning: the thumb's CENTER is at `progress * 100%` of the
+   bar; margin-left = -size-12/2 centers the circle on that point.
+   The thumb half-clips at the very left (progress=0) and very
+   right (progress=1) edges — that's intentional, reads as "the
+   playhead has reached the boundary." */
+.progressThumb {
+  position: absolute;
+  top: 50%;
+  left: calc(100% * var(--play-progress, 0));
+  width: var(--size-12);
+  height: var(--size-12);
+  margin-top: calc(var(--size-12) / -2);
+  margin-left: calc(var(--size-12) / -2);
+
+  background: var(--brand-60);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 88%, black);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+
+  /* Resting halo — present at idle + paused + ended. The thumb is
+     always "alive" because audio is the medium, but the resting
+     halo is restrained (single tight ring + soft outer bloom).
+     The breathing keyframe layers on top of this when isPlaying. */
+  box-shadow:
+    0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
+    0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
 }
 
-/* Sweep layer — reveal proportional to --play-progress (0 → 1).
-   The clip-path's right-inset collapses as progress grows, exposing
-   the brand-60 bars. Driven by RAF; no transition needed.
-
-   The mask-image fades out the rightmost size-08 of the sweep so the
-   brand-60 "kisses" each bar instead of slamming through — gives
-   the sweep front a wet, refined feel. */
-.waveformSweep {
-  clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
-  mask-image: linear-gradient(
-    to right,
-    black 0,
-    black calc(100% * var(--play-progress, 0) - var(--size-08)),
-    transparent calc(100% * var(--play-progress, 0))
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    black 0,
-    black calc(100% * var(--play-progress, 0) - var(--size-08)),
-    transparent calc(100% * var(--play-progress, 0))
-  );
+/* Playing state — the halo breathes on a §16 state-curve loop,
+   2.6s cadence. Reads as the needle being alive without competing
+   with the playhead's L→R motion (which is RAF-driven, linear).
+   The breath is decorative atmosphere; the position is information. */
+.progressThumbPlaying {
+  animation: apwThumbHalo 2600ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
 }
 
-/* Moment-of-completion settle — the rightmost bar of BOTH layers
-   gets a single springy pulse when playback ends. Re-fires whenever
-   .waveformEnded is re-applied (i.e., on every replay-end frame). */
-.waveformEnded .waveformLayer .bar:last-child {
-  animation: apwEndPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
+@keyframes apwThumbHalo {
+  0%, 100% {
+    box-shadow:
+      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
+      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 16%, transparent),
+      0 0 var(--size-16) var(--size-02) color-mix(in srgb, var(--brand-60) 38%, transparent);
+  }
 }
 
-@keyframes apwEndPulse {
-  0%   { transform: scaleY(1); }
-  50%  { transform: scaleY(1.16); }
-  100% { transform: scaleY(1); }
+/* Tap-to-seek feedback — quick halo expansion + scale-pop that
+   fans out then settles. Re-fired imperatively on each click via
+   classList toggle (see flashKeyframe in AudioPlayer.jsx). The
+   button itself isn't remounted — keyboard focus survives the
+   seek. Springy curve, 320ms (inside the entry/springy band). */
+.progressThumbSnap {
+  animation: apwThumbSnap 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
 }
 
-/* ─── Meta line — currentTime / duration (or just duration when
-   idle). Tabular nums so digits don't dance during playback. */
-.meta {
-  flex-shrink: 0;
+@keyframes apwThumbSnap {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
+      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+  }
+  50% {
+    transform: scale(1.32);
+    box-shadow:
+      0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 28%, transparent),
+      0 0 var(--size-16) var(--size-04) color-mix(in srgb, var(--brand-60) 32%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 22%, transparent),
+      0 0 var(--size-08) 0 color-mix(in srgb, var(--brand-60) 26%, transparent);
+  }
+}
+
+/* Listened state — fill retints success across its entire width
+   (the bar reads as a "filled-and-sealed" copy of itself), and the
+   thumb pins at the right edge in success-tone with a calm halo.
+   The breathing animation stops; replay no longer needs the
+   alive-signal because the seal IS the signal. */
+.progressBarListened .progressFill {
+  background: var(--color-text-success);
+}
+
+.progressBarListened .progressThumb {
+  background: var(--color-text-success);
+  border-color: color-mix(in srgb, var(--color-text-success) 88%, black);
+  box-shadow:
+    0 0 0 var(--size-02) color-mix(in srgb, var(--color-text-success) 24%, transparent),
+    0 0 var(--size-08) 0 color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  /* Override the breathing animation so the thumb sits at rest in
+     success-tone. Replay during listened state plays the audio but
+     the visual stays sealed. */
+  animation: none;
+}
+
+/* Error state — thumb hides, fill stays at zero. The bar reads as
+   inert; the trackError message under the bar carries the meaning. */
+.progressBarDisabled {
+  cursor: not-allowed;
+}
+
+.progressBarDisabled::before {
+  background: var(--grey-10);
+}
+
+.progressBarDisabled .progressFill {
+  background: var(--grey-20);
+}
+
+.progressBarDisabled .progressThumb {
+  display: none;
+}
+
+/* ─── Track meta line — current/duration times anchored under the
+   bar. When listened, replaced by the centered chip. When error,
+   replaced by the centered error message. min-height prevents
+   the row from collapsing visually as content swaps. */
+.trackMeta {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  min-height: var(--size-12);
+}
+
+.trackTimeStart,
+.trackTimeEnd {
   font-family: var(--sans);
-  font-size: var(--font-size-200);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-300);
-  color: var(--grey-60);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--grey-50);
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
-.metaTime {
+/* Error meta — replaces both time labels when <audio> fires error.
+   Centered across the full track-meta width; tone shifts to error
+   so the read is "this clip won't play" without taking the user
+   out of the chat flow. */
+.trackError {
+  flex: 1;
+  text-align: center;
   white-space: nowrap;
-}
 
-/* Error meta — replaces the time label when <audio> fires error.
-   Same row position; tone shifts to error so the read is "this
-   clip won't play" without taking the user out of the chat flow. */
-.metaError {
-  white-space: nowrap;
+  font-family: var(--sans);
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-regular);
+  line-height: 1;
   color: var(--color-text-error);
   letter-spacing: var(--letter-spacing-tight);
 }
@@ -345,11 +427,13 @@
    Timing: shimmer starts at t=0 and crosses the meta cell at ~t=300ms
    (50% across the 105deg gradient). Chip starts at t=200ms and
    settles at ~t=440ms. So the chip's pop visually catches the wave
-   of the shimmer as the wave passes over it — Pass 2 elevation: the
-   two beats now overlap by design instead of stacking back-to-back. */
+   of the shimmer as the wave passes over it — the two beats overlap
+   by design instead of stacking back-to-back. */
 .listenedChip {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-050);
   white-space: nowrap;
 
@@ -396,8 +480,8 @@
    documented exception above the §16 280–360ms entry band: the
    longer duration reads as a deliberate "earned" beat traveling
    across the row, not a hover flash. After the shimmer ends, the
-   tint stays — replay loops the sweep on top of the sealed row
-   but completed never flips back. */
+   tint stays — replay continues to play the audio but the visual
+   never un-seals. */
 .playerRowListened {
   position: relative;
   overflow: hidden;
@@ -427,30 +511,6 @@
 @keyframes apwSealShimmer {
   from { background-position: -100% 0; }
   to   { background-position:  200% 0; }
-}
-
-/* Bars retint to success on completion. Applied to both base and
-   sweep layers so the row reads as a unified "sealed" copy of the
-   waveform — even during replay, the brand-60 sweep is still
-   visible (it's mixed with the success retint, but the layered
-   structure is preserved).
-
-   The barSettle keyframe fires once when the .barListened class
-   first applies — a single 280ms springy beat where every bar
-   briefly settles into the success tone. The retint becomes a
-   physical land, not a paint swap. Curve is the §16 springy curve;
-   duration sits inside the springy band. Plays only once because
-   keyframe is scoped to the .barListened modifier — replay does
-   not re-fire (the class is sticky after the seal). */
-.barListened {
-  background: var(--color-text-success);
-  animation: apwBarSettle 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1 both;
-}
-
-@keyframes apwBarSettle {
-  0%   { transform: scaleY(1); }
-  55%  { transform: scaleY(1.12); }
-  100% { transform: scaleY(1); }
 }
 
 /* ─── Speed pill — outlined brand-60 cycling button. Height matches
@@ -506,12 +566,6 @@
   display: inline-block;
 }
 
-/* Pulse on cycle — applied imperatively after each setSpeedIndex
-   via the classList remove → reflow → add trick. Springy curve,
-   240ms (inside the entry/springy band). The outer .speedBtn keeps
-   its press scale (0.96 on :active); this inner span owns the
-   "land." Two layers of feedback for one gesture, neither competing
-   with the other. */
 .speedLabelPulse {
   animation: apwSpeedLabelPulse 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
 }
@@ -538,10 +592,11 @@
   transform: none;
 }
 
-/* ─── Reduced motion ────────────────────────────────────────────
-   Region 1 baseline — collapse the mount stagger and per-bar
-   transition smoothing. Later regions extend this block with
-   sweep/seal/end-pulse neutralizations. */
+/* ─── Reduced motion ───────────────────────────────────────────
+   Every introduced keyframe + every hover/state transition that
+   conveys motion (not color) is neutralized. The audio still plays,
+   the playhead still moves L→R linearly via --play-progress (that's
+   the content), but every decorative animation collapses. */
 @media (prefers-reduced-motion: reduce) {
   .card,
   .playerRow {
@@ -556,25 +611,19 @@
   .playerRow,
   .playBtn,
   .speedBtn,
-  .waveform {
+  .progressBar {
     transition-duration: 0.01ms;
   }
 
-  .bar {
+  .progressFill,
+  .progressThumb {
     transition-duration: 0.01ms;
   }
 
-  .waveformSweep {
-    /* Pin the sweep to fully filled so reduced-motion users still
-       get the "audio progresses" signal via the bar tint, but
-       without the motion of the L→R wipe. The mask-image wet-edge
-       collapses too — sharp boundary at full fill. */
-    --play-progress: 1 !important;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-
-  .waveformEnded .waveformLayer .bar:last-child {
+  /* The thumb's breathing halo is decorative atmosphere — under
+     reduced motion the resting halo is sufficient signal that the
+     thumb is "alive." */
+  .progressThumbPlaying {
     animation: none;
   }
 
@@ -588,11 +637,8 @@
     animation: none;
   }
 
-  /* Pass 2 elevation animations all collapse — keep the affordance
-     (focus ring, success retint, label change) but drop the motion. */
-  .waveformSeekFlash,
-  .speedLabelPulse,
-  .barListened {
+  .progressThumbSnap,
+  .speedLabelPulse {
     animation: none;
   }
 }

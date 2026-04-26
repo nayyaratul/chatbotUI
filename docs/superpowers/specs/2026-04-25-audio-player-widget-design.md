@@ -1,19 +1,35 @@
 # Audio Player Widget — Design Spec
 
-**Status:** Approved in brainstorming · ready for implementation.
+**Status:** Shipped · primitive revised post-Pass-2 (see Amendment below).
 **Widget number:** #25 in `AI_Labs_Widget_Specification - Rich Chat Widgets.csv`.
 **Priority / phase:** P2, Phase 2.
 **Family rule book:** `docs/widget-conventions.md` (doc wins any conflict).
 
 ---
 
+## Amendment — primitive swap (post-Pass-2)
+
+The original brainstorm locked the inherited primitive as VR's bar + sweep + `--play-progress` clip-path + `mask-image` wet leading edge. After Pass 2 closed clean, the user redirected: that vocabulary is the right *recording-side* visualization (the waveform IS the audio being captured), but the wrong *consumption-side* visualization. For Audio Player the right primitive is closer to VideoPlayer's progress-bar pattern — slim track + luminous brand-60 thumb — because:
+
+- A pre-rendered waveform of an audio clip the user hasn't heard yet is decorative, not informational. The user can't read it.
+- The progress-bar-with-thumb is functional: where am I, how much is left, click here to jump.
+- The **breathing halo on the thumb** becomes the new "audio is alive" signal — replaces the per-bar wet-edge that VR's recording flow earned.
+
+The signature moment is now the **brand-60 thumb halo breathing on a 2.6s state-curve loop while audio plays**, plus the springy halo expansion on tap-to-seek (`apwThumbSnap`), plus the **600ms one-cycle seal shimmer** on the first crossing of the 95% completion threshold. The thumb retints success and pins to the right edge; the fill tints success across its width; the breathing animation stops because the seal IS the signal.
+
+Locked decisions from the original brainstorm carry forward unchanged: single `default` variant, no §10 banner, no DENIED state, error degrades in place, single `onReply` fire on the completion edge, monotonic `listen_percentage`, **play button stays brand-60 even after the seal** (replay reads as a normal action, not a tinted-celebration action), no drag scrubber.
+
+The sections below are kept for historical context but reflect the *original* bar+sweep design. The implementation in `src/widgets/AudioPlayer.jsx` is the source of truth for the current primitive.
+
+---
+
 ## Purpose
 
-An inline audio-player widget for voice content: pre-rendered waveform, play / pause, tap-to-seek, speed toggle, completion seal. CSV use-cases — voice-based training in regional languages, recorded task instructions for semi-literate workers, pronunciation guides, replay of previous interactions.
+An inline audio-player widget for voice content: slim progress track with a luminous brand-60 thumb, play / pause, tap-to-seek, speed toggle, completion seal. CSV use-cases — voice-based training in regional languages, recorded task instructions for semi-literate workers, pronunciation guides, replay of previous interactions.
 
-This is the **consumption-side sibling** of Voice Recording (#26). It inherits the audio data-viz primitive VR established (32-bar waveform + brand-60 L→R sweep clipped by `--play-progress` + `mask-image` wet leading edge) and adds three things VR doesn't have: tap-to-seek, speed cycling, and a listen-tracking model (`listen_percentage` + `completed`). VR's "submitted/seal" treatment becomes the "listened" treatment here, with one tweak: the play button does **not** turn success-tone — replay should read as a normal action, not a tinted-celebration action.
+This is the **consumption-side sibling** of Voice Recording (#26). It does NOT inherit VR's bar+sweep primitive (see Amendment above) — instead it sits in VideoPlayer's progress-bar family, adapted for audio: the bar is slimmer (`size-04` vs VR's `size-32` waveform region), the thumb carries the alive-signal via a breathing halo, and there is no scrubber thumb on VideoPlayer's progress (so the AudioPlayer thumb is a genuine new shape inside the family, but it's a small refinement on a known progress-bar primitive, not a wholly novel data-viz).
 
-The signature moment is the **brand-60 sweep kissing each bar in turn** during playback, then the **600ms one-cycle seal shimmer** when playback first crosses the 95% completion threshold. After the seal, the row stays success-tinted forever; replay loops the sweep on top of the already-sealed row, but `completed` never flips back.
+The thumb's halo replaces VR's per-bar wet-edge as the "audio is alive" signal. After the seal, the row stays success-tinted forever; replay during listened state plays the audio but the visual stays sealed and `completed` never flips back.
 
 ## Variants
 
