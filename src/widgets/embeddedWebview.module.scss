@@ -431,3 +431,45 @@
   background: var(--white);
   flex-shrink: 0;
 }
+
+/* ─── Pass 1 region 10: success banner + trust-capsule done state ── */
+
+.successBanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  margin-top: auto;
+}
+
+.successChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  align-self: flex-start;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--color-text-success);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.successMeta {
+  margin: 0;
+  font-size: var(--font-size-200);
+  color: var(--grey-80);
+  font-variant-numeric: tabular-nums;
+}
+
+.trustCapsule_done {
+  background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 24%, transparent);
+  color: var(--color-text-success);
+  transition:
+    background 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
+    border-color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
+    color 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4);
+}

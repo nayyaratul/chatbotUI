@@ -97,30 +97,66 @@ export function EmbeddedWebview({ payload, onSubmit }) {
   const meta = VARIANT_META[variant] ?? VARIANT_META.partner_form
   const Icon = meta.icon
 
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [cardState, setCardState] = useState('idle')         // 'idle' | 'sheet_open' | 'dismissed' | 'completed'
+  const [lastProgress, setLastProgress] = useState(null)     // training-variant caption
+  const totalOpenMsRef = useRef(0)
+  const lastOpenedAtRef = useRef(0)
 
   const eyebrow = payload?.category
     ? `${meta.eyebrowPrefix} · ${payload.category}`
     : meta.eyebrowPrefix
 
   const handleOpen = useCallback(() => {
-    setSheetOpen(true)
-  }, [])
+    if (cardState === 'completed') return                     // proof state — locked
+    lastOpenedAtRef.current = Date.now()
+    setCardState('sheet_open')
+  }, [cardState])
 
   const handleSheetClose = useCallback(() => {
-    setSheetOpen(false)
+    if (lastOpenedAtRef.current) {
+      totalOpenMsRef.current += Date.now() - lastOpenedAtRef.current
+      lastOpenedAtRef.current = 0
+    }
+    setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))
   }, [])
 
   const handleCompleted = useCallback((data, method) => {
-    /* Submission wiring lands in Task 9. For now, just close. */
-    setSheetOpen(false)
+    if (lastOpenedAtRef.current) {
+      totalOpenMsRef.current += Date.now() - lastOpenedAtRef.current
+      lastOpenedAtRef.current = 0
+    }
+    setCardState('completed')
+
+    if (payload?.silent !== true) {
+      onSubmit?.({
+        type: 'widget_response',
+        payload: {
+          widget_id: payload?.widget_id,
+          source_type: 'embedded_webview',
+          variant,
+          completed: true,
+          completion_method: method,
+          data: data ?? {},
+          total_open_time_seconds: Math.round(totalOpenMsRef.current / 1000),
+        },
+      })
+    }
+  }, [onSubmit, payload, variant])
+
+  const handleProgress = useCallback((pct) => {
+    setLastProgress(pct)
   }, [])
 
+  const sheetOpen = cardState === 'sheet_open'
+
+  const ctaLabel = cardState === 'dismissed' ? meta.ctaReopen : meta.ctaOpen
+  const showSuccess = cardState === 'completed'
+
   return (
-    <article className={cx(styles.card, styles[`card_${variant}`])}>
+    <article className={cx(styles.card, styles[`card_${variant}`], styles[`card_${cardState}`])}>
       <header className={styles.header}>
-        <span className={styles.iconBadge} aria-hidden>
-          <Icon size={18} strokeWidth={2} />
+        <span className={styles.iconBadge}>
+          <Icon size={18} strokeWidth={2} aria-hidden />
         </span>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>{eyebrow}</p>
@@ -136,32 +172,50 @@ export function EmbeddedWebview({ payload, onSubmit }) {
         aria-hidden
       >
         {payload?.poster_url
-          ? (
-            <img className={styles.posterImg} src={payload.poster_url} alt="" loading="lazy" />
-          )
-          : (
-            <Globe className={styles.posterFallbackGlyph} size={36} strokeWidth={1.5} aria-hidden />
-          )
+          ? <img className={styles.posterImg} src={payload.poster_url} alt="" loading="lazy" />
+          : <Globe className={styles.posterFallbackGlyph} size={36} strokeWidth={1.5} aria-hidden />
         }
-        <div className={styles.trustCapsule}>
-          {payload?.favicon_url
-            ? <img className={styles.faviconImg} src={payload.favicon_url} alt="" />
-            : <Globe size={14} strokeWidth={2} aria-hidden />
+        <div className={cx(styles.trustCapsule, showSuccess && styles.trustCapsule_done)}>
+          {showSuccess
+            ? <Check size={14} strokeWidth={2.5} aria-hidden />
+            : (payload?.favicon_url
+                ? <img className={styles.faviconImg} src={payload.favicon_url} alt="" />
+                : <Globe size={14} strokeWidth={2} aria-hidden />)
           }
           <span className={styles.faviconDomain}>{payload?.domain_label}</span>
         </div>
       </div>
 
-      {payload?.estimated_minutes != null && (
-        <p className={styles.estimate}>Approx. {payload.estimated_minutes} min</p>
+      {payload?.estimated_minutes != null && !showSuccess && (
+        <p className={styles.estimate}>
+          Approx. {payload.estimated_minutes} min
+          {variant === 'training' && cardState === 'dismissed' && lastProgress != null && (
+            <> · Last left at {Math.round(lastProgress)}%</>
+          )}
+        </p>
       )}
 
-      <div className={styles.ctaRow}>
-        <Button variant="primary" fullWidth onClick={handleOpen}>
-          <span className={styles.ctaLabel}>{meta.ctaOpen}</span>
-          <ArrowRight size={16} strokeWidth={2} aria-hidden />
-        </Button>
-      </div>
+      {showSuccess
+        ? (
+          <div className={styles.successBanner}>
+            <span className={styles.successChip}>
+              <Check size={14} strokeWidth={2.5} aria-hidden />
+              <span>Submitted</span>
+            </span>
+            <p className={styles.successMeta}>
+              Submitted at {new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' }).format(new Date())}.
+            </p>
+          </div>
+        )
+        : (
+          <div className={styles.ctaRow}>
+            <Button variant="primary" fullWidth onClick={handleOpen}>
+              <span className={styles.ctaLabel}>{ctaLabel}</span>
+              <ArrowRight size={16} strokeWidth={2} aria-hidden />
+            </Button>
+          </div>
+        )
+      }
 
       {sheetOpen && (
         <EmbeddedWebviewSheet
@@ -170,6 +224,7 @@ export function EmbeddedWebview({ payload, onSubmit }) {
           meta={meta}
           onClose={handleSheetClose}
           onCompleted={handleCompleted}
+          onProgress={handleProgress}
         />
       )}
     </article>
@@ -187,6 +242,7 @@ function EmbeddedWebviewSheet({
   meta,
   onClose,
   onCompleted,
+  onProgress,            // ← new: forwards progress events to card state
 }) {
   const [phase, setPhase] = useState('entering')
   const closingRef = useRef(false)
@@ -277,6 +333,7 @@ function EmbeddedWebviewSheet({
           const raw = Number(event.data.data?.percent ?? 0)
           const pct = clamp(0, 100, Number.isFinite(raw) ? raw : 0)
           setProgress(pct)
+          onProgress?.(pct)
           return
         }
         case 'complete': {
@@ -296,7 +353,7 @@ function EmbeddedWebviewSheet({
 
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [payload, onCompleted, requestClose])
+  }, [payload, onCompleted, onProgress, requestClose])
 
   if (!portalTarget) return null
 
