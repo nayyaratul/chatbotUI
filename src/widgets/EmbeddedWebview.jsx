@@ -57,6 +57,10 @@ function buildIframeSrc(url, widgetId) {
   }
 }
 
+function clamp(min, max, v) {
+  return Math.max(min, Math.min(max, v))
+}
+
 const VARIANT_META = {
   partner_form: {
     icon: ExternalLink,
@@ -193,6 +197,9 @@ function EmbeddedWebviewSheet({
 
   const [retryNonce, setRetryNonce] = useState(0)
 
+  const [progress, setProgress] = useState(null)            // 0–100 from `progress` event
+  const droppedReasonsRef = useRef(new Set())
+
   /* 8s load watchdog. Cleared when iframe fires `load` (which flips
      iframeState to 'live', breaking the predicate and re-running cleanup). */
   useEffect(() => {
@@ -237,6 +244,57 @@ function EmbeddedWebviewSheet({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [requestClose])
+
+  /* postMessage listener — attaches when the sheet is open, detaches
+     on close. Three-check origin gate; one console warn per reason
+     per widget instance. */
+  useEffect(() => {
+    function onMessage(event) {
+      const allowedOrigin = payload?.allowed_origin
+      const expectedId = payload?.widget_id
+
+      if (allowedOrigin && event.origin !== allowedOrigin) {
+        warnOnce('origin mismatch')
+        return
+      }
+      if (event.data?.source !== 'embedded_webview') {
+        return                                              // not for us — silent drop, no warn
+      }
+      if (event.data?.widget_id !== expectedId) {
+        warnOnce('widget_id mismatch')
+        return
+      }
+
+      switch (event.data.event) {
+        case 'progress': {
+          const pct = clamp(0, 100, Number(event.data.data?.percent ?? 0))
+          setProgress(pct)
+          return
+        }
+        case 'complete': {
+          onCompleted?.(event.data.data ?? {}, 'postmessage')
+          return
+        }
+        case 'cancel': {
+          requestClose()
+          return
+        }
+        default: {
+          warnOnce(`unknown event "${event.data.event}"`)
+          return
+        }
+      }
+    }
+
+    function warnOnce(reason) {
+      if (droppedReasonsRef.current.has(reason)) return
+      droppedReasonsRef.current.add(reason)
+      console.warn(`[EmbeddedWebview] postMessage dropped: ${reason}`)
+    }
+
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [payload, onCompleted, requestClose])
 
   if (!portalTarget) return null
 
