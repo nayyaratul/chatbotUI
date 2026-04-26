@@ -213,13 +213,13 @@
   border-radius: var(--radius-100);
 }
 
-/* Tap-to-seek acknowledgment — soft brand-60 ring that fans out from the
-   waveform container and fades. Triggered by toggling .waveformSeekFlash
-   on each click; the flash is keyed by `seekTick` (state) so consecutive
-   seeks each re-fire the keyframe. State curve, 320ms — sits inside
-   the 280–360ms band so the visual response time matches the audio
-   snap perceptually. The post-flash sweep snap is instant; the ring
-   IS the micro-feedback on the gesture. */
+/* Tap-to-seek acknowledgment — soft brand-60 ring that fans out from
+   the waveform container and fades. Re-fired imperatively on each
+   click via classList remove → reflow → add (see flashKeyframe in
+   AudioPlayer.jsx). The button itself is NOT remounted — keyboard
+   focus survives the seek. State curve, 320ms (inside the entry/
+   springy band). The post-flash sweep snap is instant; the ring IS
+   the micro-feedback on the gesture. */
 .waveformSeekFlash {
   animation: apwSeekFlash 320ms cubic-bezier(0.2, 0.8, 0.3, 1) 1;
 }
@@ -229,7 +229,7 @@
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-60) 32%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 0%, transparent);
+    box-shadow: 0 0 0 var(--size-08) transparent;
   }
 }
 
@@ -279,15 +279,7 @@
 
    The mask-image fades out the rightmost size-08 of the sweep so the
    brand-60 "kisses" each bar instead of slamming through — gives
-   the sweep front a wet, refined feel.
-
-   The `filter: drop-shadow(...)` follows the masked silhouette
-   automatically, so the brand-60 sweep casts a soft halo on the
-   un-played grey bars immediately to its right. The wet leading
-   edge gains a faint atmospheric glow without any second primitive —
-   it's a property of the sweep itself, projected through the mask.
-   Drop-shadow is preferred over box-shadow here precisely because
-   the mask shapes both. */
+   the sweep front a wet, refined feel. */
 .waveformSweep {
   clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
   mask-image: linear-gradient(
@@ -301,9 +293,6 @@
     black 0,
     black calc(100% * var(--play-progress, 0) - var(--size-08)),
     transparent calc(100% * var(--play-progress, 0))
-  );
-  filter: drop-shadow(
-    0 0 var(--size-04) color-mix(in srgb, var(--brand-60) 28%, transparent)
   );
 }
 
@@ -508,14 +497,22 @@
   outline-offset: var(--size-02);
 }
 
-/* Speed-label pulse on cycle — keyed by `speedTick` (a per-cycle counter
-   in JSX) so the inner <span> remounts and re-fires the keyframe on every
-   tap. Springy curve so the new label "lands" with weight; 240ms keeps
-   it inside the entry/springy band. The outer .speedBtn gets the press
-   scale (0.96), the inner .speedLabel gets the bounce — two layers of
-   feedback for one gesture, neither competing with the other. */
+/* Speed label — base styling only, no animation. The springy pulse
+   is in `.speedLabelPulse` and applied imperatively per click (see
+   handleSpeedCycle / flashKeyframe in AudioPlayer.jsx). Keeping the
+   keyframe in a separate modifier class means first paint doesn't
+   trigger an unintended pulse. */
 .speedLabel {
   display: inline-block;
+}
+
+/* Pulse on cycle — applied imperatively after each setSpeedIndex
+   via the classList remove → reflow → add trick. Springy curve,
+   240ms (inside the entry/springy band). The outer .speedBtn keeps
+   its press scale (0.96 on :active); this inner span owns the
+   "land." Two layers of feedback for one gesture, neither competing
+   with the other. */
+.speedLabelPulse {
   animation: apwSpeedLabelPulse 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
 }
 
@@ -593,22 +590,9 @@
 
   /* Pass 2 elevation animations all collapse — keep the affordance
      (focus ring, success retint, label change) but drop the motion. */
-  .waveformSeekFlash {
-    animation: none;
-  }
-
-  .speedLabel {
-    animation: none;
-  }
-
+  .waveformSeekFlash,
+  .speedLabelPulse,
   .barListened {
     animation: none;
-  }
-
-  /* Drop-shadow halo on the sweep is decorative atmosphere — under
-     reduced motion the sweep is pinned at full fill anyway, so the
-     halo would just be a static bloom around the whole bar row. Drop. */
-  .waveformSweep {
-    filter: none;
   }
 }

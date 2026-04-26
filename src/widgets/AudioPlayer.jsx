@@ -49,6 +49,21 @@ function formatTime(totalSeconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+/* Imperatively re-fire a CSS keyframe on a DOM element by removing
+   the class, forcing a reflow, then re-adding it. The forced
+   `offsetWidth` read is the standard "restart-CSS-animation" trick;
+   without it the browser may coalesce the remove + add into a single
+   paint and the keyframe doesn't replay. Used for tap-to-seek + speed
+   cycle gesture acknowledgments — keeps focus on the live element
+   (no remount) while still re-firing the entry animation per click. */
+function flashKeyframe(el, className) {
+  if (!el || !className) return
+  el.classList.remove(className)
+  // eslint-disable-next-line no-unused-expressions
+  void el.offsetWidth
+  el.classList.add(className)
+}
+
 /* Resample an arbitrary-length array of normalized peaks to exactly
    BAR_COUNT bars by max-of-bucket. If the input is already 32, return
    it unchanged. If shorter than 32, repeat-and-interpolate. */
@@ -97,8 +112,11 @@ export function AudioPlayer({ payload }) {
      React remounts the keyed children and re-fires the entry keyframes
      on every interaction. Pure visual ornament; no behavior depends
      on the values. Initial 0 means no animation on first paint. */
-  const [seekTick, setSeekTick] = useState(0)
-  const [speedTick, setSpeedTick] = useState(0)
+  /* Refs to the elements that get per-gesture flash keyframes
+     re-fired imperatively. Storing refs (not React state + key=)
+     means the elements never remount, so keyboard focus on the
+     waveform survives a seek and the speed label doesn't animate
+     on first paint. */
   /* Listen tracking. `listenPercentage` is monotonic max — never
      decremented by rewind. `completed` is a one-way flag that flips
      true on the first crossing of COMPLETION_THRESHOLD; the
@@ -119,6 +137,7 @@ export function AudioPlayer({ payload }) {
 
   const audioElRef = useRef(null)
   const playRafRef = useRef(null)
+  const speedLabelRef = useRef(null)
   /* Gates async setState after unmount. Mirrors VR's pattern: set
      true on every effect setup (StrictMode runs setup → cleanup →
      setup on first mount; without resetting on setup the cleanup
@@ -285,12 +304,12 @@ export function AudioPlayer({ payload }) {
 
   const handleSpeedCycle = useCallback(() => {
     setSpeedIndex((i) => (i + 1) % speeds.length)
-    /* Bump the speedTick so the label re-fires its springy pulse on
-       every cycle. Without this, repeated taps on the same widget
-       instance would only animate on the first cycle (the keyed
-       child wouldn't remount because the index value would happen
-       to equal its prior value after a full loop). */
-    setSpeedTick((t) => t + 1)
+    /* Re-fire the springy pulse on the inner label imperatively.
+       Doing this via class-toggle (rather than React-state +
+       `key=` remount) means the speed button itself isn't
+       remounted — keyboard focus survives, and the keyframe
+       doesn't run on first paint. */
+    flashKeyframe(speedLabelRef.current, styles.speedLabelPulse)
   }, [speeds.length])
 
   /* Apply playbackRate whenever the speed index changes. Sweep RAF
@@ -327,12 +346,12 @@ export function AudioPlayer({ payload }) {
     const pct = fraction * 100
     setListenPercentage((prev) => (pct > prev ? pct : prev))
     if (fraction >= COMPLETION_THRESHOLD) fireCompletion()
-    /* Bump the seek tick so the .waveformSeekFlash class is re-applied
-       on a fresh keyed wrapper — the brand-60 ring fans out around
-       the waveform on every click as gesture acknowledgment. The
-       sweep's actual snap to position is instant; the flash is the
-       micro-feedback. */
-    setSeekTick((t) => t + 1)
+    /* Re-fire the seek-flash keyframe on the live container
+       imperatively. The button is NOT remounted — keyboard focus
+       survives the seek, which is critical for keyboard users
+       (Enter on the waveform with key= remount would have dropped
+       focus to body). */
+    flashKeyframe(container, styles.waveformSeekFlash)
 
     if (el.paused) {
       el.play().catch(() => { /* autoplay policy ok after gesture */ })
@@ -423,16 +442,9 @@ export function AudioPlayer({ payload }) {
             the prior end). */}
         <button
           type="button"
-          /* `key={seekTick}` remounts the button on every seek so the
-             .waveformSeekFlash keyframe re-fires (animations don't
-             auto-replay on class re-application alone). The remount
-             is shallow — the inner bar layers are React-keyed by
-             index and re-render in place. */
-          key={`wave-${seekTick}`}
           className={cx(
             styles.waveform,
             playProgress >= 1 && !isPlaying && styles.waveformEnded,
-            seekTick > 0 && styles.waveformSeekFlash,
           )}
           style={{ '--play-progress': hasError ? 0 : playProgress }}
           onClick={handleWaveformSeek}
@@ -497,12 +509,13 @@ export function AudioPlayer({ payload }) {
           disabled={hasError}
           aria-label={`Playback speed ${speedLabel}, tap to change`}
         >
-          {/* Keyed wrapper — remounts on every cycle so the
-              .speedLabel springy keyframe re-fires. The outer button
-              owns the press scale (0.96 on :active); the inner span
+          {/* Inner label sits in a static span; the springy pulse
+              is re-fired imperatively on each cycle via classList
+              toggle (see handleSpeedCycle). The outer button owns
+              the press scale (0.96 on :active); the inner span
               owns the label "land." Two layers of feedback for one
               gesture, neither stealing the show from the other. */}
-          <span key={`speed-${speedTick}`} className={styles.speedLabel}>
+          <span ref={speedLabelRef} className={styles.speedLabel}>
             {speedLabel}
           </span>
         </button>
