@@ -67,9 +67,43 @@ const VARIANT_META = {
 }
 
 export function EmbeddedWebview({ payload, onSubmit }) {
+  const variant = payload?.variant ?? 'partner_form'
+  const meta = VARIANT_META[variant] ?? VARIANT_META.partner_form
+  const Icon = meta.icon
+
+  const eyebrow = payload?.category
+    ? `${meta.eyebrowPrefix} · ${payload.category}`
+    : meta.eyebrowPrefix
+
+  const handleOpen = () => {
+    /* Sheet wiring lands in Task 5. */
+  }
+
   return (
-    <div className={styles.card} data-variant={payload?.variant ?? 'partner_form'}>
-      <p className={styles.placeholder}>EmbeddedWebview · {payload?.variant}</p>
-    </div>
+    <article className={cx(styles.card, styles[`card_${variant}`])}>
+      <header className={styles.header}>
+        <span className={styles.iconBadge}>
+          <Icon size={18} strokeWidth={2} aria-hidden />
+        </span>
+        <div className={styles.headerText}>
+          <p className={styles.eyebrow}>{eyebrow}</p>
+          <h3 className={styles.title}>{payload?.title}</h3>
+          {payload?.description && (
+            <p className={styles.description}>{payload.description}</p>
+          )}
+        </div>
+      </header>
+
+      <div className={styles.ctaRow}>
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={handleOpen}
+        >
+          <span className={styles.ctaLabel}>{meta.ctaOpen}</span>
+          <ArrowRight size={16} strokeWidth={2} aria-hidden />
+        </Button>
+      </div>
+    </article>
   )
 }
