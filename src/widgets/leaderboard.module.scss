@@ -587,6 +587,34 @@
   min-width: 0;
 }
 
+/* Rank tone ladder — gold / silver / bronze composed from Nexus
+   rungs only (§0.1 zero-tolerance). Three CSS vars cascade through
+   each column's children:
+     --rank-tone       saturated bg for the rank badge
+     --rank-tone-text  legible text/icon color on `--rank-tone`
+     --rank-tone-deep  edge ring + ghost-numeral tint
+   Contrasts validated against the size-100 (10px semibold) badge
+   text per WCAG AA: gold = grey-90 on yellow-30 (~8:1), silver =
+   grey-90 on grey-30 (~6:1), bronze = white on yellow-50+red-50
+   mix (~6:1). */
+.podiumColumn[data-rank="1"] {
+  --rank-tone:      var(--yellow-30);
+  --rank-tone-text: var(--grey-90);
+  --rank-tone-deep: var(--yellow-50);
+}
+
+.podiumColumn[data-rank="2"] {
+  --rank-tone:      var(--grey-30);
+  --rank-tone-text: var(--grey-90);
+  --rank-tone-deep: var(--grey-50);
+}
+
+.podiumColumn[data-rank="3"] {
+  --rank-tone:      color-mix(in srgb, var(--yellow-50) 65%, var(--red-50) 35%);
+  --rank-tone-text: var(--white);
+  --rank-tone-deep: color-mix(in srgb, var(--yellow-60) 60%, var(--red-60) 40%);
+}
+
 .podiumPlayer {
   display: flex;
   flex-direction: column;
@@ -613,9 +641,13 @@
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--brand-60) 12%, var(--white));
   border: var(--border-width-200) solid var(--white);
+  /* Outer ring tints toward the rank's deep tone so the disc edge
+     subtly carries gold/silver/bronze without competing with the
+     rank badge's saturated face. Falls back to grey-30 (the
+     pre-Region-5 placeholder) for any column missing a rank var. */
   box-shadow:
-    0 0 0 var(--border-width-100) color-mix(in srgb, var(--grey-30) 50%, transparent),
-    0 var(--size-02) var(--size-08) color-mix(in srgb, var(--grey-90) 8%, transparent);
+    0 0 0 var(--border-width-100) color-mix(in srgb, var(--rank-tone-deep, var(--grey-30)) 55%, transparent),
+    0 var(--size-02) var(--size-08) color-mix(in srgb, var(--grey-90) 10%, transparent);
 }
 
 .podiumColumn[data-rank="1"] .podiumDisc {
@@ -642,8 +674,9 @@
 }
 
 /* Rank badge — small numeric circle in the disc's top-right corner.
-   White outer ring against the disc's drop shadow. Brand-tinted
-   placeholder; Region 5 retones per rank (gold/silver/bronze). */
+   Saturated rank-tone face (gold / silver / bronze), white border
+   against the disc, deep-tone outer ring for contrast against the
+   card. Cascading `--rank-tone-*` vars retone the whole badge. */
 .podiumRankBadge {
   position: absolute;
   top: calc(-1 * var(--size-04));
@@ -654,13 +687,13 @@
   width: var(--size-20);
   height: var(--size-20);
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--brand-60) 18%, var(--white));
+  background: var(--rank-tone, color-mix(in srgb, var(--brand-60) 18%, var(--white)));
   border: var(--border-width-200) solid var(--white);
-  box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 50%, transparent);
+  box-shadow: 0 0 0 var(--border-width-100) var(--rank-tone-deep, color-mix(in srgb, var(--brand-60) 50%, transparent));
   font-size: var(--font-size-100);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
-  color: var(--brand-60);
+  color: var(--rank-tone-text, var(--brand-60));
   line-height: 1;
 }
 
@@ -737,11 +770,14 @@
 /* Ghosted rank numeral on the block face — large, semi-transparent.
    §12 sanctioned use of font-size-700 as a "specialised subordinate
    element" (Earnings precedent for using >400 sparingly on
-   non-focal text). */
+   non-focal text). Tone-tinted via `--rank-tone-deep` so the gold
+   "1" / silver "2" / bronze "3" subtly carry the rank color even
+   on the neutral grey block. Falls back to grey-50 if no rank var
+   is set. */
 .podiumBlockNumber {
   font-size: var(--font-size-700);
   font-weight: var(--font-weight-semibold);
-  color: color-mix(in srgb, var(--grey-50) 35%, transparent);
+  color: color-mix(in srgb, var(--rank-tone-deep, var(--grey-50)) 32%, transparent);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
