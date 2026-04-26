@@ -159,6 +159,29 @@
   outline-offset: var(--size-02);
 }
 
+/* Disabled treatment — used by the error degradation. Removes the
+   brand affordance entirely; the button reads as a placeholder
+   that "would have been play" but isn't reachable. Also collapses
+   the hover halo + active scale so the user gets no false signal. */
+.playBtnDisabled,
+.playBtn:disabled {
+  cursor: not-allowed;
+  background: var(--grey-10);
+  border-color: var(--grey-30);
+  color: var(--grey-50);
+}
+
+.playBtnDisabled:hover,
+.playBtn:disabled:hover {
+  background: var(--grey-10);
+  box-shadow: none;
+}
+
+.playBtnDisabled:active,
+.playBtn:disabled:active {
+  transform: none;
+}
+
 /* ─── Waveform — 32 bars in two stacked layers, the second one
    clipped + masked by --play-progress to produce the brand-60 L→R
    sweep. The container itself is a <button> for tap-to-seek; reset
@@ -284,6 +307,26 @@
   white-space: nowrap;
 }
 
+/* Error meta — replaces the time label when <audio> fires error.
+   Same row position; tone shifts to error so the read is "this
+   clip won't play" without taking the user out of the chat flow. */
+.metaError {
+  white-space: nowrap;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-error);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* Player row in the error state — slight tonal shift on the
+   container so the eye registers "something is off" before
+   reaching the meta line. Subtle; doesn't compete with real
+   tone-error widgets. */
+.playerRowError {
+  background: color-mix(in srgb, var(--color-text-error) 3%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-error) 18%, var(--grey-10));
+}
+
 /* ─── Speed pill — outlined brand-60 cycling button. Height matches
    the play button so the row baseline stays clean. */
 .speedBtn {
@@ -326,6 +369,22 @@
 .speedBtn:focus-visible {
   outline: var(--border-width-200) solid var(--brand-60);
   outline-offset: var(--size-02);
+}
+
+.speedBtn:disabled {
+  cursor: not-allowed;
+  background: var(--grey-10);
+  border-color: var(--grey-20);
+  color: var(--grey-50);
+}
+
+.speedBtn:disabled:hover {
+  background: var(--grey-10);
+  border-color: var(--grey-20);
+}
+
+.speedBtn:disabled:active {
+  transform: none;
 }
 
 /* ─── Reduced motion ────────────────────────────────────────────

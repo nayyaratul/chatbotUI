@@ -12,11 +12,11 @@ import styles from './audioPlayer.module.scss'
    State machine:
      idle → playing ↔ paused → ended → playing (replay)
 
-   Region 2: the signature primitive — brand-60 sweep clipped L→R by
-   `--play-progress` with a `mask-image` wet leading edge, tap-to-seek
-   on the waveform, single-bar end-pulse on the rightmost bar when
-   playback ends. Sweep is RAF-driven (~60fps), much smoother than
-   the audio element's 4Hz timeupdate event.
+   Region 3: speed pill cycles 1× → 1.5× → 2× → 1× through
+   payload.speeds (default [1, 1.5, 2]); persists across replay,
+   resets only on unmount. Error degradation: <audio>'s onError
+   swaps the player row in-place — disabled play button, grey bars,
+   `Unable to load audio` meta. No separate state block.
    ──────────────────────────────────────────────────────────────── */
 
 const BAR_COUNT = 32
@@ -80,6 +80,8 @@ export function AudioPlayer({ payload }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(propDuration)
+  const [speedIndex, setSpeedIndex] = useState(0)
+  const [hasError, setHasError] = useState(false)
   /* Sweep position in [0, 1]. Sourced from audio.currentTime / duration
      on every RAF tick while playing; held frozen on pause; snaps on
      seek. Drives the `--play-progress` CSS variable on the waveform
@@ -146,6 +148,31 @@ export function AudioPlayer({ payload }) {
     if (Number.isFinite(d) && d > 0) setDuration(d)
   }, [])
 
+  /* The <audio> element fires `error` for URL 404, codec failures,
+     network drops, etc. Degrade the row in place rather than swap to
+     a separate state block — keeps the geometry stable and signals
+     "this clip won't play" without taking the user out of the chat
+     flow. */
+  const handleAudioError = useCallback(() => {
+    setHasError(true)
+    setIsPlaying(false)
+    stopPlayRaf()
+  }, [stopPlayRaf])
+
+  const handleSpeedCycle = useCallback(() => {
+    setSpeedIndex((i) => (i + 1) % speeds.length)
+  }, [speeds.length])
+
+  /* Apply playbackRate whenever the speed index changes. Sweep RAF
+     does not need to restart — `--play-progress` is sourced from
+     audio.currentTime, which scales with playbackRate automatically. */
+  useEffect(() => {
+    const el = audioElRef.current
+    if (!el) return
+    const next = speeds[speedIndex] ?? 1
+    el.playbackRate = next
+  }, [speedIndex, speeds])
+
   /* Tap-to-seek on the waveform. Computes the seek fraction from the
      click position relative to the container's bounding rect — robust
      against bar/gap clicks regardless of which inner element the
@@ -184,11 +211,11 @@ export function AudioPlayer({ payload }) {
     }
   }, [stopPlayRaf])
 
-  const speedIndex = 0
   const currentSpeed = speeds[speedIndex] ?? 1
-  const speedLabel = Number.isInteger(currentSpeed)
-    ? `${currentSpeed}×`
-    : `${currentSpeed}×`
+  /* Format the cycling label: integers as `1×`, fractionals as
+     `1.5×`. Same template either way; the conditional was a dead
+     branch and has been removed. */
+  const speedLabel = `${currentSpeed}×`
 
   return (
     <div className={styles.card} role="article" aria-label={title} data-widget-id={widgetId} data-audio-id={audioId}>
@@ -204,7 +231,7 @@ export function AudioPlayer({ payload }) {
       </div>
 
       {/* ─── Player row ──────────────────────────────────────────── */}
-      <div className={styles.playerRow}>
+      <div className={cx(styles.playerRow, hasError && styles.playerRowError)}>
         <audio
           ref={audioElRef}
           src={url}
@@ -213,14 +240,16 @@ export function AudioPlayer({ payload }) {
           onPause={handleAudioPause}
           onEnded={handleAudioEnded}
           onLoadedMetadata={handleLoadedMetadata}
+          onError={handleAudioError}
           aria-hidden="true"
         />
 
         <button
           type="button"
-          className={styles.playBtn}
+          className={cx(styles.playBtn, hasError && styles.playBtnDisabled)}
           onClick={handlePlayPause}
-          aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+          disabled={hasError}
+          aria-label={hasError ? 'Audio unavailable' : (isPlaying ? 'Pause audio' : 'Play audio')}
         >
           {isPlaying
             ? <Pause size={18} strokeWidth={2.25} aria-hidden="true" />
@@ -241,8 +270,9 @@ export function AudioPlayer({ payload }) {
             styles.waveform,
             playProgress >= 1 && !isPlaying && styles.waveformEnded,
           )}
-          style={{ '--play-progress': playProgress }}
+          style={{ '--play-progress': hasError ? 0 : playProgress }}
           onClick={handleWaveformSeek}
+          disabled={hasError}
           aria-label="Seek audio position"
         >
           {/* Base layer — bars in grey-30 (unplayed). */}
@@ -274,17 +304,23 @@ export function AudioPlayer({ payload }) {
         </button>
 
         <div className={styles.meta}>
-          <span className={styles.metaTime}>
-            {isPlaying || currentTime > 0
-              ? `${formatTime(currentTime)} / ${formatTime(duration)}`
-              : formatTime(duration)}
-          </span>
+          {hasError ? (
+            <span className={styles.metaError}>Unable to load audio</span>
+          ) : (
+            <span className={styles.metaTime}>
+              {isPlaying || currentTime > 0
+                ? `${formatTime(currentTime)} / ${formatTime(duration)}`
+                : formatTime(duration)}
+            </span>
+          )}
         </div>
 
         <button
           type="button"
           className={styles.speedBtn}
-          aria-label={`Playback speed ${speedLabel}`}
+          onClick={handleSpeedCycle}
+          disabled={hasError}
+          aria-label={`Playback speed ${speedLabel}, tap to change`}
         >
           {speedLabel}
         </button>
