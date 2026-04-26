@@ -159,16 +159,35 @@
   outline-offset: var(--size-02);
 }
 
-/* ─── Waveform — 32 bars in two stacked layers (Region 1: base only).
-   Region 2 adds the sweep layer + clip-path + mask-image edge.
-   `overflow: hidden` contains the absolutely-positioned bar layers
-   so they never spill outside the wrapper's bounds. */
+/* ─── Waveform — 32 bars in two stacked layers, the second one
+   clipped + masked by --play-progress to produce the brand-60 L→R
+   sweep. The container itself is a <button> for tap-to-seek; reset
+   its native button chrome so it reads as the bar canvas, not a
+   pill. `overflow: hidden` contains the absolutely-positioned bar
+   layers so they never spill outside the wrapper's bounds. */
 .waveform {
   position: relative;
   flex: 1;
   min-width: 0;
   height: var(--size-32);
   overflow: hidden;
+
+  /* Reset <button> chrome — the row's primary affordance is "click
+     anywhere on the bars to seek there"; the button frame would
+     compete with the play button visually. */
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  display: block;
+}
+
+.waveform:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+  border-radius: var(--radius-100);
 }
 
 .waveformLayer {
@@ -178,6 +197,11 @@
   align-items: center;
   justify-content: center;
   gap: var(--size-02);
+  /* Bars are visual only — clicks pass through to the .waveform
+     container so the seek handler always receives a click whose
+     bounding rect is the container's, regardless of which bar/gap
+     was hit. */
+  pointer-events: none;
 }
 
 .bar {
@@ -204,6 +228,42 @@
 
 .barUnplayed {
   background: var(--grey-30);
+}
+
+/* Sweep layer — reveal proportional to --play-progress (0 → 1).
+   The clip-path's right-inset collapses as progress grows, exposing
+   the brand-60 bars. Driven by RAF; no transition needed.
+
+   The mask-image fades out the rightmost size-08 of the sweep so the
+   brand-60 "kisses" each bar instead of slamming through — gives
+   the sweep front a wet, refined feel. */
+.waveformSweep {
+  clip-path: inset(0 calc(100% * (1 - var(--play-progress, 0))) 0 0);
+  mask-image: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% * var(--play-progress, 0) - var(--size-08)),
+    transparent calc(100% * var(--play-progress, 0))
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0,
+    black calc(100% * var(--play-progress, 0) - var(--size-08)),
+    transparent calc(100% * var(--play-progress, 0))
+  );
+}
+
+/* Moment-of-completion settle — the rightmost bar of BOTH layers
+   gets a single springy pulse when playback ends. Re-fires whenever
+   .waveformEnded is re-applied (i.e., on every replay-end frame). */
+.waveformEnded .waveformLayer .bar:last-child {
+  animation: apwEndPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) 1;
+}
+
+@keyframes apwEndPulse {
+  0%   { transform: scaleY(1); }
+  50%  { transform: scaleY(1.16); }
+  100% { transform: scaleY(1); }
 }
 
 /* ─── Meta line — currentTime / duration (or just duration when
@@ -281,5 +341,19 @@
 
   .bar {
     transition-duration: 0.01ms;
+  }
+
+  .waveformSweep {
+    /* Pin the sweep to fully filled so reduced-motion users still
+       get the "audio progresses" signal via the bar tint, but
+       without the motion of the L→R wipe. The mask-image wet-edge
+       collapses too — sharp boundary at full fill. */
+    --play-progress: 1 !important;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .waveformEnded .waveformLayer .bar:last-child {
+    animation: none;
   }
 }

@@ -12,9 +12,11 @@ import styles from './audioPlayer.module.scss'
    State machine:
      idle → playing ↔ paused → ended → playing (replay)
 
-   Region 1 of Pass 1: shell + §2 header + player row at IDLE. Basic
-   play/pause through the <audio> element, meta line driven by
-   timeupdate (Region 2 swaps in the RAF-driven sweep + seek).
+   Region 2: the signature primitive — brand-60 sweep clipped L→R by
+   `--play-progress` with a `mask-image` wet leading edge, tap-to-seek
+   on the waveform, single-bar end-pulse on the rightmost bar when
+   playback ends. Sweep is RAF-driven (~60fps), much smoother than
+   the audio element's 4Hz timeupdate event.
    ──────────────────────────────────────────────────────────────── */
 
 const BAR_COUNT = 32
@@ -78,8 +80,15 @@ export function AudioPlayer({ payload }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(propDuration)
+  /* Sweep position in [0, 1]. Sourced from audio.currentTime / duration
+     on every RAF tick while playing; held frozen on pause; snaps on
+     seek. Drives the `--play-progress` CSS variable on the waveform
+     wrapper, which clips the brand-60 sweep layer + masks its
+     leading edge. */
+  const [playProgress, setPlayProgress] = useState(0)
 
   const audioElRef = useRef(null)
+  const playRafRef = useRef(null)
 
   /* ─── Playback toggle ─────────────────────────────────────────── */
 
@@ -93,9 +102,40 @@ export function AudioPlayer({ payload }) {
     }
   }, [])
 
-  const handleAudioPlay   = useCallback(() => setIsPlaying(true), [])
-  const handleAudioPause  = useCallback(() => setIsPlaying(false), [])
-  const handleAudioEnded  = useCallback(() => setIsPlaying(false), [])
+  const stopPlayRaf = useCallback(() => {
+    if (playRafRef.current) {
+      cancelAnimationFrame(playRafRef.current)
+      playRafRef.current = null
+    }
+  }, [])
+
+  const handleAudioPlay = useCallback(() => {
+    setIsPlaying(true)
+    /* RAF loop drives the sweep — much smoother than the audio
+       element's 4Hz timeupdate. Reads currentTime on every frame
+       and pushes a [0, 1] progress value into state. */
+    const tick = () => {
+      const el = audioElRef.current
+      if (!el) return
+      const dur = el.duration || duration || propDuration
+      const progress = dur > 0 ? Math.min(1, el.currentTime / dur) : 0
+      setPlayProgress(progress)
+      setCurrentTime(el.currentTime || 0)
+      playRafRef.current = requestAnimationFrame(tick)
+    }
+    playRafRef.current = requestAnimationFrame(tick)
+  }, [duration, propDuration])
+
+  const handleAudioPause = useCallback(() => {
+    setIsPlaying(false)
+    stopPlayRaf()
+  }, [stopPlayRaf])
+
+  const handleAudioEnded = useCallback(() => {
+    setIsPlaying(false)
+    setPlayProgress(1)
+    stopPlayRaf()
+  }, [stopPlayRaf])
 
   /* `loadedmetadata` may give a more accurate duration than the
      `payload.duration_seconds` prop. Swap silently when it lands. */
@@ -106,21 +146,43 @@ export function AudioPlayer({ payload }) {
     if (Number.isFinite(d) && d > 0) setDuration(d)
   }, [])
 
-  const handleTimeUpdate = useCallback(() => {
-    const el = audioElRef.current
-    if (!el) return
-    setCurrentTime(el.currentTime || 0)
-  }, [])
+  /* Tap-to-seek on the waveform. Computes the seek fraction from the
+     click position relative to the container's bounding rect — robust
+     against bar/gap clicks regardless of which inner element the
+     event hit (bars themselves are pointer-events:none in the SCSS
+     so the container always wins).
 
-  /* Cleanup on unmount — pause any in-flight playback. */
+     If currently paused or ended, the seek auto-resumes playback —
+     matches WhatsApp / Telegram audio-message behavior. */
+  const handleWaveformSeek = useCallback((e) => {
+    const el = audioElRef.current
+    const container = e.currentTarget
+    if (!el || !container) return
+    const rect = container.getBoundingClientRect()
+    if (rect.width <= 0) return
+    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const dur = el.duration || duration || propDuration
+    if (!Number.isFinite(dur) || dur <= 0) return
+
+    el.currentTime = fraction * dur
+    setPlayProgress(fraction)
+    setCurrentTime(fraction * dur)
+
+    if (el.paused) {
+      el.play().catch(() => { /* autoplay policy ok after gesture */ })
+    }
+  }, [duration, propDuration])
+
+  /* Cleanup on unmount — pause any in-flight playback, cancel RAF. */
   useEffect(() => {
     return () => {
       const el = audioElRef.current
       if (el) {
         try { el.pause() } catch { /* ignore */ }
       }
+      stopPlayRaf()
     }
-  }, [])
+  }, [stopPlayRaf])
 
   const speedIndex = 0
   const currentSpeed = speeds[speedIndex] ?? 1
@@ -151,7 +213,6 @@ export function AudioPlayer({ payload }) {
           onPause={handleAudioPause}
           onEnded={handleAudioEnded}
           onLoadedMetadata={handleLoadedMetadata}
-          onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
         />
 
@@ -166,20 +227,51 @@ export function AudioPlayer({ payload }) {
             : <Play size={18} strokeWidth={2.25} aria-hidden="true" />}
         </button>
 
-        <div className={styles.waveform} aria-hidden="true">
+        {/* Waveform — seekable button. Two stacked .waveformLayer
+            children: base in grey-30, sweep in brand-60 clipped L→R
+            by `--play-progress` and softened on the leading edge by
+            mask-image so the sweep "kisses" each bar. The
+            .waveformEnded toggle off-on across the replay frame
+            re-fires the rightmost-bar end-pulse on every replay end
+            (isPlaying flips true while playProgress is still 1 from
+            the prior end). */}
+        <button
+          type="button"
+          className={cx(
+            styles.waveform,
+            playProgress >= 1 && !isPlaying && styles.waveformEnded,
+          )}
+          style={{ '--play-progress': playProgress }}
+          onClick={handleWaveformSeek}
+          aria-label="Seek audio position"
+        >
+          {/* Base layer — bars in grey-30 (unplayed). */}
           <div className={styles.waveformLayer}>
             {bars.map((v, i) => {
               const norm = Math.min(1, Math.max(0, v))
               return (
                 <span
-                  key={i}
+                  key={`base-${i}`}
                   className={cx(styles.bar, styles.barUnplayed)}
                   style={{ '--bar-norm': norm }}
                 />
               )
             })}
           </div>
-        </div>
+          {/* Sweep layer — same bars in brand-60, clipped L→R by --play-progress. */}
+          <div className={cx(styles.waveformLayer, styles.waveformSweep)}>
+            {bars.map((v, i) => {
+              const norm = Math.min(1, Math.max(0, v))
+              return (
+                <span
+                  key={`sweep-${i}`}
+                  className={styles.bar}
+                  style={{ '--bar-norm': norm }}
+                />
+              )
+            })}
+          </div>
+        </button>
 
         <div className={styles.meta}>
           <span className={styles.metaTime}>
