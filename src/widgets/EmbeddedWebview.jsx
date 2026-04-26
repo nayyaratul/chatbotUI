@@ -150,6 +150,7 @@ export function EmbeddedWebview({ payload, onSubmit }) {
 
   const handleOpen = useCallback(() => {
     if (cardState === 'completed') return                     // proof state — locked
+    if (cardState === 'sheet_open') return                    // double-tap guard
 
     if (!prefersReducedMotion()) {
       /* Phase 1 — measure source. Sheet has not mounted yet; we use a
@@ -417,12 +418,18 @@ function EmbeddedWebviewSheet({
     ? document.getElementById('chat-modal-root')
     : null
 
-  /* Two RAFs so the initial styles paint before transition kicks in. */
+  /* Two RAFs so the initial styles paint before transition kicks in.
+     Track BOTH ids so an unmount between outer and inner cancels the
+     inner — otherwise setPhase fires on an unmounted component. */
   useEffect(() => {
-    const r = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setPhase('open'))
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setPhase('open'))
     })
-    return () => cancelAnimationFrame(r)
+    return () => {
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
+    }
   }, [])
 
   useEffect(() => {
@@ -645,12 +652,14 @@ function LiftClone({ sourceRect, targetRect, posterUrl, faviconUrl, domainLabel,
   const [phase, setPhase] = useState('start')                 // 'start' | 'end'
 
   useEffect(() => {
-    const r = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setPhase('end'))
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setPhase('end'))
     })
     const t = window.setTimeout(onDone, LIFT_DURATION + 40)
     return () => {
-      cancelAnimationFrame(r)
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
       window.clearTimeout(t)
     }
   }, [onDone])
