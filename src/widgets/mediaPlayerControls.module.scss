@@ -380,7 +380,13 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 600px) {
+/* Desktop-only — phones and small tablets in portrait don't have
+   the horizontal room for a volume button alongside play / track /
+   speed / (fullscreen). Hidden on viewports ≤ 768px so the row
+   stays comfortable on narrow chat widths. Phones also have
+   hardware volume keys, so the on-screen control isn't load-
+   bearing on those devices. */
+@media (max-width: 768px) {
   .volumeWrap {
     display: none;
   }
