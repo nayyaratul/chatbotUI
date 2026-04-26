@@ -69,13 +69,17 @@
       )
     }
 
-    document.getElementById('next').addEventListener('click', () => {
+    const nextBtn = document.getElementById('next')
+    nextBtn.addEventListener('click', () => {
       step += 1
       const pct = Math.round((step / total) * 100)
       bar.style.width = pct + '%'
       stepEl.textContent = step >= total ? 'Complete' : `Module ${step + 1} of ${total}`
       post('progress', { percent: pct })
-      if (step >= total) post('complete', { score: 1 })
+      if (step >= total) {
+        post('complete', { score: 1 })
+        nextBtn.disabled = true   /* avoid percent > 100 / duplicate complete */
+      }
     })
 
     document.getElementById('cancel').addEventListener('click', () => post('cancel', {}))

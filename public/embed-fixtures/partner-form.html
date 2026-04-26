@@ -58,6 +58,7 @@
     const form = document.getElementById('bgv')
     form.addEventListener('submit', (e) => {
       e.preventDefault()
+      e.submitter.disabled = true                      /* avoid double-submit */
       const data = Object.fromEntries(new FormData(form))
       window.parent.postMessage(
         { source: 'embedded_webview', widget_id: wid, event: 'complete', data },
