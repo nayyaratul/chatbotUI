@@ -42,6 +42,7 @@ export function ChatPane({ bot }) {
           <MessageList
             messages={bot.messages}
             isBotTyping={bot.isBotTyping}
+            typingContext={bot.typingContext}
             hideEmptyState={showStarters}
           />
           {showStarters && (

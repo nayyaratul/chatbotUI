@@ -15,7 +15,10 @@
   padding: var(--space-200);
   width: 100%;
 
-  min-height: 24rem;
+  /* No min-height floor — the card hugs its content. With the floor,
+     short variants (success banner only, 1–2 steps) had a large
+     unintentional void below the last element because the
+     CTA / banner was pinned bottom via `margin-top: auto`. */
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -246,13 +249,53 @@
   object-fit: cover;
 }
 
+/* ─── View-more / View-less link ──────────────────────────────────
+   Quiet text affordance, mirrors JobCard's `viewDetailsLink` design:
+   brand-tinted, font-size-200 medium, transparent, slight negative
+   left margin so it visually flush-aligns with the card edge. Sits
+   between the truncated step list and the CTA when steps exceed
+   the collapse threshold. */
+.viewMoreLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  margin-left: calc(-1 * var(--space-075));
+  padding: var(--space-050) var(--space-075);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--sans);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--brand-60);
+  border-radius: var(--radius-100);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.viewMoreLink:hover {
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  color: var(--brand-70);
+
+  > svg {
+    transform: translateX(var(--space-025));
+    transition: transform 160ms ease;
+  }
+}
+
+.viewMoreLink:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
 /* ─── Bottom actions group — Acknowledge CTA ─────────────────────── */
 
 .actionsGroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-075);
-  margin-top: auto;
 }
 
 .primaryBtn {
@@ -271,7 +314,6 @@
   background: color-mix(in srgb, var(--color-text-success) 10%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
   border-radius: var(--radius-150);
-  margin-top: auto;
   animation: icdSuccessPop 360ms cubic-bezier(0.18, 0.9, 0.28, 1.08) both;
 }
 

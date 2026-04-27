@@ -20,13 +20,15 @@
   padding: var(--space-200);
   width: 100%;
 
-  /* Constant-height across state transitions. Tuned to the tallest
-     natural state (submitted: header + success banner + 4:3 preview
-     image + metadata row). Shorter states (idle, denied) pin their
-     footer via `margin-top: auto`; they never shrink the card below
-     this floor, so idle → live → preview → submitted → denied all
-     render at the same outer height. */
-  min-height: 30rem;
+  /* Floor sized to the densest natural state (submitted: header +
+     success banner + 4:3 preview + footer ≈ 444px on a wide layout,
+     ~460px when the metadata row wraps). 28rem clamps the card to a
+     near-constant outer height with at most ~12px of variance between
+     states. Children stack with the standard `gap: var(--space-150)`
+     all the way down — no `margin-top: auto` pulling footers to the
+     edge — so the gap between elements stays uniform "at rest" and
+     any leftover slack sits as plain dead space below the last child. */
+  min-height: 28rem;
 
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-10);
@@ -146,7 +148,6 @@
    fake viewfinder would be dishonest. This is an explicit "open
    camera" affordance. */
 .startCameraBtn {
-  margin-top: auto;       /* pin to card bottom — constant-height contract */
   display: flex;
   align-items: center;
   gap: var(--space-125);
@@ -348,7 +349,6 @@
 
 .shutterBtn {
   align-self: center;
-  margin-top: auto;
   width: var(--size-68);
   height: var(--size-68);
   padding: var(--border-width-200);
@@ -484,7 +484,6 @@
   display: flex;
   align-items: stretch;
   gap: var(--space-100);
-  margin-top: auto;
 }
 
 .retakeBtn { flex: 0 0 auto; }
@@ -555,7 +554,6 @@
   justify-content: space-between;
   gap: var(--space-100);
   flex-wrap: wrap;
-  margin-top: auto;
 }
 
 .submittedLabel {
@@ -586,7 +584,6 @@
   align-items: center;
   gap: var(--space-100);
   padding: var(--space-200);
-  margin-top: auto;
   background: color-mix(in srgb, var(--red-50) 6%, var(--white));
   border: var(--border-width-100) solid color-mix(in srgb, var(--red-50) 24%, transparent);
   border-radius: var(--radius-200);

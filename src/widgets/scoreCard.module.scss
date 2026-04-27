@@ -28,6 +28,14 @@
 /* ─── Card shell ─────────────────────────────────────────────── */
 
 .card {
+  /* Pin primary action buttons to brand-60 so they track the project
+     accent. Nexus's --color-action-primary defaults to brand-50, which
+     reads one shade lighter than the accent the rest of the chat
+     surface uses. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -357,7 +365,6 @@
 
 .actions.horizontal {
   flex-direction: row;
-  justify-content: flex-end;
 }
 
 .actionBtn {
@@ -369,6 +376,18 @@
 .actions.vertical .actionBtn {
   width: 100%;
 }
+
+/* Desktop (horizontal): each button takes 50% so the row reads as a
+   balanced two-column control, and the primary button is forced to
+   the right via flex `order` regardless of the payload array order
+   (secondary → left, primary → right). */
+.actions.horizontal .actionBtn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.actions.horizontal .actionBtnSecondary { order: 0; }
+.actions.horizontal .actionBtnPrimary   { order: 1; }
 
 /* ─── Shared arrival keyframe ────────────────────────────────── */
 

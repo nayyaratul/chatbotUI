@@ -187,17 +187,23 @@ export function ScoreCard({ payload }) {
       {/* ── Actions ── */}
       {hasActions && (
         <div className={cx(styles.actions, styles[orientation])}>
-          {payload.actions.map((action, idx) => (
-            <Button
-              key={`${action.value}-${idx}`}
-              className={styles.actionBtn}
-              variant={action.variant === 'secondary' ? 'secondary' : 'primary'}
-              size="md"
-              onClick={() => handleAction(action)}
-            >
-              {action.label}
-            </Button>
-          ))}
+          {payload.actions.map((action, idx) => {
+            const isSecondary = action.variant === 'secondary'
+            return (
+              <Button
+                key={`${action.value}-${idx}`}
+                className={cx(
+                  styles.actionBtn,
+                  isSecondary ? styles.actionBtnSecondary : styles.actionBtnPrimary,
+                )}
+                variant={isSecondary ? 'secondary' : 'primary'}
+                size="md"
+                onClick={() => handleAction(action)}
+              >
+                {action.label}
+              </Button>
+            )
+          })}
         </div>
       )}
     </div>

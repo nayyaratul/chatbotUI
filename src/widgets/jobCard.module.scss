@@ -488,9 +488,17 @@
   padding-bottom: var(--space-050);
 }
 
-/* Each card in carousel: staggered arrival, card peek hints at scroll */
+/* Each card in carousel: staggered arrival, card peek hints at scroll.
+   Width matches the Carousel widget's slide/tile clamp formula so a
+   Job Card inside a `jobs` rail looks identical to a Job Card rendered
+   inside a `job picks` composed rail — and a standalone Job Card
+   (which caps at the 28-32rem widgetSlot ceiling). 16rem floor keeps
+   it readable on the narrowest mobile slot; 32rem ceiling stops it
+   stretching past one card on desktop. Wider viewports reveal MORE
+   peek, not bigger cards. */
 .carouselCard {
-  flex: 0 0 92%;
+  flex: 0 0 auto;
+  width: clamp(16rem, 88%, 32rem);
   scroll-snap-align: start;
   animation: jcRiseUp 420ms cubic-bezier(0.18, 0.9, 0.28, 1.04) var(--jc-delay, 0ms) backwards;
 }
@@ -501,12 +509,6 @@
 .carouselCard:nth-child(4) { --jc-delay: 240ms; }
 .carouselCard:nth-child(5) { --jc-delay: 320ms; }
 .carouselCard:nth-child(6) { --jc-delay: 400ms; }
-
-@media (min-width: 640px) {
-  .carouselCard {
-    flex: 0 0 68%;
-  }
-}
 
 /* ─── Scroll indicator dots ──────────────────────────────────────── */
 

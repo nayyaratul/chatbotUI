@@ -5,10 +5,17 @@ import {
   AlertTriangle,
   CheckCircle2,
   Check,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './instructionCard.module.scss'
+
+/* When the step count exceeds this, collapse to the first N steps and
+   surface a "View all N steps" link the user can toggle to expand the
+   rest. Picked at 4 — fits comfortably in the chat surface without
+   producing a wall of numbered rows. */
+const STEP_COLLAPSE_THRESHOLD = 4
 
 /* ─── Instruction Card Widget ─────────────────────────────────────────
    Read-forward "how to do this" guide. Complements action widgets
@@ -55,6 +62,12 @@ export function InstructionCard({ payload }) {
 
   const [acknowledged, setAcknowledged]     = useState(false)
   const [acknowledgedAt, setAcknowledgedAt] = useState(null)
+  const [stepsExpanded, setStepsExpanded]   = useState(false)
+
+  const isCollapsible = steps.length > STEP_COLLAPSE_THRESHOLD
+  const visibleSteps  = isCollapsible && !stepsExpanded
+    ? steps.slice(0, STEP_COLLAPSE_THRESHOLD)
+    : steps
 
   const handleAcknowledge = useCallback(() => {
     const now = Date.now()
@@ -95,9 +108,9 @@ export function InstructionCard({ payload }) {
       </div>
 
       {/* ─── Numbered step list ──────────────────────────────────── */}
-      {steps.length > 0 && (
+      {visibleSteps.length > 0 && (
         <ol className={styles.stepList}>
-          {steps.map((step, index) => (
+          {visibleSteps.map((step, index) => (
             <Step
               key={step.step_id ?? index}
               index={index + 1}
@@ -105,6 +118,21 @@ export function InstructionCard({ payload }) {
             />
           ))}
         </ol>
+      )}
+
+      {/* View-more / View-less — only when step count crosses the
+          collapse threshold. Mirrors JobCard's "View full details"
+          quiet-link affordance. */}
+      {isCollapsible && (
+        <button
+          type="button"
+          className={styles.viewMoreLink}
+          onClick={() => setStepsExpanded((v) => !v)}
+          aria-expanded={stepsExpanded}
+        >
+          {stepsExpanded ? 'Show fewer steps' : `View all ${steps.length} steps`}
+          <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
+        </button>
       )}
 
       {/* ─── Bottom: Acknowledge CTA OR success banner ──────────── */}

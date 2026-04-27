@@ -2,9 +2,37 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import { respond } from './mockBot.js'
 
+/* Maps a queued bot widget's `type` to a context-aware verb bucket
+   the typing indicator can pick from. Buckets are intentionally
+   coarse — one set of verbs per "kind of work the bot is doing"
+   rather than per widget. Anything unmapped falls back to 'default'. */
+function inferTypingContext(widget) {
+  const type = widget?.type
+  if (!type) return null
+  switch (type) {
+    case 'job_card':           return 'jobs'
+    case 'carousel':           return 'jobs'
+    case 'form':               return 'form'
+    case 'validated_input':    return 'form'
+    case 'image_capture':      return 'photo'
+    case 'qc_evidence_review': return 'photo'
+    case 'evidence_review':    return 'photo'
+    case 'rating':             return 'rating'
+    case 'confirmation':       return 'confirm'
+    case 'score_card':         return 'scoring'
+    case 'mcq_quiz':           return 'scoring'
+    case 'leaderboard':        return 'profile'
+    case 'profile':            return 'profile'
+    case 'comparison':         return 'compare'
+    case 'file_upload':        return 'upload'
+    default:                   return 'default'
+  }
+}
+
 export function useBot() {
   const [messages, setMessages] = useState([])
   const [engineTyping, setEngineTyping] = useState(false)
+  const [typingContext, setTypingContext] = useState(null)
   const [typingOverride, setTypingOverride] = useState('auto') // 'auto' | 'on' | 'off'
   const [latencyMs, setLatencyMs] = useState(700)
 
@@ -30,12 +58,18 @@ export function useBot() {
   const sendUserMessage = useCallback(
     (widget) => {
       const userMessage = append('user', widget)
+      /* Pre-compute the reply so we know the widget type *before* the
+         latency delay — that lets the typing indicator pick a
+         context-appropriate verb bucket while the bot "thinks". The
+         actual append still happens after the delay. */
+      const botWidget = respond(userMessage)
       setEngineTyping(true)
+      setTypingContext(inferTypingContext(botWidget))
       const timerId = setTimeout(() => {
         timersRef.current.delete(timerId)
-        const botWidget = respond(userMessage)
         if (botWidget) append('bot', botWidget)
         setEngineTyping(false)
+        setTypingContext(null)
       }, latencyRef.current)
       timersRef.current.add(timerId)
     },
@@ -57,12 +91,14 @@ export function useBot() {
         timestamp: Date.now(),
         widget,
       }
+      const botWidget = respond(stubUserMessage)
       setEngineTyping(true)
+      setTypingContext(inferTypingContext(botWidget))
       const timerId = setTimeout(() => {
         timersRef.current.delete(timerId)
-        const botWidget = respond(stubUserMessage)
         if (botWidget) append('bot', botWidget)
         setEngineTyping(false)
+        setTypingContext(null)
       }, latencyRef.current)
       timersRef.current.add(timerId)
     },
@@ -76,6 +112,7 @@ export function useBot() {
     timersRef.current.clear()
     setMessages([])
     setEngineTyping(false)
+    setTypingContext(null)
   }, [])
 
   const isBotTyping = typingOverride === 'on'
@@ -87,6 +124,7 @@ export function useBot() {
   return {
     messages,
     isBotTyping,
+    typingContext,
     typingOverride,
     setTypingOverride,
     latencyMs,

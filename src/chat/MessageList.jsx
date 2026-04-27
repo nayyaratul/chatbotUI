@@ -9,7 +9,7 @@ function toYmd(ts) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function MessageList({ messages, isBotTyping, hideEmptyState = false }) {
+export function MessageList({ messages, isBotTyping, typingContext, hideEmptyState = false }) {
   const endRef = useRef(null)
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function MessageList({ messages, isBotTyping, hideEmptyState = false }) {
           </Fragment>
         )
       })}
-      {isBotTyping && <TypingIndicator />}
+      {isBotTyping && <TypingIndicator context={typingContext} />}
       <div ref={endRef} />
     </div>
   )

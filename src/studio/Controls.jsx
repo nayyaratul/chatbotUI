@@ -24,7 +24,7 @@ export function Controls({ bot }) {
           value={[bot.latencyMs]}
           onValueChange={([v]) => bot.setLatencyMs(v)}
           min={0}
-          max={3000}
+          max={10000}
           step={100}
         />
       </div>

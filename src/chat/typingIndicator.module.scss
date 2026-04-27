@@ -1,31 +1,104 @@
+/* ─── Thinking indicator ──────────────────────────────────────────
+   Claude-style: small icon + cycling verb with a shimmer gradient
+   that sweeps across the text. Sits in the message stream like any
+   other inbound row — left-aligned, no bubble chrome, so it reads
+   as the assistant's "presence" rather than a sent message.
+   ───────────────────────────────────────────────────────────── */
+
 .row {
-  display: flex;
-  padding: 3px 12px;
-  justify-content: flex-start;
-}
-
-.bubble {
   display: inline-flex;
-  gap: 4px;
-  padding: 10px 14px;
-  background: var(--white);
-  border: 1px solid var(--grey-10);
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
+  align-items: center;
+  gap: var(--space-075);
+  padding: var(--space-075) var(--space-150);
+  align-self: flex-start;
+  font-family: var(--sans);
 }
 
-.dot {
-  width: 6px;
-  height: 6px;
-  background: var(--grey-40);
-  border-radius: 50%;
-  animation: bounce 1.2s infinite ease-in-out;
+.iconSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-60);
+
+  /* Soft pulse — keeps the glyph alive even between verb swaps. */
+  animation: ti-iconPulse 1.6s ease-in-out infinite;
 }
 
-.dot:nth-child(2) { animation-delay: 0.15s; }
-.dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ti-iconPulse {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
 
-@keyframes bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-  40% { transform: translateY(-4px); opacity: 1; }
+/* Shimmer: a horizontal gradient swept across the text via
+   background-clip. The grey-40 stops act as the base colour and the
+   grey-90 stop is the bright "highlight" passing through.
+   `key` on the JSX node remounts this element on each verb swap, so
+   the shimmer + fade-in restart cleanly with the new word. */
+.verb {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  /* Was line-height: 1, which clipped descenders ("g" in Pondering /
+     Considering / Working) once `background-clip: text` made the box
+     the painted area. line-height-300 (20px on a 14px font) gives the
+     glyphs full headroom + a couple of px below the baseline. */
+  line-height: var(--line-height-300);
+  letter-spacing: var(--letter-spacing-tight);
+  /* Belt + braces: a tiny bottom padding so even fonts with deeper
+     descenders never touch the box edge. */
+  padding: 1px 0 2px;
+
+  /* Shimmer in the brand-accent family: brand-40 base, brand-70 as
+     the bright highlight pass-through. Matches the Sparkles icon's
+     brand-60 fill so the indicator reads as one tonal element. */
+  background: linear-gradient(
+    90deg,
+    var(--brand-40)  0%,
+    var(--brand-40) 35%,
+    var(--brand-70) 50%,
+    var(--brand-40) 65%,
+    var(--brand-40) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  animation:
+    ti-verbFade 240ms cubic-bezier(0.2, 0.8, 0.3, 1) both,
+    ti-shimmer 1.6s linear infinite;
+}
+
+@keyframes ti-verbFade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ti-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+/* Trailing "..." — text characters inside `.verb` so they inherit
+   the shimmer gradient and read as part of the same word. Reserve a
+   fixed width that fits all three dots (left-aligned) so the verb
+   doesn't shift right/left as the dot count cycles 0 → 1 → 2 → 3. */
+.dotsSlot {
+  display: inline-block;
+  width: 1.4ch;
+  text-align: left;
+  white-space: pre;
+}
+
+/* Reduced-motion: drop the shimmer + pulses, keep all parts visible
+   in static brand colour so the indicator still reads as alive. */
+@media (prefers-reduced-motion: reduce) {
+  .iconSlot { animation: none; opacity: 1; }
+  .verb {
+    animation: none;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    color: var(--brand-60);
+  }
 }
