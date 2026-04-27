@@ -18,6 +18,7 @@
 }
 
 .filterPill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
@@ -32,10 +33,27 @@
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   cursor: pointer;
+  overflow: hidden;
   transition:
-    background-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    border-color     200ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    color            200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    border-color  200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    color         200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Ink underline — a thin brand-60 bar that grows from the centre on
+   activation. Replaces the previous flat tint swap; the pill stays
+   light and lets the underline carry the state. */
+.filterPill::after {
+  content: '';
+  position: absolute;
+  left: var(--space-125);
+  right: var(--space-125);
+  bottom: var(--space-025);
+  height: var(--border-width-200);
+  border-radius: var(--radius-full);
+  background: var(--brand-60);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 240ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
 }
 
 .filterPill:hover {
@@ -43,16 +61,34 @@
   color: var(--grey-90);
 }
 
+.filterPill:hover::after {
+  transform: scaleX(0.4);
+  background: var(--grey-30);
+}
+
 .filterPill_active {
+  border-color: color-mix(in srgb, var(--brand-60) 32%, transparent);
+  color: var(--brand-60);
+}
+
+.filterPill_active::after {
+  transform: scaleX(1);
   background: var(--brand-60);
-  border-color: var(--brand-60);
-  color: var(--white);
 }
 
 .filterPill_active:hover {
-  background: color-mix(in srgb, var(--brand-60) 88%, black);
-  border-color: color-mix(in srgb, var(--brand-60) 88%, black);
-  color: var(--white);
+  border-color: var(--brand-60);
+  color: var(--brand-60);
+}
+
+.filterPill_active:hover::after {
+  transform: scaleX(1);
+  background: var(--brand-60);
+}
+
+.filterPill:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
 }
 
 /* Selected pin emphasis — pulled forward, larger drop shadow.
@@ -164,11 +200,15 @@
 }
 
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-100);
   width: 100%;
   padding: var(--space-100) var(--space-125);
+  /* Slight extra left padding to reserve space for the §8 stripe so
+     the label doesn't shift horizontally between selected/unselected. */
+  padding-left: calc(var(--space-125) + var(--space-075));
   border: var(--border-width-100) solid var(--grey-10);
   border-radius: var(--radius-150);
   background: var(--white);
@@ -181,6 +221,26 @@
     box-shadow       200ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+/* §8 decided-row stripe — left-edge brand-60 bar that springs up
+   when the row is selected (via list tap or via pin tap on the map).
+   Stays muted otherwise. The springy curve is the family's "this is
+   done" signature. */
+.row::before {
+  content: '';
+  position: absolute;
+  left: var(--space-075);
+  top: var(--space-100);
+  bottom: var(--space-100);
+  width: var(--border-width-300);
+  border-radius: var(--radius-full);
+  background: var(--brand-60);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition:
+    opacity   220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4);
+}
+
 .row:hover {
   border-color: var(--grey-30);
   background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
@@ -190,6 +250,16 @@
   border-color: var(--brand-60);
   background: color-mix(in srgb, var(--brand-60) 8%, var(--white));
   box-shadow: 0 0 0 var(--size-02) color-mix(in srgb, var(--brand-60) 14%, transparent);
+  /* Springy entry on the row itself when it becomes the chosen one
+     (whether the user got there from the list or from a pin tap on
+     the map). The animation re-fires on each fresh selection because
+     the class transitions in. */
+  animation: njRowSpring 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.row_selected::before {
+  opacity: var(--opacity-100);
+  transform: scaleY(1);
 }
 
 .rowText {
@@ -229,12 +299,24 @@
   color: var(--grey-50);
 }
 
+@keyframes njRowSpring {
+  0%   { transform: scale(0.985); }
+  60%  { transform: scale(1.012); }
+  100% { transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .filterPill,
+  .filterPill::after,
   .fab,
   .peekHandle,
-  .row {
+  .row,
+  .row::before {
     transition: none;
+    animation: none;
+  }
+  .row_selected {
+    animation: none;
   }
   .fab:hover { transform: none; }
 }
