@@ -50,6 +50,7 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
     initial ? { lat: initial.lat, lng: initial.lng, source: 'initial' } : null,
   )
   const [address, setAddress] = useState(initial?.address ?? null)
+  const [addressComponents, setAddressComponents] = useState(initial?.address_components ?? null)
   const [accuracyM, setAccuracyM] = useState(initial?.accuracy_m ?? null)
   const [resolving, setResolving] = useState(false)
 
@@ -74,6 +75,7 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
       const result = await reverseGeocode(pin.lat, pin.lng, fixtures)
       if (seq !== reverseSeqRef.current) return
       setAddress(result?.address ?? null)
+      setAddressComponents(result?.address_components ?? null)
       setResolving(false)
     }, REVERSE_GEOCODE_DEBOUNCE_MS)
     return () => window.clearTimeout(t)
@@ -123,6 +125,7 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
   const handleResultPick = useCallback((r) => {
     setPin({ lat: r.lat, lng: r.lng, source: 'search' })
     setAddress(r.address)
+    setAddressComponents(r.address_components ?? null)
     setAccuracyM(null)
     setQuery(r.address)
     setShowResults(false)
@@ -184,11 +187,11 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
       lat: pin.lat,
       lng: pin.lng,
       address,
-      address_components: null,    /* region 16 fixtures carry these */
+      address_components: addressComponents,
       accuracy_m: accuracyM,
       source: pin.source === 'initial' ? 'initial' : pin.source,
     })
-  }, [pin, address, accuracyM, onComplete])
+  }, [pin, address, addressComponents, accuracyM, onComplete])
 
   return (
     <>

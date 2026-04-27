@@ -10,6 +10,8 @@ import {
   LocateOff,
   AlertTriangle,
   MapPinOff,
+  MapPin,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
 import { MapSurface } from '../MapSurface.jsx'
@@ -67,19 +69,31 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
   const samplesRef = useRef([])
   const [stableInside, setStableInside] = useState(null)  /* null = not enough data yet */
 
+  /* Snapshot of the timestamp of the most recent GPS sample —
+     prevents the coord row's clock value from drifting on every
+     parent rerender (ticking unrelated to data freshness). */
+  const [positionTimestamp, setPositionTimestamp] = useState(null)
+
   /* Auto-start watching when the body mounts. The hook detaches the
-     watcher on cleanup. */
+     watcher on cleanup. Depend on the stable callback refs from
+     useGeolocation, NOT on the whole `geo` bag — `geo.position` /
+     `geo.accuracy` mutate on every sample, which would re-fire this
+     effect (and its cleanup) for every position update. */
   useEffect(() => {
     if (!watchEnabled) {
       geo.request()
       return undefined
     }
     return geo.watch()
-  }, [watchEnabled, geo])
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [watchEnabled, geo.watch, geo.request])
 
-  /* Recompute inside/outside as position updates. */
+  /* Recompute inside/outside as position updates. Also snapshot
+     the receive-time so the coord-row clock doesn't tick on
+     unrelated rerenders. */
   useEffect(() => {
     if (!polygonValid || !geo.position) return
+    setPositionTimestamp(new Date())
     const next = isInsidePolygon([geo.position.lat, geo.position.lng], polygon)
     samplesRef.current = [...samplesRef.current.slice(-(HYSTERESIS_WINDOW - 1)), next]
     if (samplesRef.current.length >= HYSTERESIS_WINDOW) {
@@ -234,8 +248,14 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
         <div className={styles.coordRow}>
           {geo.position ? (
             <>
-              <span className={styles.coord}>📍 {formatLatLng(geo.position.lat, geo.position.lng)}</span>
-              <span className={styles.timestamp}>{formatTime(new Date())}</span>
+              <span className={styles.coord}>
+                <MapPin size={14} strokeWidth={2} aria-hidden />
+                <span>{formatLatLng(geo.position.lat, geo.position.lng)}</span>
+              </span>
+              <span className={styles.timestamp}>
+                <Clock size={14} strokeWidth={2} aria-hidden />
+                <span>{formatTime(positionTimestamp)}</span>
+              </span>
             </>
           ) : (
             <span className={styles.coordPending}>Waiting for first GPS fix…</span>

@@ -563,11 +563,11 @@ export function LocationMap({ payload }) {
    Single chip + one-line tabular-nums timestamp. No confetti. */
 
 const SUCCESS_LABELS = {
+  /* directions never enters `completed`, so it has no entry. */
   pin_drop:      'Confirmed',
   pin_drop_cold: 'Confirmed',
   nearby_jobs:   'Applied',
   geofence:      'Checked in',
-  directions:    'Opened',  /* unused — directions never completes */
 }
 
 function SuccessBanner({ variant, completedAt }) {

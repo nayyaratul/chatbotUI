@@ -5,11 +5,14 @@ import {
   MapPin,
   Compass,
   ShieldCheck,
-  ShieldAlert,
   Navigation,
   X as XIcon,
 } from 'lucide-react'
 import { MapSurface } from './MapSurface.jsx'
+import { PinDropBody }    from './bodies/PinDropBody.jsx'
+import { NearbyJobsBody } from './bodies/NearbyJobsBody.jsx'
+import { GeofenceBody }   from './bodies/GeofenceBody.jsx'
+import { DirectionsBody } from './bodies/DirectionsBody.jsx'
 import styles from './locationMapSheet.module.scss'
 
 /* ─── LocationMapSheet — shared shell + variant-body dispatch ────
@@ -31,23 +34,19 @@ import styles from './locationMapSheet.module.scss'
    switch.
    ─────────────────────────────────────────────────────────────── */
 
-const SHEET_ANIM_DURATION = 360   /* matches transform 320ms + 40ms safety */
+const SHEET_EXIT_DURATION = 300   /* matches the 280ms exit transition + 20ms safety;
+                                     enter is 320ms but only the exit window matters
+                                     for the close-→onClose deferral. */
 
-/* Variant icon table — bodies that need tone-aware variants
-   (geofence inside vs outside) override locally. */
+/* Variant icon fallback for the GenericBody. Bodies render their
+   own variant icons inline; this map exists only so the dispatch
+   fallback has something semantic to show. */
 const VARIANT_ICON = {
   pin_drop:      MapPin,
   pin_drop_cold: MapPin,
   nearby_jobs:   Compass,
   geofence:      ShieldCheck,
   directions:    Navigation,
-}
-
-/* Re-exported for body components — keeps icon imports centralised
-   so adding a variant only changes one map. */
-export const VARIANT_ICONS = {
-  ...VARIANT_ICON,
-  geofence_outside: ShieldAlert,
 }
 
 /* ── Sheet shell (portaled) ─────────────────────────────────── */
@@ -84,7 +83,7 @@ export function LocationMapSheet({ payload, onClose, onComplete }) {
     if (closingRef.current) return
     closingRef.current = true
     setPhase('exiting')
-    window.setTimeout(onClose, SHEET_ANIM_DURATION)
+    window.setTimeout(onClose, SHEET_EXIT_DURATION)
   }, [onClose])
 
   useEffect(() => {
@@ -127,11 +126,6 @@ export function LocationMapSheet({ payload, onClose, onComplete }) {
    Region 5 routes every variant to GenericBody (MapSurface +
    placeholder footer). Regions 6–9 each register their dedicated
    body in this switch.                                          */
-
-import { PinDropBody }    from './bodies/PinDropBody.jsx'
-import { NearbyJobsBody } from './bodies/NearbyJobsBody.jsx'
-import { GeofenceBody }   from './bodies/GeofenceBody.jsx'
-import { DirectionsBody } from './bodies/DirectionsBody.jsx'
 
 function BodySwitch({ payload, variant, requestClose, onComplete, closeBtnRef }) {
   const props = { payload, requestClose, onComplete, closeBtnRef }

@@ -67,6 +67,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.coord,
+.timestamp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+}
+
 .coord {
   font-weight: var(--font-weight-medium);
 }
