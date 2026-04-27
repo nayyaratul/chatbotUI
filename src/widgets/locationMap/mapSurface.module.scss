@@ -1,0 +1,361 @@
+/* MapSurface — Leaflet wrapper styles.
+   Verified Nexus tokens:
+     space     : 025 050 075 100 125 150 200
+     size      : 04 06 12 16 20 24 28 32 36 40
+     font-size : 100 200
+     font-wt   : medium semibold
+     radius    : 100 150 500 full
+     border-w  : 100 200
+     opacity   : 072 100
+
+   Two responsibilities:
+     1. Layout the map container + loading / error overlays.
+     2. Restyle Leaflet's own chrome (zoom, attribution) to Nexus
+        tokens via `:global()` selectors and re-tone Leaflet-rendered
+        SVG paths (polygons, polylines, accuracy ring) via class
+        rules that override SVG `stroke` / `fill` attributes.
+                                                                      */
+
+.surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* `--lift-tint` is set by region 13's FLIP handoff so the loader
+     sits on a colour matching the source rect's last frame. Until
+     then the fallback is a faint brand-tinted backdrop. */
+  --lift-tint: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  background: var(--lift-tint);
+  overflow: hidden;
+  /* Bound the Leaflet container to the surface — Leaflet measures
+     against this on init. */
+  isolation: isolate;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  /* Leaflet writes its own background on the tile pane, so this
+     just keeps things tidy before tiles paint. */
+  background: var(--lift-tint);
+}
+
+/* ── Overlays ─────────────────────────────────────────────── */
+
+.loadingOverlay,
+.errorOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 400;  /* above tile layer (200) + overlay pane (400 in Leaflet — match so we sit on top) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-100);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--white) 70%, transparent);
+}
+
+.errorOverlay {
+  pointer-events: auto;
+  padding: var(--space-200);
+  text-align: center;
+  background: color-mix(in srgb, var(--white) 92%, transparent);
+}
+
+.loadingSpinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-60);
+  animation: msSpin 800ms linear infinite;
+}
+
+.errorIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-error);
+  margin-bottom: var(--space-050);
+}
+
+.errorTitle {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-90);
+  line-height: var(--line-height-300);
+}
+
+.errorBody {
+  margin: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-60);
+  line-height: var(--line-height-200);
+}
+
+.errorRetry {
+  margin-top: var(--space-100);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+}
+
+/* ── Markers (L.divIcon) ─────────────────────────────────── */
+
+.marker {
+  /* Reset Leaflet's default marker styling — divIcons inherit a
+     `display: block` plus background-image / background-position
+     for their PNG sprites. We're going pure-CSS. */
+  background: none;
+  border: 0;
+  pointer-events: auto;
+}
+
+/* Lollipop pin — tip at the bottom-center anchor (iconAnchor [11,30]).
+   Two layers: the round-blob head (rotated -45deg so the bottom corner
+   becomes the tip), and a faint ground shadow. */
+.marker_pin {
+  position: relative;
+  width: var(--size-24);
+  height: var(--size-32);
+}
+
+.marker_pin::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: var(--size-04);
+  width: var(--size-20);
+  height: var(--size-20);
+  transform: translateX(-50%) rotate(-45deg);
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand-60);
+  border: var(--border-width-200) solid var(--white);
+  box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 28%, transparent);
+}
+
+.marker_pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--size-12);
+  height: var(--size-04);
+  transform: translateX(-50%);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--grey-90) 18%, transparent);
+  filter: blur(var(--size-04));
+}
+
+/* Secondary pin — same shape, neutral grey body. Bodies use this
+   for non-selected job pins or muted markers. */
+.marker_pin_secondary::before {
+  background: var(--grey-50);
+  box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--grey-90) 22%, transparent);
+}
+
+/* Solid dot — used as the "you" marker on bodies that show user
+   position + nearby content (nearby_jobs). */
+.marker_dot {
+  width: var(--size-20);
+  height: var(--size-20);
+  border-radius: var(--radius-full);
+  background: var(--brand-60);
+  border: var(--border-width-300) solid var(--white);
+  box-shadow:
+    0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 28%, transparent),
+    0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 16%, transparent);
+}
+
+/* User-location marker (used only when MapSurface gets a
+   `userLocation` prop). Same shape as `marker_dot` but stable so
+   bodies needing both a "you" dot AND a job-side dot can differ. */
+.marker_user {
+  width: var(--size-16);
+  height: var(--size-16);
+  border-radius: var(--radius-full);
+  background: var(--brand-60);
+  border: var(--border-width-300) solid var(--white);
+  box-shadow:
+    0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 30%, transparent),
+    0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 20%, transparent);
+  animation: msPulse 2400ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+
+/* Distance-label chip floats above a job pin showing "0.8 km".
+   Bodies attach this via spec.kind = 'distance_label' with the
+   distance in spec.html. */
+.marker_distance_label {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-025) var(--space-075);
+  border-radius: var(--radius-500);
+  background: var(--brand-60);
+  color: var(--white);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  white-space: nowrap;
+  box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 28%, transparent);
+  pointer-events: none;
+}
+
+/* ── Polygon overrides (CSS class beats SVG attribute) ────── */
+
+.polygon {
+  /* The base class — Leaflet sets `stroke` and `fill` as SVG
+     attributes; CSS class selectors override them. */
+  fill-opacity: 0.18;
+  stroke-linejoin: round;
+}
+
+.polygon_brand {
+  stroke: var(--brand-60);
+  fill: var(--brand-60);
+}
+
+.polygon_success {
+  stroke: var(--color-text-success);
+  fill: var(--color-text-success);
+  fill-opacity: 0.16;
+}
+
+.polygon_warning {
+  stroke: var(--yellow-60);
+  fill: var(--yellow-60);
+  fill-opacity: 0.18;
+}
+
+.polygon_error {
+  stroke: var(--color-text-error);
+  fill: var(--color-text-error);
+  fill-opacity: 0.14;
+}
+
+/* ── Polyline overrides ──────────────────────────────────── */
+
+.polyline {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.polyline_brand {
+  stroke: var(--brand-60);
+}
+
+.polyline_success {
+  stroke: var(--color-text-success);
+}
+
+/* ── Accuracy ring (L.circle) ────────────────────────────── */
+
+.userRing {
+  stroke: var(--brand-60);
+  fill: var(--brand-60);
+  fill-opacity: 0.10;
+  stroke-opacity: 0.32;
+}
+
+/* ── Leaflet chrome restyle (`:global()` because Leaflet owns
+       the class names) ─────────────────────────────────────── */
+
+:global(.leaflet-container) {
+  font-family: inherit;
+  /* Map background while tiles load. */
+  background: var(--lift-tint);
+}
+
+:global(.leaflet-container a) {
+  color: var(--brand-60);
+}
+
+:global(.leaflet-control-zoom) {
+  margin: var(--space-100) !important;  /* Leaflet sets inline margin */
+  border: var(--border-width-100) solid var(--grey-20) !important;
+  border-radius: var(--radius-150) !important;
+  box-shadow: var(--shadow-100) !important;
+  background: var(--white);
+  overflow: hidden;
+}
+
+:global(.leaflet-control-zoom a) {
+  width: var(--size-32) !important;
+  height: var(--size-32) !important;
+  line-height: var(--size-32) !important;
+  color: var(--grey-80) !important;
+  background: var(--white) !important;
+  border-bottom: var(--border-width-100) solid var(--grey-10) !important;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  transition: background-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+:global(.leaflet-control-zoom a:last-child) {
+  border-bottom: 0 !important;
+}
+
+:global(.leaflet-control-zoom a:hover) {
+  background: var(--grey-10) !important;
+  color: var(--grey-90) !important;
+}
+
+:global(.leaflet-control-zoom a.leaflet-disabled) {
+  color: var(--grey-30) !important;
+  cursor: not-allowed;
+}
+
+:global(.leaflet-control-attribution) {
+  margin: var(--space-075) !important;
+  padding: var(--space-025) var(--space-075) !important;
+  border-radius: var(--radius-100) !important;
+  background: color-mix(in srgb, var(--white) 88%, transparent) !important;
+  font-size: var(--font-size-100) !important;
+  color: var(--grey-50) !important;
+  backdrop-filter: blur(var(--size-06));
+  border: var(--border-width-100) solid var(--grey-10);
+  line-height: var(--line-height-200);
+}
+
+:global(.leaflet-control-attribution a) {
+  color: var(--grey-60) !important;
+  text-decoration: none;
+}
+
+:global(.leaflet-control-attribution a:hover) {
+  color: var(--brand-60) !important;
+  text-decoration: underline;
+}
+
+/* Leaflet's default popup chrome (we don't use it yet, but bodies
+   may — pre-tone for consistency). */
+:global(.leaflet-popup-content-wrapper) {
+  border-radius: var(--radius-150);
+  box-shadow: var(--shadow-100);
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+
+@keyframes msSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes msPulse {
+  0%   { box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 30%, transparent),
+                     0 0 0 var(--size-08)  color-mix(in srgb, var(--brand-60) 20%, transparent); }
+  50%  { box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 30%, transparent),
+                     0 0 0 var(--size-16) color-mix(in srgb, var(--brand-60) 04%, transparent); }
+  100% { box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 30%, transparent),
+                     0 0 0 var(--size-08)  color-mix(in srgb, var(--brand-60) 20%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingSpinner,
+  .marker_user {
+    animation: none;
+  }
+  :global(.leaflet-control-zoom a) {
+    transition: none;
+  }
+}
