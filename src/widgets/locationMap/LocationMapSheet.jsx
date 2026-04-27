@@ -128,7 +128,8 @@ export function LocationMapSheet({ payload, onClose, onComplete }) {
    placeholder footer). Regions 6–9 each register their dedicated
    body in this switch.                                          */
 
-import { PinDropBody } from './bodies/PinDropBody.jsx'
+import { PinDropBody }    from './bodies/PinDropBody.jsx'
+import { NearbyJobsBody } from './bodies/NearbyJobsBody.jsx'
 
 function BodySwitch({ payload, variant, requestClose, onComplete, closeBtnRef }) {
   const props = { payload, requestClose, onComplete, closeBtnRef }
@@ -136,7 +137,9 @@ function BodySwitch({ payload, variant, requestClose, onComplete, closeBtnRef })
     case 'pin_drop':
     case 'pin_drop_cold':
       return <PinDropBody {...props} />
-    /* Real bodies for the remaining variants land in regions 7–9. */
+    case 'nearby_jobs':
+      return <NearbyJobsBody {...props} />
+    /* Real bodies for the remaining variants land in regions 8–9. */
     default: return <GenericBody {...props} />
   }
 }
