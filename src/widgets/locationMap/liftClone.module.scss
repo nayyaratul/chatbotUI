@@ -12,16 +12,40 @@
   /* Transform animation drives the position-and-scale from source
      to target. Box-shadow grows during the lift to sell "this is
      rising up" — eased on the rise-up curve so it tracks the
-     scale animation. */
+     scale animation. Opacity is on its own state-curve transition
+     so the fading phase reads as a clean cross-fade with the
+     sheet's actual map region underneath, not a snap-cut. */
   transition:
     transform   520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
-    box-shadow  520ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+    box-shadow  520ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    opacity     140ms cubic-bezier(0.2, 0.8, 0.3, 1);
   box-shadow:
-    0 var(--size-12) var(--size-32) color-mix(in srgb, var(--grey-90) 18%, transparent),
+    0 var(--size-04) var(--size-08) color-mix(in srgb, var(--grey-90) 8%, transparent),
     0 0 0 var(--border-width-100) var(--grey-10);
   /* Clone children fill the clone box (the variant preview's
      mini-map element is `position: relative` with overlays). */
   background: var(--white);
+  opacity: var(--opacity-100);
+}
+
+/* Mid-lift: shadow swells so the clone reads as physically rising
+   over the chat surface, then settles back down at the target rect. */
+.clone_target {
+  box-shadow:
+    0 var(--size-12) var(--size-32) color-mix(in srgb, var(--grey-90) 18%, transparent),
+    0 var(--size-04) var(--size-12) color-mix(in srgb, var(--grey-90) 10%, transparent),
+    0 0 0 var(--border-width-100) var(--grey-10);
+}
+
+/* Hand-off cross-fade — transform/shadow stay where they settled,
+   opacity tweens to 0 over 140ms. The sheet's map region is already
+   visible underneath so the user sees one continuous surface, not a
+   snap-cut. */
+.clone_fading {
+  opacity: 0;
+  box-shadow:
+    0 var(--size-04) var(--size-12) color-mix(in srgb, var(--grey-90) 6%, transparent),
+    0 0 0 var(--border-width-100) color-mix(in srgb, var(--grey-10) 30%, transparent);
 }
 
 .clone > * {

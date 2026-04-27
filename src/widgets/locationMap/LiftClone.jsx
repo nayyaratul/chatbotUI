@@ -26,7 +26,13 @@ import styles from './liftClone.module.scss'
    silently.
    ─────────────────────────────────────────────────────────────── */
 
-const ANIM_MS = 520
+/* Lift timing — the transform animates over LIFT_MS, then the clone
+   spends FADE_MS cross-fading to opacity 0 while the sheet's actual
+   map region is already painted underneath. Total hand-off feels
+   continuous instead of snap-fading at the end of the transform. */
+const LIFT_MS = 520
+const FADE_MS = 140
+const ANIM_MS = LIFT_MS + FADE_MS
 
 export function LiftClone({
   sourceRect,
@@ -39,27 +45,34 @@ export function LiftClone({
     ? document.getElementById('chat-modal-root')
     : null
 
+  /* Phases:
+       source → target → fading   (forward: lift up, then fade out)
+       target → source → fading   (reverse: lift down, then fade out)
+     The 'fading' phase is what makes the hand-off cross-fade —
+     transform has settled, only opacity moves. */
   const [phase, setPhase] = useState(reverse ? 'target' : 'source')
 
   useEffect(() => {
     let raf2 = 0
+    let fadeT = 0
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
         setPhase(reverse ? 'source' : 'target')
+        fadeT = window.setTimeout(() => setPhase('fading'), LIFT_MS)
       })
     })
     return () => {
       cancelAnimationFrame(raf1)
       cancelAnimationFrame(raf2)
+      window.clearTimeout(fadeT)
     }
   }, [reverse])
 
   useEffect(() => {
-    const expectedFinal = reverse ? 'source' : 'target'
-    if (phase !== expectedFinal) return
-    const t = window.setTimeout(() => onDone?.(), ANIM_MS + 20)
+    if (phase !== 'fading') return undefined
+    const t = window.setTimeout(() => onDone?.(), FADE_MS + 20)
     return () => window.clearTimeout(t)
-  }, [phase, reverse, onDone])
+  }, [phase, onDone])
 
   if (!target || !sourceRect || !targetRect) return null
 
@@ -79,16 +92,25 @@ export function LiftClone({
     transformOrigin: 'top left',
   }
 
-  const style = phase === 'source'
-    ? { ...baseStyle, transform: 'translate(0, 0) scale(1, 1)' }
-    : { ...baseStyle, transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` }
+  const settledTransform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`
+  const transform = phase === 'source'
+    ? 'translate(0, 0) scale(1, 1)'
+    : settledTransform
+
+  const phaseClass = `clone_${phase}`
 
   return createPortal(
-    <div className={styles.clone} style={style} aria-hidden="true">
+    <div
+      className={`${styles.clone} ${styles[phaseClass]}`}
+      style={{ ...baseStyle, transform }}
+      aria-hidden="true"
+    >
       {children}
     </div>,
     target,
   )
 }
+
+LiftClone.ANIM_MS = ANIM_MS
 
 export default LiftClone
