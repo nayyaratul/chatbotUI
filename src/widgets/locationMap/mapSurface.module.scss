@@ -355,7 +355,14 @@
   .marker_user {
     animation: none;
   }
-  :global(.leaflet-control-zoom a) {
-    transition: none;
+  :global(.leaflet-control-zoom a),
+  :global(.leaflet-fade-anim .leaflet-tile),
+  :global(.leaflet-zoom-anim .leaflet-zoom-animated) {
+    transition: none !important;
+  }
+  /* Leaflet's tile fade-in is gated on the `leaflet-fade-anim` class
+     on the container; force the final state immediately. */
+  :global(.leaflet-fade-anim .leaflet-tile-loaded) {
+    opacity: 1 !important;
   }
 }
