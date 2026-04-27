@@ -692,12 +692,49 @@ function buildEmbeddedWebviewPayload(variant) {
 }
 
 /* ─── Location Map (#13) — variant payload builder ────────────────
-   Region 1 ships minimal-but-valid payloads per the spec contract.
-   Region 16 fleshes out fixtures (12 nearby_jobs across Bengaluru,
-   8-step directions polyline traced on Old Madras Road, etc.).
-   Bengaluru is the anchor for every variant — Lavelle Road for
-   pin_drop, a polygon near Whitefield for geofence, Indiranagar →
-   Whitefield for directions.                                       */
+   Bengaluru-anchored fixtures across all five palette entries.
+   Sandbox-only; production callers ship real-world payloads.
+                                                                      */
+
+const LM_SEARCH_FIXTURES = [
+  {
+    lat: 12.9716, lng: 77.5946,
+    address: '14, Lavelle Road, Bengaluru 560001',
+    address_components: { street: 'Lavelle Road', locality: 'Lavelle Road', city: 'Bengaluru', postal: '560001', state: 'Karnataka', country: 'India' },
+    score: 0.95,
+  },
+  {
+    lat: 12.9784, lng: 77.6408,
+    address: '100 Ft Road, Indiranagar, Bengaluru 560038',
+    address_components: { street: '100 Ft Road', locality: 'Indiranagar', city: 'Bengaluru', postal: '560038', state: 'Karnataka', country: 'India' },
+    score: 0.92,
+  },
+  {
+    lat: 12.9698, lng: 77.7500,
+    address: 'EPIP Zone, Whitefield, Bengaluru 560066',
+    address_components: { street: 'EPIP Zone', locality: 'Whitefield', city: 'Bengaluru', postal: '560066', state: 'Karnataka', country: 'India' },
+    score: 0.88,
+  },
+  {
+    lat: 12.9116, lng: 77.6473,
+    address: '27th Main Road, HSR Layout, Bengaluru 560102',
+    address_components: { street: '27th Main Road', locality: 'HSR Layout', city: 'Bengaluru', postal: '560102', state: 'Karnataka', country: 'India' },
+    score: 0.86,
+  },
+  {
+    lat: 12.9352, lng: 77.6245,
+    address: '80 Feet Road, Koramangala 4 Block, Bengaluru 560034',
+    address_components: { street: '80 Feet Road', locality: 'Koramangala', city: 'Bengaluru', postal: '560034', state: 'Karnataka', country: 'India' },
+    score: 0.84,
+  },
+  {
+    lat: 12.8456, lng: 77.6603,
+    address: 'Phase 1, Electronic City, Bengaluru 560100',
+    address_components: { street: 'Hosur Road', locality: 'Electronic City', city: 'Bengaluru', postal: '560100', state: 'Karnataka', country: 'India' },
+    score: 0.78,
+  },
+]
+
 function buildLocationMapPayload(variant) {
   const common = {
     widget_id: makeId('lmap'),
@@ -727,7 +764,7 @@ function buildLocationMapPayload(variant) {
         },
         accuracy_m: 12,
       },
-      search_fixtures: [],
+      search_fixtures: LM_SEARCH_FIXTURES,
       enable_gps: true,
     }
   }
@@ -736,10 +773,10 @@ function buildLocationMapPayload(variant) {
     return {
       ...common,
       title: 'Set your location',
-      description: 'Open the map to drop a pin.',
+      description: 'Open the map to drop a pin or search for an address.',
       category: 'Location',
       initial_location: null,
-      search_fixtures: [],
+      search_fixtures: LM_SEARCH_FIXTURES,
       enable_gps: true,
     }
   }
@@ -747,16 +784,31 @@ function buildLocationMapPayload(variant) {
   if (variant === 'nearby_jobs') {
     return {
       ...common,
+      center_lat: 12.9500,
+      center_lng: 77.6300,
+      initial_zoom: 12,
       title: 'Jobs near you',
       description: 'Closest three shown. Open the map for the full set.',
       category: '12 jobs within 5 km',
       jobs: [
-        { id: 'j-rid-indir',  label: 'Riders Op · Indiranagar',  sublabel: 'Mon–Sat · ₹680/shift', lat: 12.9784, lng: 77.6408, distance_m_hint: 800  },
-        { id: 'j-wh-whfld',   label: 'Warehouse · Whitefield',   sublabel: 'Tue–Sat · ₹720/shift', lat: 12.9698, lng: 77.7500, distance_m_hint: 2400 },
-        { id: 'j-del-hsr',    label: 'Delivery hub · HSR',       sublabel: 'Mon–Fri · ₹650/shift', lat: 12.9116, lng: 77.6473, distance_m_hint: 4100 },
+        { id: 'j-rid-indir',  label: 'Riders Op · Indiranagar',     sublabel: 'Mon–Sat · ₹680/shift', lat: 12.9784, lng: 77.6408, distance_m_hint:   800 },
+        { id: 'j-wh-whfld',   label: 'Warehouse · Whitefield',      sublabel: 'Tue–Sat · ₹720/shift', lat: 12.9698, lng: 77.7500, distance_m_hint:  2400 },
+        { id: 'j-del-hsr',    label: 'Delivery hub · HSR',          sublabel: 'Mon–Fri · ₹650/shift', lat: 12.9116, lng: 77.6473, distance_m_hint:  4100 },
+        { id: 'j-rid-kor',    label: 'Riders Op · Koramangala',     sublabel: 'Mon–Sat · ₹700/shift', lat: 12.9352, lng: 77.6245, distance_m_hint:  1900 },
+        { id: 'j-ret-mg',     label: 'Retail · MG Road store',      sublabel: 'Wed–Sun · ₹580/shift', lat: 12.9756, lng: 77.6065, distance_m_hint:   600 },
+        { id: 'j-del-jpn',    label: 'Delivery · Jayanagar',        sublabel: 'Mon–Sat · ₹620/shift', lat: 12.9279, lng: 77.5824, distance_m_hint:  5200 },
+        { id: 'j-rid-bnsh',   label: 'Riders Op · Banashankari',    sublabel: 'Tue–Sun · ₹680/shift', lat: 12.9248, lng: 77.5566, distance_m_hint:  6100 },
+        { id: 'j-wh-bom',     label: 'Warehouse · Bommanahalli',    sublabel: 'Mon–Sat · ₹740/shift', lat: 12.8980, lng: 77.6225, distance_m_hint:  7400 },
+        { id: 'j-ret-orion',  label: 'Retail · Orion Mall',         sublabel: 'Thu–Mon · ₹600/shift', lat: 13.0160, lng: 77.5547, distance_m_hint:  7100 },
+        { id: 'j-del-yel',    label: 'Delivery hub · Yelahanka',    sublabel: 'Mon–Fri · ₹650/shift', lat: 13.1007, lng: 77.5963, distance_m_hint: 14400 },
+        { id: 'j-rid-hbr',    label: 'Riders Op · Hebbal',          sublabel: 'Mon–Sat · ₹700/shift', lat: 13.0358, lng: 77.5970, distance_m_hint:  7100 },
+        { id: 'j-wh-ec',      label: 'Warehouse · Electronic City', sublabel: 'Mon–Sun · ₹780/shift', lat: 12.8456, lng: 77.6603, distance_m_hint: 14000 },
       ],
       filters: [
-        { id: 'all', label: 'All', predicate_id: 'all' },
+        { id: 'all',          label: 'All',          predicate_id: 'all' },
+        { id: 'within_2km',   label: 'Within 2 km',  predicate_id: 'within_2km' },
+        { id: 'today',        label: 'Today',        predicate_id: 'today' },
+        { id: 'riders',       label: 'Riders',       predicate_id: 'riders' },
       ],
     }
   }
@@ -764,8 +816,9 @@ function buildLocationMapPayload(variant) {
   if (variant === 'geofence') {
     return {
       ...common,
-      center_lat: 12.9698,
-      center_lng: 77.7500,
+      center_lat: 12.9700,
+      center_lng: 77.7505,
+      initial_zoom: 16,
       title: 'Check in to start your shift',
       description: 'You\'re inside the zone — ready to clock in.',
       category: 'Warehouse 4',
@@ -773,11 +826,12 @@ function buildLocationMapPayload(variant) {
         id: 'wh4',
         label: 'Warehouse 4',
         polygon: [
-          [12.9710, 77.7480],
-          [12.9720, 77.7510],
-          [12.9700, 77.7530],
-          [12.9685, 77.7515],
-          [12.9690, 77.7485],
+          [12.9712, 77.7488],
+          [12.9718, 77.7515],
+          [12.9710, 77.7530],
+          [12.9692, 77.7528],
+          [12.9686, 77.7505],
+          [12.9695, 77.7488],
         ],
       },
       accuracy_gate_m: 50,
@@ -786,26 +840,62 @@ function buildLocationMapPayload(variant) {
   }
 
   if (variant === 'directions') {
+    /* Polyline traces a plausible Indiranagar → Whitefield path —
+       100 Ft Road → CMH Road → Old Madras Road → Whitefield Main
+       Road. Sample points spaced so the stroke-dashoffset draw
+       reads smoothly. */
     return {
       ...common,
       center_lat: 12.9740,
       center_lng: 77.6950,
+      initial_zoom: 12,
       title: 'Indiranagar → Whitefield',
-      description: '12 km · Approx. 25 min by car.',
+      description: '12.4 km · Approx. 25 min by car.',
       category: 'On the way',
       origin:      { lat: 12.9784, lng: 77.6408, label: 'Indiranagar' },
       destination: { lat: 12.9698, lng: 77.7500, label: 'Whitefield' },
       polyline: [
         [12.9784, 77.6408],
-        [12.9760, 77.6600],
-        [12.9740, 77.6800],
-        [12.9720, 77.7100],
-        [12.9710, 77.7300],
+        [12.9788, 77.6440],
+        [12.9790, 77.6478],
+        [12.9785, 77.6520],
+        [12.9778, 77.6562],
+        [12.9772, 77.6604],
+        [12.9764, 77.6646],
+        [12.9756, 77.6688],
+        [12.9748, 77.6730],
+        [12.9740, 77.6772],
+        [12.9734, 77.6814],
+        [12.9728, 77.6856],
+        [12.9722, 77.6898],
+        [12.9718, 77.6940],
+        [12.9714, 77.6982],
+        [12.9712, 77.7024],
+        [12.9710, 77.7066],
+        [12.9708, 77.7108],
+        [12.9706, 77.7150],
+        [12.9704, 77.7192],
+        [12.9702, 77.7234],
+        [12.9700, 77.7276],
+        [12.9700, 77.7318],
+        [12.9700, 77.7360],
+        [12.9700, 77.7402],
+        [12.9700, 77.7444],
+        [12.9698, 77.7480],
         [12.9698, 77.7500],
       ],
-      distance_m: 12000,
+      distance_m: 12400,
       duration_s: 1500,
-      steps: [],
+      steps: [
+        { instruction: 'Head east on 100 Ft Road for 600 m',          distance_m:  600, turn_type: 'straight' },
+        { instruction: 'Turn right onto CMH Road, continue 1.4 km',   distance_m: 1400, turn_type: 'right' },
+        { instruction: 'Continue straight onto Old Madras Road',      distance_m: 4200, turn_type: 'straight' },
+        { instruction: 'Stay on Old Madras Road past KR Puram',       distance_m: 2800, turn_type: 'straight' },
+        { instruction: 'Turn left at Hoodi Junction',                 distance_m:  500, turn_type: 'left' },
+        { instruction: 'Continue onto Whitefield Main Road',          distance_m: 1900, turn_type: 'straight' },
+        { instruction: 'Turn right onto EPIP Zone Road',              distance_m:  700, turn_type: 'right' },
+        { instruction: 'Arrive at destination',                       distance_m:  300, turn_type: 'arrive' },
+      ],
       deep_link_template: null,
     }
   }
