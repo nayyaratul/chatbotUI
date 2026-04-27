@@ -1,0 +1,135 @@
+/* GeofenceBody styles.
+   Verified Nexus tokens:
+     space     : 050 075 100 125 150
+     size      : 02 04 14 32 40
+     font-size : 100 200
+     font-wt   : medium semibold
+     radius    : 100 150 500 full
+     border-w  : 100 200
+     opacity   : 072
+                                                                      */
+
+.fab {
+  position: absolute;
+  right: var(--space-100);
+  bottom: var(--space-100);
+  z-index: 500;
+  width: var(--size-40);
+  height: var(--size-40);
+  border-radius: var(--radius-full);
+  border: var(--border-width-100) solid var(--grey-20);
+  background: var(--white);
+  color: var(--brand-60);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-100);
+  transition:
+    transform   200ms cubic-bezier(0.18, 0.9, 0.28, 1.4),
+    border-color 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.fab:hover {
+  border-color: var(--brand-60);
+  transform: translateY(calc(-1 * var(--size-02)));
+}
+
+.fab:focus-visible {
+  outline: var(--border-width-200) solid var(--brand-60);
+  outline-offset: var(--size-02);
+}
+
+.fab_disabled {
+  color: var(--grey-50);
+  cursor: not-allowed;
+  opacity: var(--opacity-072);
+}
+
+.fab_disabled:hover {
+  border-color: var(--grey-20);
+  transform: none;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+
+.footer {
+  gap: var(--space-100);
+}
+
+.coordRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-100);
+  font-size: var(--font-size-100);
+  color: var(--grey-60);
+  font-variant-numeric: tabular-nums;
+}
+
+.coord {
+  font-weight: var(--font-weight-medium);
+}
+
+.timestamp {
+  font-weight: var(--font-weight-semibold);
+  color: var(--grey-80);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.coordPending {
+  font-style: italic;
+  color: var(--grey-50);
+}
+
+.caption {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-075);
+  padding: var(--space-075) var(--space-125);
+  border-radius: var(--radius-150);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-200);
+}
+
+.captionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.caption_warning {
+  background: color-mix(in srgb, var(--yellow-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--yellow-60) 26%, transparent);
+  color: color-mix(in srgb, var(--yellow-60) 80%, var(--grey-90));
+}
+
+.caption_error {
+  background: color-mix(in srgb, var(--color-text-error) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-error) 26%, transparent);
+  color: var(--color-text-error);
+}
+
+.caption_neutral,
+.caption_success {
+  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  border: var(--border-width-100) solid var(--grey-10);
+  color: var(--grey-60);
+}
+
+/* When CTA is ready (inside zone + accuracy ok), retone the
+   primary button to success. The locationMap card-level CTA
+   still uses brand-60 by default; this override applies inside
+   the geofence sheet only. */
+.cta_ready {
+  --color-action-primary: var(--color-text-success);
+  --color-action-primary-hover: color-mix(in srgb, var(--color-text-success) 88%, black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab { transition: none; }
+  .fab:hover { transform: none; }
+}
