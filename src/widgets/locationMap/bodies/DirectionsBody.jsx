@@ -132,6 +132,36 @@ export function DirectionsBody({ payload, requestClose, onComplete, closeBtnRef 
     }
   }, [polylinePoints])
 
+  /* Hover / focus on a step row highlights the matching slice of the
+     polyline. Sandbox payload doesn't carry an explicit step→points
+     index map, so we partition the polyline evenly across the step
+     count — close enough for the fixture data, and the same heuristic
+     a future routing-API integration would refine via per-step
+     `geometry_indices`. Each slice overlaps its neighbours by one
+     point so adjacent steps share their seam (no visual gap). */
+  const [activeStepIdx, setActiveStepIdx] = useState(null)
+  const stepSlices = useMemo(() => {
+    if (polylinePoints.length < 2 || steps.length === 0) return []
+    const N = polylinePoints.length
+    return steps.map((_, i) => {
+      const start = Math.floor((i * (N - 1)) / steps.length)
+      const end   = Math.min(N, Math.ceil(((i + 1) * (N - 1)) / steps.length) + 1)
+      return polylinePoints.slice(start, end)
+    })
+  }, [polylinePoints, steps])
+
+  const polylineHighlight = useMemo(() => {
+    if (activeStepIdx == null) return null
+    const slice = stepSlices[activeStepIdx]
+    if (!slice || slice.length < 2) return null
+    return {
+      id: `route-step-${activeStepIdx}`,
+      points: slice,
+      tone: 'brand',
+      weight: 8,
+    }
+  }, [activeStepIdx, stepSlices])
+
   const handleOpenMaps = useCallback(() => {
     if (!origin || !destination) return
     const url = buildDeepLink({
@@ -187,6 +217,7 @@ export function DirectionsBody({ payload, requestClose, onComplete, closeBtnRef 
           zoom={payload?.initial_zoom ?? 13}
           markers={markers}
           polyline={polyline}
+          polylineHighlight={polylineHighlight}
           fitBounds={fitBounds}
           ariaLabel={headerTitle}
         />
@@ -199,10 +230,25 @@ export function DirectionsBody({ payload, requestClose, onComplete, closeBtnRef 
             <ol className={styles.stepList}>
               {steps.map((step, idx) => {
                 const Turn = TURN_ICON[step.turn_type] ?? ArrowRight
+                const isArrival = step.turn_type === 'arrive'
+                const isActive = activeStepIdx === idx
                 return (
-                  <li key={idx} className={styles.stepRow} style={{ animationDelay: `${Math.min(idx, 7) * 60}ms` }}>
+                  <li
+                    key={idx}
+                    className={cx(
+                      styles.stepRow,
+                      isActive && styles.stepRow_active,
+                      isArrival && styles.stepRow_arrival,
+                    )}
+                    style={{ animationDelay: `${Math.min(idx, 7) * 60}ms` }}
+                    onMouseEnter={() => setActiveStepIdx(idx)}
+                    onMouseLeave={() => setActiveStepIdx((cur) => (cur === idx ? null : cur))}
+                    onFocus={() => setActiveStepIdx(idx)}
+                    onBlur={() => setActiveStepIdx((cur) => (cur === idx ? null : cur))}
+                    tabIndex={0}
+                  >
                     <span className={styles.stepIndex}>{idx + 1}</span>
-                    <span className={styles.stepIcon}>
+                    <span className={cx(styles.stepIcon, isArrival && styles.stepIcon_arrival)}>
                       <Turn size={14} strokeWidth={2} aria-hidden />
                     </span>
                     <span className={styles.stepInstruction}>{step.instruction}</span>

@@ -52,6 +52,7 @@ export function MapSurface({
   markers = [],
   polygons = [],
   polyline = null,
+  polylineHighlight = null,
   userLocation = null,
   fitBounds = null,
   controls,
@@ -68,6 +69,7 @@ export function MapSurface({
     markers: [],
     polygons: [],
     polyline: null,
+    polylineHighlight: null,
     userPin: null,
     userRing: null,
   })
@@ -272,6 +274,38 @@ export function MapSurface({
     line.addTo(map)
     overlaysRef.current.polyline = line
   }, [polyline])
+
+  /* ── Polyline highlight (overlay segment) ─────────────────────
+     Renders a second polyline on top of the base route with a
+     different (usually brighter / heavier) class. Used by
+     DirectionsBody to highlight the segment for the hovered/focused
+     step row. Points are a slice of the base polyline. */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    overlaysRef.current.polylineHighlight?.remove()
+    overlaysRef.current.polylineHighlight = null
+
+    if (!polylineHighlight || !polylineHighlight.points || polylineHighlight.points.length < 2) return
+
+    const line = L.polyline(polylineHighlight.points, {
+      color: 'transparent',
+      weight: polylineHighlight.weight ?? 7,
+      opacity: 1,
+      lineCap: 'round',
+      lineJoin: 'round',
+      className: cx(
+        styles.polyline,
+        styles.polylineHighlight,
+        styles[`polyline_${polylineHighlight.tone ?? 'brand'}`],
+        polylineHighlight.className,
+      ),
+      interactive: false,
+    })
+    line.addTo(map)
+    overlaysRef.current.polylineHighlight = line
+  }, [polylineHighlight])
 
   /* ── User location pin + accuracy ring ───────────────────────── */
   useEffect(() => {
