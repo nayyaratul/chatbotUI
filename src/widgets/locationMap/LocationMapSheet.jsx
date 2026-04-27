@@ -131,6 +131,7 @@ export function LocationMapSheet({ payload, onClose, onComplete }) {
 import { PinDropBody }    from './bodies/PinDropBody.jsx'
 import { NearbyJobsBody } from './bodies/NearbyJobsBody.jsx'
 import { GeofenceBody }   from './bodies/GeofenceBody.jsx'
+import { DirectionsBody } from './bodies/DirectionsBody.jsx'
 
 function BodySwitch({ payload, variant, requestClose, onComplete, closeBtnRef }) {
   const props = { payload, requestClose, onComplete, closeBtnRef }
@@ -142,7 +143,8 @@ function BodySwitch({ payload, variant, requestClose, onComplete, closeBtnRef })
       return <NearbyJobsBody {...props} />
     case 'geofence':
       return <GeofenceBody {...props} />
-    /* DirectionsBody lands in region 9. */
+    case 'directions':
+      return <DirectionsBody {...props} />
     default: return <GenericBody {...props} />
   }
 }
