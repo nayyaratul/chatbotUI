@@ -14,12 +14,12 @@ import styles from './leaderboard.module.scss'
 /* ─── Incentive / Leaderboard Widget (#30) ────────────────────────
    Display-only performance card with two structural variants:
 
-     personal     → ring (current/target) + 3-pill tier rung +
+     personal     → rank summary eyebrow + ring (current/target) +
                     metric breakdown bars. Signature moment is the
                     target-hit beat — ring stroke completes, halo
                     pulses, Trophy retones success.
-     leaderboard  → top-5 ranked list with the user's row called
-                    out via §8 ledger-stripe spring-in.
+     leaderboard  → top-3 podium + ranks 4-5 list with the user's
+                    row called out via §8 ledger-stripe spring-in.
 
    Reuses Profile's ring + count-up vocabulary verbatim and Earnings'
    sheen restraint on celebrations (no confetti, §18 #11). Footer
@@ -195,17 +195,16 @@ export function Leaderboard({ payload }) {
 }
 
 /* ─── Personal body ──────────────────────────────────────────────
-   Tier rung eyebrow → ring + breakdown two-column. Container query
-   collapses to stacked at narrow slot widths. */
+   Ring + breakdown two-column. Container query collapses to stacked
+   at narrow slot widths. The eyebrow row above is the rank summary
+   (added in Region 8). */
 function PersonalBody({ payload }) {
   const target    = payload?.target ?? null
   const breakdown = Array.isArray(payload?.breakdown) ? payload.breakdown : []
-  const tier      = payload?.tier ?? null
   const unit      = typeof payload?.unit === 'string' ? payload.unit : ''
 
   return (
     <div className={styles.personalBody}>
-      {tier && <TierRung tier={tier} />}
       {target && (
         <div className={styles.metricRow}>
           <ProgressRing
@@ -229,56 +228,6 @@ function PersonalBody({ payload }) {
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-/* Tier rung — chip + 3-pill segmented rung + distance caption.
-   §6 segmented-pills vocabulary. When `distance === null` (top tier
-   reached), the right-most pill takes a success tint with a one-cycle
-   springy pulse and the caption swaps to "Top tier reached". */
-function TierRung({ tier }) {
-  const rungs   = Array.isArray(tier?.rungs) ? tier.rungs : []
-  const current = tier?.current ?? ''
-  const currentIdx = rungs.findIndex((r) => r === current)
-  const atTop = tier?.distance == null
-  const distanceCopy = atTop
-    ? 'Top tier reached'
-    : `${tier?.distance ?? 0} ${tier?.distance_unit ?? ''}`.trim()
-
-  return (
-    <div className={styles.tierRow} role="group" aria-label="Tier progress">
-      <span className={styles.tierChip}>{current}</span>
-      <span className={styles.rungs} aria-hidden="true">
-        {rungs.map((rung, idx) => {
-          let state = 'upcoming'
-          if (idx < currentIdx) state = 'completed'
-          else if (idx === currentIdx) state = 'current'
-          const isLastTopRung = atTop && idx === rungs.length - 1
-          /* When the user has reached the top tier, drop the state
-             class entirely — `rungPill_topPulse` carries its own
-             success-tinted background and the springy pulse. Avoids
-             the `current` (half-saturation) and `topPulse` rules
-             racing for the same property. */
-          /* Cascade-climb stagger — each pill paints toward its state
-             color 80ms after the prior pill, reading as the user
-             climbing the rungs from grey-20 to their current tier. */
-          return (
-            <span
-              key={rung}
-              className={cx(
-                styles.rungPill,
-                !isLastTopRung && styles[`rungPill_${state}`],
-                isLastTopRung && styles.rungPill_topPulse,
-              )}
-              data-state={isLastTopRung ? 'top-reached' : state}
-              aria-label={`${rung}, ${isLastTopRung ? 'top reached' : state}`}
-              style={{ '--lb-rung-delay': `${idx * 80}ms` }}
-            />
-          )
-        })}
-      </span>
-      <span className={styles.distanceCaption}>{distanceCopy}</span>
     </div>
   )
 }

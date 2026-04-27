@@ -142,7 +142,7 @@
 }
 
 /* ─── Personal body ────────────────────────────────────────────
-   Tier rung row + ring/breakdown two-column. The two-column
+   Rank summary eyebrow + ring/breakdown two-column. The two-column
    collapses to a stack at narrow slot widths via container query
    on `.personalBody`. */
 
@@ -167,108 +167,6 @@
     align-items: stretch;
     gap: var(--space-150);
   }
-}
-
-/* ─── Tier rung ────────────────────────────────────────────────
-   Chip + 3-pill segmented rung + distance caption.
-   §6 segmented-pills vocabulary, §7 tone for the chip. */
-
-.tierRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-125);
-  flex-wrap: wrap;
-  min-width: 0;
-
-  animation: lbRowRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
-  animation-delay: 120ms;
-}
-
-.tierChip {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  padding: var(--space-025) var(--space-100);
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
-  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
-  color: var(--brand-60);
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.rungs {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-050);
-  flex: 0 0 auto;
-}
-
-.rungPill {
-  display: inline-block;
-  width: var(--size-32);
-  height: var(--size-08);
-  border-radius: var(--radius-full);
-  /* `--rung-target-color` is set by each state class below. The base
-     fallback is grey-20, so an unstyled pill renders as "upcoming"
-     by default. */
-  background: var(--rung-target-color, var(--grey-20));
-  /* Transition reserved for Pass 2+ — if the rung becomes interactive
-     (e.g. tap-to-explain) these properties are the ones it'll
-     animate. Dead-code today; harmless because pills don't change
-     class at runtime. */
-  transition:
-    background 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
-    transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.rungPill_completed { --rung-target-color: var(--brand-60); }
-.rungPill_current   { --rung-target-color: color-mix(in srgb, var(--brand-60) 60%, var(--white)); }
-.rungPill_upcoming  { --rung-target-color: var(--grey-20); }
-
-/* Cascade-climb on mount — each populated rung pill paints from
-   grey-20 toward its target color with an 80ms stagger keyed off
-   `--lb-rung-delay` (set inline in JSX). Reads as the user climbing
-   the rungs to their current tier. `backwards` fill-mode applies the
-   `from` keyframe during the delay window so each pill stays grey-20
-   until its turn. The implicit `to` is the rule's own static
-   background (the var resolves to the state color), so the keyframe
-   composes cleanly with the per-state `--rung-target-color`. */
-.rungPill_completed,
-.rungPill_current {
-  animation: lbRungClimb 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards;
-  animation-delay: var(--lb-rung-delay, 0ms);
-}
-
-/* Top-tier reached — last pill retones success + one-cycle springy
-   pulse. Fires once on mount; resolves to a static success-tinted
-   pill. Specificity bumped via chained-class selector so the success
-   tint wins regardless of source order against the state classes
-   above (a future reorder shouldn't silently break the top-tier
-   visual). The cascade-climb runs first (via --lb-rung-delay), then
-   the springy pulse layers 360ms later. */
-.rungPill.rungPill_topPulse {
-  --rung-target-color: var(--color-text-success);
-  animation:
-    lbRungClimb 360ms cubic-bezier(0.18, 0.9, 0.28, 1.04) backwards,
-    lbTopRungPulse 280ms cubic-bezier(0.18, 0.9, 0.28, 1.4) forwards;
-  animation-delay: var(--lb-rung-delay, 0ms), calc(var(--lb-rung-delay, 0ms) + 360ms);
-}
-
-.distanceCaption {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--font-size-100);
-  font-weight: var(--font-weight-regular);
-  line-height: 1;
-  letter-spacing: var(--letter-spacing-normal);
-  color: var(--grey-50);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ─── Progress ring ────────────────────────────────────────────
@@ -1159,13 +1057,6 @@
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
-/* Top-tier rung pill pulse — last pill scales 1 → 1.06 → 1 once. */
-@keyframes lbTopRungPulse {
-  0%   { transform: scale(1); }
-  45%  { transform: scale(1.06); }
-  100% { transform: scale(1); }
-}
-
 /* iconBadge tone retone — pure interpolation between brand-tinted
    resting state and the success-tinted target-hit state. Forwards
    pins the final frame so the badge stays success-tinted. */
@@ -1191,13 +1082,6 @@
 @keyframes lbRingBackplate {
   from { opacity: var(--opacity-000); }
   to   { opacity: var(--opacity-100); }
-}
-
-/* Cascade-climb rung paint — pill background animates from grey-20
-   to its rule-defined target color (via `--rung-target-color`).
-   Implicit `to` keyframe = the rule's static background. */
-@keyframes lbRungClimb {
-  from { background: var(--grey-20); }
 }
 
 /* Stripe latch bloom — brand-60 box-shadow pulses out as the stripe
@@ -1299,10 +1183,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .card,
-  .tierRow,
-  .rungPill_completed,
-  .rungPill_current,
-  .rungPill_topPulse,
   .ringFill,
   .ringFrame::after,
   .ringVerdict,

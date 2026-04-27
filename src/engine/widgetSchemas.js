@@ -493,15 +493,13 @@ function buildLeaderboardPayload(variant) {
         { label: 'Hours logged',      current: 142, target: 168 },
         { label: 'QC pass rate',      current: 92, target: 95, unit: '%' },
       ],
-      tier: {
-        current: 'Bronze',
-        next: 'Silver',
-        rungs: ['Bronze', 'Silver', 'Gold'],
-        distance: 6,
-        distance_unit: 'shifts to Silver',
-      },
       leaderboard: null,
-      user_position: null,
+      user_position: {
+        rank: 16,
+        out_of: 184,
+        delta: 4,
+        delta_label: 'vs last week',
+      },
     }
   }
 
@@ -510,7 +508,6 @@ function buildLeaderboardPayload(variant) {
       ...base,
       target: null,
       breakdown: null,
-      tier: null,
       leaderboard: [
         { rank: 1, name: 'Worker 4821', score: 28, is_user: false, delta: 3 },
         { rank: 2, name: 'Worker 6133', score: 26, is_user: false, delta: -1 },
