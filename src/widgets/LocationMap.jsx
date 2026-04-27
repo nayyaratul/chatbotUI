@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 import cx from 'classnames'
 import {
   MapPin,
@@ -80,10 +80,17 @@ export function LocationMap({ payload }) {
   const CtaIcon = CTA_ICON[variant] ?? ArrowRight
   const ctaLabel = CTA_LABEL[variant] ?? 'Open map'
 
-  /* Sheet open/close state — wired in region 1 so region 5 can plug
-     in the real shell without restructuring. CTA stays disabled in
-     region 1; region 5 enables it once the shell ships. */
-  const [sheetOpen] = useState(false)
+  /* Sheet open/close state. Region 11 wires widget_response emission
+     through `onComplete`; for now the handler just closes the sheet. */
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const handleOpen = useCallback(() => setSheetOpen(true),  [])
+  const handleClose = useCallback(() => setSheetOpen(false), [])
+  const handleComplete = useCallback(() => {
+    /* Region 11 fills this in (widget_response shape, completed
+       state, etc.). For now we just close the sheet. */
+    setSheetOpen(false)
+  }, [])
 
   return (
     <div className={cx(styles.card, styles[`variant_${variant}`])}>
@@ -115,8 +122,7 @@ export function LocationMap({ payload }) {
       <Button
         variant="primary"
         className={styles.cta}
-        disabled
-        aria-disabled="true"
+        onClick={handleOpen}
       >
         <span>{ctaLabel}</span>
         <CtaIcon size={16} />
@@ -124,7 +130,11 @@ export function LocationMap({ payload }) {
 
       {sheetOpen && (
         <Suspense fallback={null}>
-          <LocationMapSheet />
+          <LocationMapSheet
+            payload={payload}
+            onClose={handleClose}
+            onComplete={handleComplete}
+          />
         </Suspense>
       )}
     </div>
