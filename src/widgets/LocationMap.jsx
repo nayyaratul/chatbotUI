@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   MapPin,
@@ -10,6 +10,8 @@ import {
   Check,
 } from 'lucide-react'
 import { Button } from '@nexus/atoms'
+/* eslint-disable react-refresh/only-export-components */
+import { useChatActions } from '../chat/ChatActionsContext.jsx'
 import styles from './locationMap.module.scss'
 
 /* ─── Location Map Widget (#13) ──────────────────────────────────
@@ -287,22 +289,132 @@ function VariantPreview({ variant, payload }) {
   }
 }
 
+/* ─── widget_response shape per variant ──────────────────────── */
+
+function buildWidgetResponse(variant, payload, data, totalOpenTimeSeconds) {
+  const widget_id = payload?.widget_id
+  const timestamp = new Date().toISOString()
+
+  const base = {
+    type: 'widget_response',
+    payload: {
+      widget_id,
+      source_type: 'location_map',
+      variant: variant === 'pin_drop_cold' ? 'pin_drop' : variant,
+      total_open_time_seconds: totalOpenTimeSeconds,
+    },
+  }
+
+  switch (variant) {
+    case 'pin_drop':
+    case 'pin_drop_cold':
+      return {
+        ...base,
+        payload: {
+          ...base.payload,
+          completed: true,
+          completion_method: 'pin_set',
+          data: { ...data, timestamp },
+        },
+      }
+
+    case 'nearby_jobs':
+      return {
+        ...base,
+        payload: {
+          ...base.payload,
+          completed: true,
+          completion_method: 'job_selected',
+          data: { ...data, timestamp },
+        },
+      }
+
+    case 'geofence':
+      return {
+        ...base,
+        payload: {
+          ...base.payload,
+          completed: true,
+          completion_method: 'check_in',
+          data: { ...data, timestamp },
+        },
+      }
+
+    case 'directions':
+      /* directions is informational — completed: false, never locks. */
+      return {
+        ...base,
+        payload: {
+          ...base.payload,
+          completed: false,
+          completion_method: 'opened_in_native_maps',
+          data: { ...data, timestamp },
+        },
+      }
+
+    default:
+      return null
+  }
+}
+
 /* ─── Public widget component ──────────────────────────────── */
 
 export function LocationMap({ payload }) {
   const variant = payload?.variant ?? 'pin_drop'
   const Icon = VARIANT_ICONS[variant] ?? MapPin
   const CtaIcon = CTA_ICON[variant] ?? ArrowRight
-  const ctaLabel = CTA_LABEL[variant] ?? 'Open map'
 
+  const { onReply } = useChatActions()
+
+  /* Card-level state machine (idle → sheet_open → completed | dismissed).
+     `directions` never enters `completed` — see spec §state machine. */
+  const [cardState, setCardState] = useState('idle')
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const handleOpen = useCallback(() => setSheetOpen(true), [])
-  const handleClose = useCallback(() => setSheetOpen(false), [])
-  const handleComplete = useCallback(() => {
-    /* Region 11 wires this up. For now: just close. */
+  /* total_open_time_seconds — accumulates across all open intervals. */
+  const openedAtRef = useRef(null)
+  const accumOpenMsRef = useRef(0)
+
+  const ctaLabel = useMemo(() => {
+    if (cardState === 'dismissed') return 'Reopen map'
+    return CTA_LABEL[variant] ?? 'Open map'
+  }, [cardState, variant])
+
+  const handleOpen = useCallback(() => {
+    if (cardState === 'completed') return  /* terminal — sheet locked */
+    openedAtRef.current = Date.now()
+    setSheetOpen(true)
+    setCardState('sheet_open')
+  }, [cardState])
+
+  const handleClose = useCallback(() => {
+    if (openedAtRef.current != null) {
+      accumOpenMsRef.current += Date.now() - openedAtRef.current
+      openedAtRef.current = null
+    }
     setSheetOpen(false)
+    /* Only flip to `dismissed` if we weren't already `completed` —
+       a sheet that completes also calls onClose afterwards. */
+    setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))
   }, [])
+
+  const handleComplete = useCallback((data) => {
+    if (openedAtRef.current != null) {
+      accumOpenMsRef.current += Date.now() - openedAtRef.current
+      openedAtRef.current = null
+    }
+    const totalSeconds = Math.round(accumOpenMsRef.current / 1000)
+
+    const message = buildWidgetResponse(variant, payload, data, totalSeconds)
+    if (message) {
+      const isSilent = variant === 'directions'
+      onReply(message, isSilent ? { silent: true } : undefined)
+    }
+
+    /* directions is informational — close the sheet but stay reopen-able. */
+    setSheetOpen(false)
+    setCardState((prev) => (variant === 'directions' ? 'dismissed' : 'completed'))
+  }, [variant, payload, onReply])
 
   return (
     <div className={cx(styles.card, styles[`variant_${variant}`])}>
