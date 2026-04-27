@@ -114,6 +114,17 @@
   color: var(--brand-60);
 }
 
+.searchEmpty {
+  margin: 0;
+  padding: var(--space-100) var(--space-125);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-150);
+  font-size: var(--font-size-100);
+  color: var(--grey-50);
+  text-align: center;
+}
+
 /* ── FAB ─────────────────────────────────────────────────── */
 
 .fab {

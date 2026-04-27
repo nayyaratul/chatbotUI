@@ -241,6 +241,10 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
             ))}
           </ul>
         )}
+
+        {showResults && results.length === 0 && query.trim() && (
+          <p className={styles.searchEmpty}>No matches in saved locations.</p>
+        )}
       </div>
 
       <div className={shellStyles.mapRegion}>
