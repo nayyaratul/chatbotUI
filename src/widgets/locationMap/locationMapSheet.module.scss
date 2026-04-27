@@ -129,6 +129,58 @@
   --header-tone-title-color: var(--color-text-error);
 }
 
+/* "You're in" cascade — fires on geofence outside→inside transition.
+   A success-tinted highlight bar sweeps left→right across the header
+   band (horizontal gradient swept by background-position) over 320ms
+   on the rise-up curve. The header tone has already swapped to
+   success at this point; the sweep is the moment of arrival. */
+.header_cascading {
+  position: relative;
+  overflow: hidden;
+}
+
+.header_cascading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-text-success) 24%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: lmsHeaderSweep 480ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  pointer-events: none;
+}
+
+/* Status chip morph — the header icon badge re-mounts (key) and pops
+   in on the springy curve, with a bloom of success colour during the
+   first half of the cascade. */
+.headerIcon_cascading {
+  animation: lmsIconMorph 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both 60ms;
+}
+
+@keyframes lmsHeaderSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes lmsIconMorph {
+  0%   {
+    transform: scale(0.7);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  }
+  60%  {
+    transform: scale(1.16);
+    box-shadow: 0 0 0 var(--size-08) color-mix(in srgb, var(--color-text-success) 18%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+}
+
 .headerLeft {
   display: flex;
   align-items: center;
@@ -271,5 +323,9 @@
   }
   .card {
     transform: none;
+  }
+  .header_cascading::before,
+  .headerIcon_cascading {
+    animation: none;
   }
 }

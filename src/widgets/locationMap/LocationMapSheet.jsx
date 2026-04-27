@@ -153,13 +153,28 @@ export function SheetHeader({
   title,
   subtitle,
   tone = 'neutral',     /* 'neutral' | 'success' | 'warning' | 'error' */
+  cascading = false,    /* one-shot "you're in" sequence — geofence only */
+  cascadeKey = 0,       /* bumps to re-fire the cascade animations */
   requestClose,
   closeBtnRef,
 }) {
+  /* `data-cascade-key` forces React to remount the icon span when the
+     key changes, restarting the springy chip morph. The header band
+     uses an animation-name swap keyed off the .header_cascading class. */
   return (
-    <header className={cx(styles.header, styles[`header_${tone}`])}>
+    <header
+      className={cx(
+        styles.header,
+        styles[`header_${tone}`],
+        cascading && styles.header_cascading,
+      )}
+      data-cascade-key={cascadeKey}
+    >
       <div className={styles.headerLeft}>
-        <span className={styles.headerIcon}>
+        <span
+          key={`icon-${cascadeKey}`}
+          className={cx(styles.headerIcon, cascading && styles.headerIcon_cascading)}
+        >
           <Icon size={16} strokeWidth={2} aria-hidden />
         </span>
         <div className={styles.headerText}>

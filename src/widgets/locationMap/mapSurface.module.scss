@@ -275,10 +275,28 @@
 /* ── Accuracy ring (L.circle) ────────────────────────────── */
 
 .userRing {
-  stroke: var(--brand-60);
-  fill: var(--brand-60);
   fill-opacity: 0.10;
   stroke-opacity: 0.32;
+  /* Tone shifts on the rise-up curve so the geofence cascade can
+     transition the ring from warning/brand → success continuously. */
+  transition:
+    stroke 320ms cubic-bezier(0.18, 0.9, 0.28, 1.04),
+    fill   320ms cubic-bezier(0.18, 0.9, 0.28, 1.04);
+}
+
+.userRing_brand {
+  stroke: var(--brand-60);
+  fill: var(--brand-60);
+}
+
+.userRing_success {
+  stroke: var(--color-text-success);
+  fill: var(--color-text-success);
+}
+
+.userRing_warning {
+  stroke: var(--yellow-60);
+  fill: var(--yellow-60);
 }
 
 /* ── Leaflet chrome restyle (`:global()` because Leaflet owns

@@ -136,7 +136,31 @@
   --color-action-primary-hover: color-mix(in srgb, var(--color-text-success) 88%, black);
 }
 
+/* Tail of the "you're in" cascade — the CTA tone has already
+   shifted to success via .cta_ready; cta_arriving runs a brief
+   springy lift so the moment lands. Delayed 180ms so it follows
+   the header sweep (0ms) and icon morph (60ms). */
+.cta_arriving {
+  animation: gfCtaArrive 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both 180ms;
+}
+
+@keyframes gfCtaArrive {
+  0%   {
+    transform: translateY(var(--size-04)) scale(0.985);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+  60%  {
+    transform: translateY(0) scale(1.012);
+    box-shadow: 0 0 0 var(--size-06) color-mix(in srgb, var(--color-text-success) 18%, transparent);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-text-success) 0%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fab { transition: none; }
   .fab:hover { transform: none; }
+  .cta_arriving { animation: none; }
 }

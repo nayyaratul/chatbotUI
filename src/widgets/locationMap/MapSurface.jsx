@@ -312,7 +312,10 @@ export function MapSurface({
         fillOpacity: 0.10,
         weight: 1,
         opacity: 1,
-        className: cx(styles.userRing),
+        className: cx(
+          styles.userRing,
+          styles[`userRing_${userLocation.tone ?? 'brand'}`],
+        ),
         interactive: false,
       })
       ring.addTo(map)

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
+import mapStyles from '../mapSurface.module.scss'
 import {
   ShieldCheck,
   ShieldAlert,
@@ -68,6 +69,28 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
   /* Hysteresis ring buffer of recent inside/outside samples. */
   const samplesRef = useRef([])
   const [stableInside, setStableInside] = useState(null)  /* null = not enough data yet */
+
+  /* "You're in" cascade — fires once when stableInside flips
+     outside→inside. Drives a 320ms staggered sequence across the
+     header band, status chip, CTA tone, and accuracy ring. A
+     boolean flag is raised on flip and cleared after the cascade
+     window so subsequent inside↔outside oscillations don't replay
+     (avoids fatigue). The cascadeKey grows each transition so CSS
+     animations re-fire even when the elements are otherwise stable. */
+  const [cascading, setCascading] = useState(false)
+  const [cascadeKey, setCascadeKey] = useState(0)
+  const prevStableInsideRef = useRef(null)
+  useEffect(() => {
+    if (prevStableInsideRef.current === false && stableInside === true) {
+      setCascading(true)
+      setCascadeKey((k) => k + 1)
+      const t = window.setTimeout(() => setCascading(false), 720)
+      prevStableInsideRef.current = stableInside
+      return () => window.clearTimeout(t)
+    }
+    prevStableInsideRef.current = stableInside
+    return undefined
+  }, [stableInside])
 
   /* Snapshot of the timestamp of the most recent GPS sample —
      prevents the coord row's clock value from drifting on every
@@ -167,14 +190,23 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
     }]
   }, [polygon, polygonValid, stableInside])
 
+  /* Ring tone follows the cascade: success when inside (drives the
+     ring-color tween that completes the "you're in" sequence),
+     warning when outside-but-near, brand otherwise. */
+  const ringTone =
+    stableInside === true ? 'success'
+    : stableInside === false ? 'warning'
+    : 'brand'
+
   const userLocation = useMemo(() => {
     if (!geo.position) return null
     return {
       lat: geo.position.lat,
       lng: geo.position.lng,
       accuracy_m: geo.accuracy ?? null,
+      tone: ringTone,
     }
-  }, [geo.position, geo.accuracy])
+  }, [geo.position, geo.accuracy, ringTone])
 
   const center = useMemo(() => [
     payload?.center_lat ?? 12.9716,
@@ -215,6 +247,8 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
         title={payload?.title ?? fence?.label ?? 'Check in'}
         subtitle={subtitle}
         tone={tone}
+        cascading={cascading}
+        cascadeKey={cascadeKey}
         requestClose={requestClose}
         closeBtnRef={closeBtnRef}
       />
@@ -277,8 +311,13 @@ export function GeofenceBody({ payload, requestClose, onComplete, closeBtnRef })
         )}
 
         <Button
+          key={`cta-${cascadeKey}`}
           variant="primary"
-          className={cx(shellStyles.footerCta, isReady && styles.cta_ready)}
+          className={cx(
+            shellStyles.footerCta,
+            isReady && styles.cta_ready,
+            cascading && styles.cta_arriving,
+          )}
           onClick={handleCheckIn}
           disabled={!isReady}
         >
