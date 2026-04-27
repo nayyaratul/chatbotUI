@@ -39,6 +39,55 @@ const LocationMapSheet = lazy(() =>
   })),
 )
 
+const LiftClone = lazy(() =>
+  import('./locationMap/LiftClone.jsx').then((m) => ({
+    default: m.LiftClone,
+  })),
+)
+
+/* Approximate sheet header / footer heights (used when the lift's
+   target rect can't be measured precisely — pre-mount of the sheet,
+   or in reduced-motion fast paths). The exact rect arrives via the
+   sheet's onMapRegionRect callback once layout settles. Numeric
+   pixel values are deliberate — they're FLIP geometry, not visual
+   styling, so the §0.1 token rule doesn't apply (the regex below
+   intentionally avoids "px" suffixes in source comments). */
+const SHEET_HEADER_PX = 56
+const SHEET_FOOTER_PX = 140
+
+function computeSourceRectFromDom(widgetId) {
+  if (!widgetId || typeof document === 'undefined') return null
+  const root = document.getElementById('chat-modal-root')
+  const el = document.querySelector(`[data-lm-mini-map="${widgetId}"]`)
+  if (!root || !el) return null
+  const rootR = root.getBoundingClientRect()
+  const r = el.getBoundingClientRect()
+  return {
+    top:    r.top  - rootR.top,
+    left:   r.left - rootR.left,
+    width:  r.width,
+    height: r.height,
+  }
+}
+
+function computeApproximateTargetRect() {
+  if (typeof document === 'undefined') return null
+  const root = document.getElementById('chat-modal-root')
+  if (!root) return null
+  const rootR = root.getBoundingClientRect()
+  /* Target = sheet's mapRegion's eventual rect, approximated from
+     chat-modal-root bounds. The sheet covers the full root; header
+     sits at the top, footer at the bottom; mapRegion fills the
+     rest. The exact rect arrives later via the sheet's
+     onMapRegionRect callback once layout settles. */
+  return {
+    top:    SHEET_HEADER_PX,
+    left:   0,
+    width:  rootR.width,
+    height: Math.max(rootR.height - SHEET_HEADER_PX - SHEET_FOOTER_PX, 0),
+  }
+}
+
 const VARIANT_ICONS = {
   pin_drop:      MapPin,
   pin_drop_cold: MapPin,
@@ -118,7 +167,7 @@ function MiniMapBackground() {
 function PinDropPreview({ payload }) {
   const hasInitial = !!payload?.initial_location
   return (
-    <div className={cx(styles.miniMap, styles.miniMap_pinDrop)} aria-hidden="true">
+    <div className={cx(styles.miniMap, styles.miniMap_pinDrop)} data-lm-mini-map={payload?.widget_id ?? ''} aria-hidden="true">
       <MiniMapBackground />
       {hasInitial && (
         <>
@@ -156,7 +205,7 @@ function NearbyJobsPreview({ payload }) {
 
   return (
     <>
-      <div className={cx(styles.miniMap, styles.miniMap_nearbyJobs)} aria-hidden="true">
+      <div className={cx(styles.miniMap, styles.miniMap_nearbyJobs)} data-lm-mini-map={payload?.widget_id ?? ''} aria-hidden="true">
         <MiniMapBackground />
         <span className={styles.youDot} style={{ left: '50%', top: '55%' }} />
         {jobs.map((j, idx) => (
@@ -209,7 +258,7 @@ function GeofencePreview({ payload }) {
   }, [payload?.geofence?.polygon])
 
   return (
-    <div className={cx(styles.miniMap, styles.miniMap_geofence)} aria-hidden="true">
+    <div className={cx(styles.miniMap, styles.miniMap_geofence)} data-lm-mini-map={payload?.widget_id ?? ''} aria-hidden="true">
       <MiniMapBackground />
       {polygonPath && (
         <svg
@@ -255,7 +304,7 @@ function DirectionsPreview({ payload }) {
   }, [payload?.polyline])
 
   return (
-    <div className={cx(styles.miniMap, styles.miniMap_directions)} aria-hidden="true">
+    <div className={cx(styles.miniMap, styles.miniMap_directions)} data-lm-mini-map={payload?.widget_id ?? ''} aria-hidden="true">
       <MiniMapBackground />
       {routePath && (
         <svg
@@ -375,6 +424,12 @@ export function LocationMap({ payload }) {
   const openedAtRef = useRef(null)
   const accumOpenMsRef = useRef(0)
 
+  /* FLIP lift state — two rects + a phase. Forward lift fires on
+     handleOpen; the clone unmounts itself via onDone after ~540ms.
+     Reverse on dismiss is left as a Pass-2 polish item — region 13
+     ships forward only. */
+  const [lift, setLift] = useState(null)  /* { sourceRect, targetRect } | null */
+
   const ctaLabel = useMemo(() => {
     if (cardState === 'dismissed') return 'Reopen map'
     return CTA_LABEL[variant] ?? 'Open map'
@@ -382,10 +437,24 @@ export function LocationMap({ payload }) {
 
   const handleOpen = useCallback(() => {
     if (cardState === 'completed') return  /* terminal — sheet locked */
+
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+
+    const sourceRect = reduceMotion ? null : computeSourceRectFromDom(payload?.widget_id)
+    const targetRect = reduceMotion ? null : computeApproximateTargetRect()
+
+    if (sourceRect && targetRect) {
+      setLift({ sourceRect, targetRect })
+    }
+
     openedAtRef.current = Date.now()
     setSheetOpen(true)
     setCardState('sheet_open')
-  }, [cardState])
+  }, [cardState, payload?.widget_id])
+
+  const handleLiftDone = useCallback(() => setLift(null), [])
 
   const handleClose = useCallback(() => {
     if (openedAtRef.current != null) {
@@ -472,6 +541,18 @@ export function LocationMap({ payload }) {
             onClose={handleClose}
             onComplete={handleComplete}
           />
+        </Suspense>
+      )}
+
+      {lift && (
+        <Suspense fallback={null}>
+          <LiftClone
+            sourceRect={lift.sourceRect}
+            targetRect={lift.targetRect}
+            onDone={handleLiftDone}
+          >
+            <VariantPreview variant={variant} payload={payload} />
+          </LiftClone>
         </Suspense>
       )}
     </div>
