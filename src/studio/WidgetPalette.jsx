@@ -35,6 +35,7 @@ import {
   Signature,
   ExternalLink,
   Trophy,
+  Map,
 } from 'lucide-react'
 import styles from './widgetPalette.module.scss'
 
@@ -71,6 +72,7 @@ const WIDGET_ICONS = {
   signature:          Signature,
   embedded_webview:   ExternalLink,
   leaderboard:        Trophy,
+  location_map:       Map,
 }
 
 /**

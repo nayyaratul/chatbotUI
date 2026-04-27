@@ -694,6 +694,128 @@ function buildEmbeddedWebviewPayload(variant) {
   throw new Error(`buildEmbeddedWebviewPayload: unknown variant "${variant}"`)
 }
 
+/* ─── Location Map (#13) — variant payload builder ────────────────
+   Region 1 ships minimal-but-valid payloads per the spec contract.
+   Region 16 fleshes out fixtures (12 nearby_jobs across Bengaluru,
+   8-step directions polyline traced on Old Madras Road, etc.).
+   Bengaluru is the anchor for every variant — Lavelle Road for
+   pin_drop, a polygon near Whitefield for geofence, Indiranagar →
+   Whitefield for directions.                                       */
+function buildLocationMapPayload(variant) {
+  const common = {
+    widget_id: makeId('lmap'),
+    variant,
+    center_lat: 12.9716,
+    center_lng: 77.5946,
+    initial_zoom: 15,
+  }
+
+  if (variant === 'pin_drop') {
+    return {
+      ...common,
+      title: 'Confirm your address',
+      description: 'Tap to open the map and adjust if needed.',
+      category: 'Home address',
+      initial_location: {
+        lat: 12.9716,
+        lng: 77.5946,
+        address: '14, Lavelle Road, Bengaluru 560001',
+        address_components: {
+          street: 'Lavelle Road',
+          locality: 'Lavelle Road',
+          city: 'Bengaluru',
+          postal: '560001',
+          state: 'Karnataka',
+          country: 'India',
+        },
+        accuracy_m: 12,
+      },
+      search_fixtures: [],
+      enable_gps: true,
+    }
+  }
+
+  if (variant === 'pin_drop_cold') {
+    return {
+      ...common,
+      title: 'Set your location',
+      description: 'Open the map to drop a pin.',
+      category: 'Location',
+      initial_location: null,
+      search_fixtures: [],
+      enable_gps: true,
+    }
+  }
+
+  if (variant === 'nearby_jobs') {
+    return {
+      ...common,
+      title: 'Jobs near you',
+      description: 'Closest three shown. Open the map for the full set.',
+      category: '12 jobs within 5 km',
+      jobs: [
+        { id: 'j-rid-indir',  label: 'Riders Op · Indiranagar',  sublabel: 'Mon–Sat · ₹680/shift', lat: 12.9784, lng: 77.6408, distance_m_hint: 800  },
+        { id: 'j-wh-whfld',   label: 'Warehouse · Whitefield',   sublabel: 'Tue–Sat · ₹720/shift', lat: 12.9698, lng: 77.7500, distance_m_hint: 2400 },
+        { id: 'j-del-hsr',    label: 'Delivery hub · HSR',       sublabel: 'Mon–Fri · ₹650/shift', lat: 12.9116, lng: 77.6473, distance_m_hint: 4100 },
+      ],
+      filters: [
+        { id: 'all', label: 'All', predicate_id: 'all' },
+      ],
+    }
+  }
+
+  if (variant === 'geofence') {
+    return {
+      ...common,
+      center_lat: 12.9698,
+      center_lng: 77.7500,
+      title: 'Check in to start your shift',
+      description: 'You\'re inside the zone — ready to clock in.',
+      category: 'Warehouse 4',
+      geofence: {
+        id: 'wh4',
+        label: 'Warehouse 4',
+        polygon: [
+          [12.9710, 77.7480],
+          [12.9720, 77.7510],
+          [12.9700, 77.7530],
+          [12.9685, 77.7515],
+          [12.9690, 77.7485],
+        ],
+      },
+      accuracy_gate_m: 50,
+      watch_position: true,
+    }
+  }
+
+  if (variant === 'directions') {
+    return {
+      ...common,
+      center_lat: 12.9740,
+      center_lng: 77.6950,
+      title: 'Indiranagar → Whitefield',
+      description: '12 km · Approx. 25 min by car.',
+      category: 'On the way',
+      origin:      { lat: 12.9784, lng: 77.6408, label: 'Indiranagar' },
+      destination: { lat: 12.9698, lng: 77.7500, label: 'Whitefield' },
+      polyline: [
+        [12.9784, 77.6408],
+        [12.9760, 77.6600],
+        [12.9740, 77.6800],
+        [12.9720, 77.7100],
+        [12.9710, 77.7300],
+        [12.9698, 77.7500],
+      ],
+      distance_m: 12000,
+      duration_s: 1500,
+      steps: [],
+      deep_link_template: null,
+    }
+  }
+
+  throw new Error(`buildLocationMapPayload: unknown variant "${variant}"`)
+}
+
 export const widgetSchemas = {
 
   // ─── engine ──────────────────────────────────────────────────────
@@ -2045,6 +2167,18 @@ export const widgetSchemas = {
     variants: [
       { id: 'personal',    label: 'Personal', payload: () => buildLeaderboardPayload('personal') },
       { id: 'leaderboard', label: 'Top 5',    payload: () => buildLeaderboardPayload('leaderboard') },
+    ],
+  },
+
+  location_map: {
+    label: 'Map',
+    category: 'input',
+    variants: [
+      { id: 'pin_drop',      label: 'Pin · confirm', payload: () => buildLocationMapPayload('pin_drop') },
+      { id: 'pin_drop_cold', label: 'Pin · cold',    payload: () => buildLocationMapPayload('pin_drop_cold') },
+      { id: 'nearby_jobs',   label: 'Nearby jobs',   payload: () => buildLocationMapPayload('nearby_jobs') },
+      { id: 'geofence',      label: 'Geofence',      payload: () => buildLocationMapPayload('geofence') },
+      { id: 'directions',    label: 'Directions',    payload: () => buildLocationMapPayload('directions') },
     ],
   },
 

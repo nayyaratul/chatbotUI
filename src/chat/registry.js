@@ -30,6 +30,7 @@ import { AudioPlayer } from '../widgets/AudioPlayer.jsx'
 import { EmbeddedWebview } from '../widgets/EmbeddedWebview.jsx'
 import { SignatureCapture } from '../widgets/SignatureCapture.jsx'
 import { Leaderboard } from '../widgets/Leaderboard.jsx'
+import { LocationMap } from '../widgets/LocationMap.jsx'
 
 export const registry = {
   text: TextMessage,
@@ -64,4 +65,5 @@ export const registry = {
   signature: SignatureCapture,
   embedded_webview: EmbeddedWebview,
   leaderboard: Leaderboard,
+  location_map: LocationMap,
 }

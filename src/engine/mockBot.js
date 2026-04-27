@@ -503,3 +503,38 @@ registerRule({
   match: /^(webview|embed(ded)?( webview)?|partner form)$/i,
   build: () => ({ type: 'embedded_webview', payload: getVariantPayload('embedded_webview', 'partner_form') }),
 })
+
+// ─── Location Map — pin_drop (default) ─────────────────────────
+// Trigger: "show map", "map", "show location", "location"
+registerRule({
+  match: /^(show )?(map|location)$/i,
+  build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'pin_drop') }),
+})
+
+// ─── Location Map — pin_drop_cold ──────────────────────────────
+// Trigger: "show map cold", "map empty", etc.
+registerRule({
+  match: /^(show )?(map|location)\s+(cold|empty)$/i,
+  build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'pin_drop_cold') }),
+})
+
+// ─── Location Map — nearby_jobs ────────────────────────────────
+// Trigger: "show map nearby", "map nearby", etc.
+registerRule({
+  match: /^(show )?(map|location)\s+nearby$/i,
+  build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'nearby_jobs') }),
+})
+
+// ─── Location Map — geofence ───────────────────────────────────
+// Trigger: "show map geofence", "map fence", "map check-in", etc.
+registerRule({
+  match: /^(show )?(map|location)\s+(geofence|fence|check[- ]?in)$/i,
+  build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'geofence') }),
+})
+
+// ─── Location Map — directions ─────────────────────────────────
+// Trigger: "show map directions", "map route", etc.
+registerRule({
+  match: /^(show )?(map|location)\s+(directions|route)$/i,
+  build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'directions') }),
+})
