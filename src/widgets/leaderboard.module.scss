@@ -593,27 +593,25 @@
      --rank-tone       saturated bg for the rank badge
      --rank-tone-text  legible text/icon color on `--rank-tone`
      --rank-tone-deep  edge ring + ghost-numeral tint
-   All three badges share grey-90 text — the previous "white text on
-   dark bronze" treatment was inconsistent with gold/silver and
-   broke visual hierarchy: bronze popped (high Weber contrast on
-   dark bg) while gold and silver felt quieter. Unifying on grey-90
-   forces all three backgrounds into the same luminance band so the
-   podium reads with even visual weight.
+   All three badges share white text on dark metal-tone fills —
+   reads as "premium achievement chip" and unifies visual weight
+   across the podium. Each bg lands at L ≈ 0.11 so the three feel
+   like peers rather than competing for attention.
    Contrasts measured against the size-100 (10px semibold) badge
    text per WCAG 2.1 (small-text threshold = 4.5:1 AA, 7:1 AAA):
-     gold   = grey-90 on yellow-30                  → 6.70:1   ✅ AA
-     silver = grey-90 on grey-30                    → 6.54:1   ✅ AA
-     bronze = grey-90 on yellow-30+red-30 mix       → 6.62:1   ✅ AA
-   Bronze tone landed by mixing yellow-30 (light gold base) with
-   red-30 (warm pink) at 60/40 — gives a peach-bronze (#E19A52)
-   that sits in the same luminance band as gold and silver while
-   still reading as a warm rank-3 tone. The deep variant retains
-   the previous saturated bronze (#AF5724) for the disc rim and
-   ghost numeral, providing visual depth at the column edges. */
+     gold   = white on yellow-60                    → 6.45:1   ✅ AA
+     silver = white on grey-60                      → 6.41:1   ✅ AA
+     bronze = white on yellow-60+red-50 mix         → 6.34:1   ✅ AA
+   Tones picked to land in the same luminance band (~0.11) so all
+   three carry equal visual weight on the podium — earlier mixes
+   that put gold/silver lighter than bronze (or vice-versa) made
+   one rank pop while the others felt washed out. Bronze mix uses
+   yellow-60 + red-50 at 70/30, giving #974A1D — a deep bronze
+   that doesn't drift into burnt orange. */
 .podiumColumn[data-rank="1"] {
-  --rank-tone:      var(--yellow-30);
-  --rank-tone-text: var(--grey-90);
-  --rank-tone-deep: var(--yellow-50);
+  --rank-tone:      var(--yellow-60);
+  --rank-tone-text: var(--white);
+  --rank-tone-deep: var(--yellow-70);
   /* Stacking context so the persistent spotlight `::before` stays
      scoped behind this column's content but doesn't escape behind
      the card. */
@@ -623,7 +621,9 @@
 /* Spotlight behind #1 — soft warm radial that blooms in on mount and
    sits permanently at rest opacity. Reads as "the winner is lit up"
    without painting actual stage lights. Anchored to the upper-third
-   of the column so the disc gets the brightest part. */
+   of the column so the disc gets the brightest part. Uses yellow-30
+   (the bright/warm gold) for the radial — `--rank-tone` (yellow-60)
+   would render the spotlight too dim against the white card. */
 .podiumColumn[data-rank="1"]::before {
   content: '';
   position: absolute;
@@ -642,15 +642,15 @@
 }
 
 .podiumColumn[data-rank="2"] {
-  --rank-tone:      var(--grey-30);
-  --rank-tone-text: var(--grey-90);
-  --rank-tone-deep: var(--grey-50);
+  --rank-tone:      var(--grey-60);
+  --rank-tone-text: var(--white);
+  --rank-tone-deep: var(--grey-80);
 }
 
 .podiumColumn[data-rank="3"] {
-  --rank-tone:      color-mix(in srgb, var(--yellow-30) 60%, var(--red-30) 40%);
-  --rank-tone-text: var(--grey-90);
-  --rank-tone-deep: color-mix(in srgb, var(--yellow-50) 65%, var(--red-50) 35%);
+  --rank-tone:      color-mix(in srgb, var(--yellow-60) 70%, var(--red-50) 30%);
+  --rank-tone-text: var(--white);
+  --rank-tone-deep: color-mix(in srgb, var(--yellow-70) 60%, var(--red-60) 40%);
 }
 
 .podiumPlayer {
