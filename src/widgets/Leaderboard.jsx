@@ -195,16 +195,18 @@ export function Leaderboard({ payload }) {
 }
 
 /* ─── Personal body ──────────────────────────────────────────────
-   Ring + breakdown two-column. Container query collapses to stacked
-   at narrow slot widths. The eyebrow row above is the rank summary
-   (added in Region 8). */
+   Rank summary eyebrow → ring + breakdown two-column. Container
+   query collapses the metric row to stacked at narrow slot
+   widths. */
 function PersonalBody({ payload }) {
-  const target    = payload?.target ?? null
-  const breakdown = Array.isArray(payload?.breakdown) ? payload.breakdown : []
-  const unit      = typeof payload?.unit === 'string' ? payload.unit : ''
+  const target       = payload?.target ?? null
+  const breakdown    = Array.isArray(payload?.breakdown) ? payload.breakdown : []
+  const userPosition = payload?.user_position ?? null
+  const unit         = typeof payload?.unit === 'string' ? payload.unit : ''
 
   return (
     <div className={styles.personalBody}>
+      {userPosition && <RankSummary position={userPosition} />}
       {target && (
         <div className={styles.metricRow}>
           <ProgressRing
@@ -227,6 +229,41 @@ function PersonalBody({ payload }) {
             </ul>
           )}
         </div>
+      )}
+    </div>
+  )
+}
+
+/* RankSummary — eyebrow row showing where the user sits in the
+   field. Three pieces: rank chip ("#16 of 184"), percentile caption
+   ("Top 9%"), and an optional delta indicator with caption ("↑ 4
+   vs last week"). Percentile derived as `Math.ceil(rank/out_of *
+   100)` — gives a more relatable read than raw rank for self-
+   context. Delta semantics: positive = improved (lower rank
+   number), negative = dropped, flat = no change. */
+function RankSummary({ position }) {
+  const rank       = position?.rank
+  const outOf      = position?.out_of
+  const delta      = position?.delta
+  const deltaLabel = position?.delta_label
+
+  if (typeof rank !== 'number' || typeof outOf !== 'number' || outOf <= 0) {
+    return null
+  }
+
+  const percentile = Math.max(1, Math.ceil((rank / outOf) * 100))
+
+  return (
+    <div className={styles.rankSummary} role="group" aria-label="Your ranking">
+      <span className={styles.rankSummaryChip}>
+        <span className={styles.rankSummaryRank}>#{rank}</span>
+        <span className={styles.rankSummaryOf}>of {outOf}</span>
+      </span>
+      <span className={styles.rankSummaryPercentile}>
+        Top {percentile}%
+      </span>
+      {typeof delta === 'number' && (
+        <DeltaIndicator delta={delta} label={deltaLabel} />
       )}
     </div>
   )
@@ -480,7 +517,7 @@ function RankRow({ idx, row, unit }) {
   )
 }
 
-function DeltaIndicator({ delta }) {
+function DeltaIndicator({ delta, label }) {
   const tone =
     delta > 0 ? 'positive' :
     delta < 0 ? 'negative' :
@@ -490,11 +527,16 @@ function DeltaIndicator({ delta }) {
     delta < 0 ? ArrowDown :
     Minus
   const magnitude = Math.abs(delta)
+  const direction = delta > 0 ? 'Up' : delta < 0 ? 'Down' : 'Flat'
+  const ariaLabel = label
+    ? `${direction} ${magnitude} ${label}`
+    : `Delta ${delta}`
 
   return (
-    <span className={cx(styles.delta, styles[`delta_${tone}`])} aria-label={`Delta ${delta}`}>
+    <span className={cx(styles.delta, styles[`delta_${tone}`])} aria-label={ariaLabel}>
       <Glyph size={14} strokeWidth={2} aria-hidden="true" />
       {magnitude > 0 && <span className={styles.deltaValue}>{magnitude}</span>}
+      {label && <span className={styles.deltaLabel}>{label}</span>}
     </span>
   )
 }

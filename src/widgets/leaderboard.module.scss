@@ -161,6 +161,60 @@
   min-width: 0;
 }
 
+/* ─── Rank summary eyebrow ─────────────────────────────────────
+   Sits above the metricRow. Three children: brand-tinted rank chip
+   ("#16 of 184"), percentile caption ("Top 9%"), and an optional
+   delta indicator with sublabel ("↑ 4 vs last week"). Wraps if the
+   slot is too narrow to hold all three on one line. */
+
+.rankSummary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-125);
+  flex-wrap: wrap;
+  min-width: 0;
+
+  animation: lbRowRise 280ms cubic-bezier(0.18, 0.9, 0.28, 1.04) both;
+  animation-delay: 120ms;
+}
+
+.rankSummaryChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-050);
+  flex: 0 0 auto;
+  padding: var(--space-050) var(--space-125);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-60) 10%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 24%, transparent);
+  color: var(--brand-60);
+  line-height: 1;
+}
+
+.rankSummaryRank {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.rankSummaryOf {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  opacity: var(--opacity-072);
+}
+
+.rankSummaryPercentile {
+  flex: 0 0 auto;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--grey-50);
+  line-height: 1;
+}
+
 @container lb-personal (max-width: 30rem) {
   .metricRow {
     flex-direction: column;
@@ -945,6 +999,18 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* Optional sublabel rendered alongside the delta value (e.g.
+   "vs last week" on the personal-variant rank summary). Overrides
+   the parent's tone color so the label reads as quiet metadata
+   rather than tinted with the delta direction. */
+.deltaLabel {
+  margin-left: var(--space-050);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-normal);
+  text-transform: none;
+  color: var(--grey-50);
+}
+
 /* "You're #N of M" eyebrow — surfaces user position when the user
    isn't in the top 5. §12 eyebrow vocabulary. */
 .userPosition {
@@ -1183,6 +1249,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .card,
+  .rankSummary,
   .ringFill,
   .ringFrame::after,
   .ringVerdict,
