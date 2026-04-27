@@ -113,6 +113,11 @@
   gap: var(--space-100);
   padding: var(--space-100) var(--space-125);
 
+  /* Match the Submit button (size="md", 40px) and the standard input
+     touch target. Without a floor, padding+line-height+borders only
+     resolve to ~38px, which reads stubby beside the 40px CTA. */
+  min-height: var(--size-40);
+
   background: var(--white);
   border: var(--border-width-100) solid var(--grey-20);
   border-radius: var(--radius-150);
@@ -228,7 +233,12 @@
   flex: 0 0 auto;
   position: relative;
   width: var(--size-44);
-  height: var(--size-52);
+  /* Square the box at 48×44 (was 52×44 = 1:1.18 portrait). Keeps the
+     hero scale of an OTP affordance while closing the 8px height gap
+     between the OTP card and the single-input variants — the OTP row
+     was the main reason those two states didn't sit at similar
+     heights. */
+  height: var(--size-48);
   padding: 0;
   text-align: center;
 

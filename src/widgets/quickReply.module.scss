@@ -4,6 +4,15 @@
    ───────────────────────────────────────────────────────── */
 
 .container {
+  /* Pin the selected-option / Submit primary fill to brand-60. Nexus
+     defaults --color-action-primary to brand-50, which reads one shade
+     lighter than the brand-60 accent the rest of the chat surface
+     uses; without this scoped override the selected pill renders in a
+     different hue from the input row + widget accents. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+
   display: flex;
   flex-direction: column;
   gap: var(--space-125);

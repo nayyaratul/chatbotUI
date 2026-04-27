@@ -40,6 +40,17 @@
   box-shadow: var(--shadow-100);
 }
 
+/* Thumbs variant trims the 18rem floor. The floor was sized for the
+   stars/emoji layouts, which reserve ~66px above the picker for the
+   live sentiment label (.liveLabel min-height + scaleWrap padding).
+   Thumbs has no live label, so under the 18rem floor `actionsGroup`'s
+   `margin-top: auto` opens up ~66px of empty air between the thumbs
+   row and the Submit CTA. Dropping the floor lets the card collapse
+   to its natural height. */
+.cardThumbs {
+  min-height: 0;
+}
+
 /* ─── Header ─────────────────────────────────────────────────────── */
 
 .header {

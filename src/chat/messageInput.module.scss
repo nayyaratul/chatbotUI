@@ -1,4 +1,15 @@
 .input {
+  /* Pin the input row's interactive elements to the project accent
+     (brand-60). Nexus defaults --color-action-primary and --color-
+     border-focus to brand-50; the rest of the chat surface (widgets,
+     suggestions strip) reads brand-60, so without this scoped override
+     the input + send button render one shade lighter than the
+     surrounding accents and read as a different colour. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+  --color-border-focus: var(--brand-60);
+
   display: flex;
   align-items: center;
   gap: var(--space-100);
@@ -17,16 +28,23 @@
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
+.textarea:focus,
+.textarea:focus-visible {
+  border-color: var(--brand-60) !important;
+  outline-color: var(--brand-60) !important;
+}
+
 .textarea.accented {
   border-color: var(--brand-60) !important;
   box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
 }
 
 /* Send CTA — fixed 40x40, icon centered in all axes. Primary variant
-   inherits --color-action-primary which follows the active brand. When
-   disabled (empty input or bot typing) we override Nexus's opacity-
-   reduced primary look with a clean neutral grey so the state reads
-   clearly as "not actionable" rather than "faded brand". */
+   inherits --color-action-primary which we've pinned to brand-60 on
+   the input row above so it tracks the project accent. When disabled
+   (empty input or bot typing) we override Nexus's opacity-reduced
+   primary look with a clean neutral grey so the state reads clearly
+   as "not actionable" rather than "faded brand". */
 .sendButton {
   width: var(--size-40);
   height: var(--size-40);
@@ -35,6 +53,16 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+/* The Lucide Send icon is a paper plane whose visual mass sits in the
+   lower-left of its 16x16 box — geometric centre reads as up-and-right
+   to the eye. A 1px down/left nudge restores optical centre. We also
+   force the SVG to display:block so the inline-baseline gap from the
+   wrapping <span> doesn't push it down. */
+.sendButton svg {
+  display: block;
+  transform: translate(-1px, 1px);
 }
 
 .sendButton:disabled {

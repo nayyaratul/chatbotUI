@@ -102,7 +102,11 @@ export function RatingWidget({ payload }) {
   }, [canSubmit, variant, value, scale, comment, onReply, widgetId, ratingId, isSilent])
 
   return (
-    <div className={styles.card} role="article" aria-label={title}>
+    <div
+      className={cx(styles.card, variant === 'thumbs' && styles.cardThumbs)}
+      role="article"
+      aria-label={title}
+    >
       {/* Header — same family chrome */}
       <div className={styles.header}>
         <div className={styles.iconBadge} aria-hidden="true">

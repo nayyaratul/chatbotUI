@@ -8,6 +8,15 @@
 /* ─── Card shell ──────────────────────────────────────────────────── */
 
 .card {
+  /* Pin the Submit CTA (variant="primary") to brand-60 so it tracks
+     the project accent. The form's progress meter + active-field rail
+     already read brand-60 directly; without this scoped override the
+     Submit button would render in Nexus's default brand-50 and read
+     one shade lighter than the rest of the card. */
+  --color-action-primary: var(--brand-60);
+  --color-action-primary-hover: var(--brand-70);
+  --color-action-primary-active: var(--brand-80);
+
   position: relative;
   display: flex;
   flex-direction: column;

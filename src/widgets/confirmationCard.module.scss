@@ -43,10 +43,15 @@
 
 /* ─── Tone modes — all values resolve to Nexus tokens ───────── */
 
+/* Info variant tracks the project accent (brand-*), not Nexus's fixed
+   blue info tones. Caution / danger keep their semantic warning + error
+   tones intentionally — only the neutral "informational" tone gets
+   re-linked, so the Confirm CTA, kicker chip, and left-edge stripe
+   match the rest of the chat surface's accent. */
 .info {
-  --tone-surface: var(--color-bg-info-subtle);
-  --tone-accent:  var(--color-text-info);
-  --tone-border:  var(--blue-20);
+  --tone-surface: var(--brand-10);
+  --tone-accent:  var(--brand-60);
+  --tone-border:  var(--brand-20);
 }
 
 .caution {

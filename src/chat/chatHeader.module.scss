@@ -7,19 +7,35 @@
   background: var(--white);
 }
 
+/* Pin the header Avatar's tint to the project accent. The Nexus
+   Avatar atom hashes the `name` to one of five fixed hues (blue/
+   green/yellow/red/cool) and applies them via inline style — so we
+   need !important to win over the inline style and a tag+role
+   selector to target the atom without depending on its hashed CSS-
+   module class name. */
+.header > [role='img'] {
+  background: var(--brand-10) !important;
+  color: var(--brand-70) !important;
+}
+
+/* Text block sized to exactly match the 40px Avatar:
+     name (line-height-400 = 24) + subtitle (line-height-200 = 16) = 40.
+   Same scale the widget headers use (font-size-400 / font-size-200),
+   so the chat header reads as part of the same family. */
 .name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-400);
   color: var(--grey-90);
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: var(--font-size-200);
+  line-height: var(--line-height-200);
   color: var(--grey-50);
 }
 
 .text {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
 }
