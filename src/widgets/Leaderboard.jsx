@@ -206,7 +206,6 @@ function PersonalBody({ payload }) {
 
   return (
     <div className={styles.personalBody}>
-      {userPosition && <RankSummary position={userPosition} />}
       {target && (
         <div className={styles.metricRow}>
           <ProgressRing
@@ -230,6 +229,7 @@ function PersonalBody({ payload }) {
           )}
         </div>
       )}
+      {userPosition && <RankSummary position={userPosition} />}
     </div>
   )
 }
