@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
+import mapStyles from '../mapSurface.module.scss'
 import {
   MapPin,
   Search,
@@ -146,6 +147,10 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
 
   const markers = useMemo(() => {
     if (!pin) return []
+    /* Springy drop animation on tap-placed pins. Other sources
+       ('search' / 'drag' / 'gps' / 'initial') skip the bounce so it
+       reads as the user's deliberate placement gesture, not chrome. */
+    const droppedClass = pin.source === 'tap' ? mapStyles.marker_pin_dropped : null
     return [{
       id: 'pin',
       lat: pin.lat,
@@ -153,6 +158,7 @@ export function PinDropBody({ payload, requestClose, onComplete, closeBtnRef }) 
       kind: 'pin',
       draggable: true,
       onDragEnd: handlePinDragEnd,
+      className: droppedClass,
     }]
   }, [pin, handlePinDragEnd])
 

@@ -150,6 +150,9 @@
   background: var(--brand-60);
   border: var(--border-width-200) solid var(--white);
   box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 32%, transparent);
+  /* Springy drop on first paint — the pin "lands" instead of just
+     appearing. Same curve / timing as the §16 springy bounce. */
+  animation: lmPinLand 320ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
 }
 
 .accuracyRing {
@@ -162,6 +165,9 @@
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--brand-60) 10%, transparent);
   border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 32%, transparent);
+  /* Breathing pulse — the pin's fill subtly inhales/exhales so the
+     compact card has a heartbeat. ~3.6s loop, on the state-curve. */
+  animation: lmAccuracyBreathe 3600ms cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
 }
 
 .pinHeroMuted {
@@ -414,10 +420,46 @@
   to   { opacity: var(--opacity-100); transform: translateY(0); }
 }
 
+/* Accuracy ring breathing — alpha + fill swap subtly between two
+   rest states. Done with color-mix percentage frames so we stay
+   token-pure (no raw alphas). */
+@keyframes lmAccuracyBreathe {
+  0%, 100% {
+    background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+    border-color: color-mix(in srgb, var(--brand-60) 28%, transparent);
+  }
+  50% {
+    background: color-mix(in srgb, var(--brand-60) 18%, transparent);
+    border-color: color-mix(in srgb, var(--brand-60) 40%, transparent);
+  }
+}
+
+/* Pin landing — scale 0 → 1.05 → 1 with a slight drop so it reads
+   as "the pin fell into place". The translate keeps the tip on the
+   geographic point throughout. */
+@keyframes lmPinLand {
+  0%   {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - var(--size-08))) rotate(-45deg) scale(0.4);
+  }
+  60%  {
+    opacity: var(--opacity-100);
+    transform: translate(-50%, -100%) rotate(-45deg) scale(1.08);
+  }
+  100% {
+    opacity: var(--opacity-100);
+    transform: translate(-50%, -100%) rotate(-45deg) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card { animation: none; }
   .card,
   .card:hover {
     transition: none;
+  }
+  .accuracyRing,
+  .pinHero {
+    animation: none;
   }
 }
