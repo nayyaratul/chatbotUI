@@ -2,9 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import {
   Trophy,
-  Crown,
-  Medal,
-  Award,
   ArrowUp,
   ArrowDown,
   Minus,
@@ -395,12 +392,6 @@ function BreakdownRow({ idx, label, current, target, unit }) {
    they're in the rest list; podium-level user emphasis is handled
    inside PodiumColumn instead. */
 
-const RANK_ICON = {
-  1: Crown,
-  2: Medal,
-  3: Award,
-}
-
 /* Derive a single-character initial from the row's name for the
    podium disc. Anonymized handles like "Worker 4821" become "W". */
 function deriveInitial(name) {
@@ -513,7 +504,6 @@ function RankRow({ idx, row, unit }) {
   const score  = row?.score
   const isUser = !!row?.is_user
   const delta  = row?.delta
-  const RankIcon = RANK_ICON[rank] ?? null
 
   /* Stagger §11 — 60ms steps starting at 200ms.
      User-row stripe springs in 180ms after the row's own rise-up. */
@@ -525,30 +515,15 @@ function RankRow({ idx, row, unit }) {
   return (
     <li
       className={cx(styles.rankRow, isUser && styles.rankRow_user)}
-      data-rank={rank}
       style={{
         '--lb-row-delay': `${rowDelay}ms`,
         '--lb-stripe-delay': `${stripeDelay}ms`,
       }}
       aria-current={isUser ? 'location' : undefined}
     >
-      {RankIcon ? (
-        <span
-          className={cx(styles.rankPill, styles.rankPill_podium)}
-          data-rank={rank}
-          aria-label={`Rank ${rank}`}
-        >
-          <RankIcon size={16} strokeWidth={2} aria-hidden="true" />
-        </span>
-      ) : (
-        <span
-          className={cx(styles.rankPill, styles.rankPill_numeric)}
-          data-rank={rank}
-          aria-label={`Rank ${rank}`}
-        >
-          {rank}
-        </span>
-      )}
+      <span className={styles.rankPill} aria-label={`Rank ${rank}`}>
+        {rank}
+      </span>
       <span className={styles.rankName}>{displayName}</span>
       <span className={styles.rankScore}>{scoreCopy}</span>
       {typeof delta === 'number' && <DeltaIndicator delta={delta} />}
