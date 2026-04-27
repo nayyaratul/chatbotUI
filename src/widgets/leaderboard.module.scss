@@ -142,30 +142,23 @@
 }
 
 /* ─── Personal body ────────────────────────────────────────────
-   Rank summary eyebrow + ring/breakdown two-column. The two-column
-   collapses to a stack at narrow slot widths via container query
-   on `.personalBody`. */
+   Vertical stack: ring → rank summary → breakdown. The ring
+   centers via its own `align-items: center` once it stretches to
+   full width. Rank summary centers its three children via
+   `justify-content: center`. Breakdown spans full width with its
+   bars stacking naturally. */
 
 .personalBody {
   display: flex;
   flex-direction: column;
   gap: var(--space-150);
-  container-type: inline-size;
-  container-name: lb-personal;
 }
 
-.metricRow {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-200);
-  min-width: 0;
-}
-
-/* ─── Rank summary eyebrow ─────────────────────────────────────
-   Sits above the metricRow. Three children: brand-tinted rank chip
-   ("#16 of 184"), percentile caption ("Top 9%"), and an optional
-   delta indicator with sublabel ("↑ 4 vs last week"). Wraps if the
-   slot is too narrow to hold all three on one line. */
+/* ─── Rank summary ─────────────────────────────────────────────
+   Sits between the ring and the breakdown. Three children: brand-
+   tinted rank chip ("#16 of 184"), percentile caption ("Top 9%"),
+   and an optional delta indicator with sublabel ("↑ 4 vs last
+   week"). Centered as a group via `justify-content: center`. */
 
 .rankSummary {
   display: flex;
@@ -216,13 +209,6 @@
   line-height: 1;
 }
 
-@container lb-personal (max-width: 30rem) {
-  .metricRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-150);
-  }
-}
 
 /* ─── Progress ring ────────────────────────────────────────────
    64×64 SVG, two concentric circles. SVG is rotated -90deg so the
@@ -418,7 +404,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;

@@ -207,29 +207,27 @@ function PersonalBody({ payload }) {
   return (
     <div className={styles.personalBody}>
       {target && (
-        <div className={styles.metricRow}>
-          <ProgressRing
-            current={target.current_value ?? 0}
-            target={target.target_value ?? 0}
-            unit={unit}
-          />
-          {breakdown.length > 0 && (
-            <ul className={styles.breakdown}>
-              {breakdown.slice(0, 4).map((row, idx) => (
-                <BreakdownRow
-                  key={`${row.label ?? 'row'}-${idx}`}
-                  idx={idx}
-                  label={row.label ?? ''}
-                  current={row.current ?? 0}
-                  target={row.target ?? 0}
-                  unit={row.unit ?? unit}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
+        <ProgressRing
+          current={target.current_value ?? 0}
+          target={target.target_value ?? 0}
+          unit={unit}
+        />
       )}
       {userPosition && <RankSummary position={userPosition} />}
+      {target && breakdown.length > 0 && (
+        <ul className={styles.breakdown}>
+          {breakdown.slice(0, 4).map((row, idx) => (
+            <BreakdownRow
+              key={`${row.label ?? 'row'}-${idx}`}
+              idx={idx}
+              label={row.label ?? ''}
+              current={row.current ?? 0}
+              target={row.target ?? 0}
+              unit={row.unit ?? unit}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
