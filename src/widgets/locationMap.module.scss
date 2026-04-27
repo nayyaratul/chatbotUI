@@ -1,23 +1,16 @@
-/* Location Map Widget (#13) — compact card shell.
-   Verified Nexus tokens used in this region:
-     space     : 075 100 125 150 200
-     size      : 01 36
+/* Location Map Widget (#13) — compact card.
+   Verified Nexus tokens used in this file:
+     space     : 050 075 100 125 150 200
+     size      : 01 02 04 06 08 12 14 16 20 24 28 32 36 40
      font-size : 100 200 400
      font-wt   : regular medium semibold   (NO bold)
-     radius    : 150 200
-     border-w  : 100
+     radius    : 100 150 200 500 full
+     border-w  : 100 200 300
      letter-sp : tight wide
-     opacity   : 100
-
-   Region 1 ships only the §1 shell + §2 header + body placeholder
-   + §5 CTA. Per-variant body regions (mini-map + overlays) land in
-   region 10; the FLIP-lift mini-map source rect lives there too.
+     opacity   : 072 100
                                                                       */
 
 .card {
-  /* §5 — pin the action accent so the (currently disabled) CTA
-     and any future Button instance falls back to brand-60, not
-     Nexus's default brand-50. */
   --color-action-primary: var(--brand-60);
   --color-action-primary-hover: color-mix(in srgb, var(--brand-60) 88%, black);
 
@@ -28,8 +21,8 @@
   padding: var(--space-200);
   width: 100%;
 
-  /* §4 floor — covers tallest variant (`nearby_jobs` with mini-map
-     + 3-row list). Other variants fit naturally inside this. */
+  /* §4 floor — covers tallest variant (`nearby_jobs` with mini-map +
+     3-row list). Other variants fit naturally inside this. */
   min-height: 24rem;
 
   background: var(--white);
@@ -48,7 +41,8 @@
   box-shadow: var(--shadow-100);
 }
 
-/* §2 — icon badge + eyebrow + title + description, side-by-side. */
+/* ── Header ──────────────────────────────────────────────── */
+
 .header {
   display: flex;
   align-items: flex-start;
@@ -101,33 +95,240 @@
   color: var(--grey-60);
 }
 
-/* Body placeholder — region 10 replaces this with the variant-specific
-   mini-map preview (pin / multi-pins / polygon outline / route). The
-   16:9 aspect ratio is set here so the §4 floor + §1 spacing reads
-   correctly even before the real preview lands. `nearby_jobs` will
-   override to 16:7 in region 10. */
-.bodyPlaceholder {
+/* ── Mini-map (FLIP source rect for region 13) ───────────── */
+
+.miniMap {
   position: relative;
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-150);
-  background: color-mix(in srgb, var(--brand-60) 6%, var(--white));
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--brand-60) 4%, var(--white)) 0%,
+    color-mix(in srgb, var(--yellow-60) 6%, var(--white)) 60%,
+    color-mix(in srgb, var(--brand-60) 6%, var(--white)) 100%);
   border: var(--border-width-100) solid var(--grey-10);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: color-mix(in srgb, var(--brand-60) 60%, var(--grey-30));
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.bodyPlaceholderIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.miniMap_nearbyJobs {
+  aspect-ratio: 16 / 7;
+}
+
+.miniMapBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.miniMapWater {
+  fill: color-mix(in srgb, var(--brand-60) 14%, var(--white));
   opacity: var(--opacity-072);
 }
 
-/* §5 CTA — full-width, sits flush at the bottom; `margin-top: auto`
-   in case future variant body regions don't fill the card. */
+.miniMapPark {
+  fill: color-mix(in srgb, var(--color-text-success) 18%, var(--white));
+  opacity: var(--opacity-072);
+}
+
+.miniMapRoads line {
+  stroke: var(--white);
+  stroke-width: 2;
+  fill: none;
+  opacity: var(--opacity-072);
+}
+
+/* Pin (lollipop) — used as the centred "hero" pin on pin_drop. */
+.pinHero {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--size-20);
+  height: var(--size-24);
+  transform: translate(-50%, -100%) rotate(-45deg);
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand-60);
+  border: var(--border-width-200) solid var(--white);
+  box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 32%, transparent);
+}
+
+.accuracyRing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-60) 10%, transparent);
+  border: var(--border-width-100) solid color-mix(in srgb, var(--brand-60) 32%, transparent);
+}
+
+.pinHeroMuted {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-050);
+  color: color-mix(in srgb, var(--brand-60) 60%, var(--grey-50));
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  opacity: var(--opacity-072);
+}
+
+/* You-dot — pulsing circle. */
+.youDot {
+  position: absolute;
+  width: var(--size-12);
+  height: var(--size-12);
+  border-radius: var(--radius-full);
+  background: var(--brand-60);
+  border: var(--border-width-300) solid var(--white);
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 var(--size-02) var(--size-04) color-mix(in srgb, var(--brand-60) 40%, transparent),
+    0 0 0 var(--size-08) color-mix(in srgb, var(--brand-60) 14%, transparent);
+}
+
+/* Job pin (smaller variant of pinHero, for nearby_jobs preview). */
+.jobPin {
+  position: absolute;
+  width: var(--size-16);
+  height: var(--size-20);
+  transform: translate(-50%, -100%) rotate(-45deg);
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand-60);
+  border: var(--border-width-200) solid var(--white);
+  box-shadow: 0 var(--size-02) var(--size-04) color-mix(in srgb, var(--brand-60) 28%, transparent);
+}
+
+/* Job-list rows — sit below the 16:7 mini-map. */
+.jobList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+}
+
+.jobRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-100);
+  padding: var(--space-075) var(--space-125);
+  background: color-mix(in srgb, var(--brand-60) 4%, var(--white));
+  border: var(--border-width-100) solid var(--grey-10);
+  border-radius: var(--radius-100);
+}
+
+.jobLabel {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--grey-90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobDistance {
+  flex-shrink: 0;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-60);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+/* Geofence preview — polygon outline + status chip overlay. */
+.fencePolygon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fencePolygon polygon {
+  fill: color-mix(in srgb, var(--color-text-success) 20%, transparent);
+  stroke: var(--color-text-success);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.statusChip {
+  position: absolute;
+  top: var(--space-100);
+  left: var(--space-100);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 12%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  color: var(--color-text-success);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/* Directions preview — start pin, end pin, route polyline. */
+.routeSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.routeLine {
+  fill: none;
+  stroke: var(--brand-60);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.routeLineInner {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.startPin {
+  position: absolute;
+  left: 12%;
+  top: 78%;
+  width: var(--size-16);
+  height: var(--size-16);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-width-300) solid var(--brand-60);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 var(--size-02) var(--size-04) color-mix(in srgb, var(--brand-60) 28%, transparent);
+}
+
+.endPin {
+  position: absolute;
+  right: 8%;
+  top: 22%;
+  width: var(--size-20);
+  height: var(--size-24);
+  transform: translate(50%, -100%) rotate(-45deg);
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand-60);
+  border: var(--border-width-200) solid var(--white);
+  box-shadow: 0 var(--size-04) var(--size-06) color-mix(in srgb, var(--brand-60) 32%, transparent);
+}
+
+/* ── CTA ─────────────────────────────────────────────────── */
+
 .cta {
   width: 100%;
   margin-top: auto;
@@ -137,9 +338,10 @@
   gap: var(--space-075);
 }
 
-/* Variant hooks — empty in region 1; region 8 fills in geofence
-   tone-tinting (success / warning / error on the iconBadge + eyebrow
-   + CTA), and region 10 fills in per-variant body regions. */
+/* Variant hooks — region 8 attaches geofence-tone overrides here
+   (success/warning/error on the icon badge + eyebrow + CTA based
+   on payload-side state). For region 10, all four variants share
+   the brand-60 default. */
 .variant_pin_drop      {}
 .variant_pin_drop_cold {}
 .variant_nearby_jobs   {}
