@@ -348,6 +348,67 @@
 .variant_geofence      {}
 .variant_directions    {}
 
+/* ── Completed state (§10 success banner) ────────────────── */
+
+.card_completed {
+  /* No special override yet — the success banner replaces the CTA
+     and the iconBadge swaps to a Check overlay. The card itself
+     stays in the family-default visual. */
+}
+
+.iconBadge_completed {
+  background: color-mix(in srgb, var(--color-text-success) 14%, var(--white));
+  border-color: color-mix(in srgb, var(--color-text-success) 32%, transparent);
+  color: var(--color-text-success);
+  animation: lmCheckPop 240ms cubic-bezier(0.18, 0.9, 0.28, 1.4) both;
+}
+
+.successBanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-050);
+  padding: var(--space-100) var(--space-125);
+  border-radius: var(--radius-150);
+  background: color-mix(in srgb, var(--color-text-success) 8%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 22%, transparent);
+  margin-top: auto;
+  animation: lmBannerEnter 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.successChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-050);
+  align-self: flex-start;
+  padding: var(--space-025) var(--space-100);
+  border-radius: var(--radius-500);
+  background: color-mix(in srgb, var(--color-text-success) 14%, var(--white));
+  border: var(--border-width-100) solid color-mix(in srgb, var(--color-text-success) 28%, transparent);
+  color: var(--color-text-success);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.successMeta {
+  margin: 0;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-regular);
+  color: var(--grey-90);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes lmCheckPop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: var(--opacity-100); }
+}
+
+@keyframes lmBannerEnter {
+  from { opacity: 0; transform: translateY(var(--space-050)); }
+  to   { opacity: var(--opacity-100); transform: translateY(0); }
+}
+
 @keyframes lmRiseUp {
   from { opacity: 0; transform: translateY(var(--space-100)); }
   to   { opacity: var(--opacity-100); transform: translateY(0); }

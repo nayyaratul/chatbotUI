@@ -398,6 +398,8 @@ export function LocationMap({ payload }) {
     setCardState((prev) => (prev === 'completed' ? prev : 'dismissed'))
   }, [])
 
+  const [completedAt, setCompletedAt] = useState(null)
+
   const handleComplete = useCallback((data) => {
     if (openedAtRef.current != null) {
       accumOpenMsRef.current += Date.now() - openedAtRef.current
@@ -413,14 +415,28 @@ export function LocationMap({ payload }) {
 
     /* directions is informational — close the sheet but stay reopen-able. */
     setSheetOpen(false)
-    setCardState((prev) => (variant === 'directions' ? 'dismissed' : 'completed'))
+    if (variant === 'directions') {
+      setCardState('dismissed')
+    } else {
+      setCardState('completed')
+      setCompletedAt(new Date())
+    }
   }, [variant, payload, onReply])
 
+  const isCompleted = cardState === 'completed'
+
   return (
-    <div className={cx(styles.card, styles[`variant_${variant}`])}>
+    <div className={cx(
+      styles.card,
+      styles[`variant_${variant}`],
+      isCompleted && styles.card_completed,
+    )}>
       <header className={styles.header}>
-        <span className={styles.iconBadge}>
-          <Icon size={18} strokeWidth={2} aria-hidden />
+        <span className={cx(styles.iconBadge, isCompleted && styles.iconBadge_completed)}>
+          {isCompleted
+            ? <Check size={18} strokeWidth={2.5} aria-hidden />
+            : <Icon size={18} strokeWidth={2} aria-hidden />
+          }
         </span>
         <div className={styles.headerText}>
           <span className={styles.eyebrow}>
@@ -435,14 +451,19 @@ export function LocationMap({ payload }) {
 
       <VariantPreview variant={variant} payload={payload} />
 
-      <Button
-        variant="primary"
-        className={styles.cta}
-        onClick={handleOpen}
-      >
-        <span>{ctaLabel}</span>
-        <CtaIcon size={16} strokeWidth={2} aria-hidden />
-      </Button>
+      {isCompleted
+        ? <SuccessBanner variant={variant} completedAt={completedAt} />
+        : (
+          <Button
+            variant="primary"
+            className={styles.cta}
+            onClick={handleOpen}
+          >
+            <span>{ctaLabel}</span>
+            <CtaIcon size={16} strokeWidth={2} aria-hidden />
+          </Button>
+        )
+      }
 
       {sheetOpen && (
         <Suspense fallback={null}>
@@ -452,6 +473,35 @@ export function LocationMap({ payload }) {
             onComplete={handleComplete}
           />
         </Suspense>
+      )}
+    </div>
+  )
+}
+
+/* ─── §10 success banner ────────────────────────────────────────
+   Single chip + one-line tabular-nums timestamp. No confetti. */
+
+const SUCCESS_LABELS = {
+  pin_drop:      'Confirmed',
+  pin_drop_cold: 'Confirmed',
+  nearby_jobs:   'Applied',
+  geofence:      'Checked in',
+  directions:    'Opened',  /* unused — directions never completes */
+}
+
+function SuccessBanner({ variant, completedAt }) {
+  const label = SUCCESS_LABELS[variant] ?? 'Done'
+  const timeStr = completedAt
+    ? new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' }).format(completedAt)
+    : ''
+  return (
+    <div className={styles.successBanner} role="status" aria-live="polite">
+      <span className={styles.successChip}>
+        <Check size={14} strokeWidth={2.5} aria-hidden />
+        <span>{label}</span>
+      </span>
+      {timeStr && (
+        <p className={styles.successMeta}>Submitted at {timeStr}.</p>
       )}
     </div>
   )
