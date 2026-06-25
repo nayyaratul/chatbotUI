@@ -1,4 +1,6 @@
 import { getVariantPayload } from './widgetSchemas.js'
+import { answerQuestion } from './knowledge.js'
+import { matchWidgetIntent } from './widgetIntents.js'
 
 /**
  * Rule-based mock bot. Each rule is { match: RegExp, build: (userMessage) => botWidget | null }.
@@ -35,6 +37,13 @@ export function respond(userMessage) {
         if (built) return built
       }
     }
+    /* Loose "show/open X" requests → the matching widget (handles natural
+       phrasing the exact triggers above miss). */
+    const widget = matchWidgetIntent(text)
+    if (widget) return widget
+    /* Otherwise hand the question to the small knowledge layer for a
+       helpful (spoken) answer instead of echoing it back. */
+    return { type: 'text', payload: { text: answerQuestion(text) } }
   }
   return defaultEcho(userMessage)
 }
@@ -537,4 +546,35 @@ registerRule({
 registerRule({
   match: /^(show )?(map|location)\s+(directions|route)$/i,
   build: () => ({ type: 'location_map', payload: getVariantPayload('location_map', 'directions') }),
+})
+
+// ─── Conversational replies (spoken-style, multi-sentence) ─────────
+// These return plain text so voice mode can stream them into the chat
+// in ~10–12-word chunks. Triggers are distinct from the widget rules
+// above so they only fire on a genuine conversational opener.
+
+registerRule({
+  match: /^(hi|hello|hey|namaste|good (morning|afternoon|evening))\b/i,
+  build: () => ({ type: 'text', payload: { text:
+    "Hey! Good to hear from you. I can help you find shifts near you, " +
+    "check this week's earnings, or sort out anything on your profile. " +
+    "What would you like to do today?" } }),
+})
+
+registerRule({
+  match: /^(how am i doing|how('?s| is) my (week|month|performance)|how have i done|my summary)\b/i,
+  build: () => ({ type: 'text', payload: { text:
+    "You've had a solid week — five shifts done and your on-time rate is " +
+    "up to ninety-four percent. You're about two hundred rupees short of " +
+    "this week's bonus, so one more evening shift would tip you over. " +
+    "Want me to find one nearby?" } }),
+})
+
+registerRule({
+  match: /^(what should i do|what'?s next|plan my day|help me plan|what now)\b/i,
+  build: () => ({ type: 'text', payload: { text:
+    "Here's what I'd suggest: finish the safety video that's still pending, " +
+    "then pick up the Thursday evening slot since it pays the most this week. " +
+    "After that you'll have cleared everything for your payout. " +
+    "Should I pull those up?" } }),
 })
