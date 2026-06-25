@@ -4,11 +4,11 @@ import { FallbackUnknown } from './FallbackUnknown.jsx'
 import styles from './messageRenderer.module.scss'
 
 export function MessageRenderer({ message }) {
-  const { role, widget } = message
+  const { role, widget, streaming } = message
   const Component = registry[widget.type]
 
   const rendered = Component ? (
-    <Component payload={widget.payload} role={role} />
+    <Component payload={widget.payload} role={role} streaming={streaming} />
   ) : (
     <FallbackUnknown type={widget.type} payload={widget.payload} />
   )

@@ -30,6 +30,10 @@ export function StudioPanel({
   onToggleCollapsed,
   brand,
   onBrandChange,
+  bargeSensitivity,
+  onBargeSensitivityChange,
+  bloomIntensity,
+  onBloomIntensityChange,
 }) {
   return (
     <aside className={cx(styles.panel, collapsed && styles.collapsed)}>
@@ -128,7 +132,13 @@ export function StudioPanel({
               <span className={styles.dot} aria-hidden />
               <h2 className={styles.sectionTitle}>Controls</h2>
             </header>
-            <Controls bot={bot} />
+            <Controls
+              bot={bot}
+              bargeSensitivity={bargeSensitivity}
+              onBargeSensitivityChange={onBargeSensitivityChange}
+              bloomIntensity={bloomIntensity}
+              onBloomIntensityChange={onBloomIntensityChange}
+            />
           </section>
         </div>
       )}

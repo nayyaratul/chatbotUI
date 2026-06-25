@@ -1,74 +1,273 @@
+/* ─── Composer bar ──────────────────────────────────────────────────
+   The wrapper keeps the chat surface's input chrome (border-top + white
+   bg + padding); the rounded `.box` inside is the actual composer. */
 .input {
-  /* Pin the input row's interactive elements to the project accent
-     (brand-60). Nexus defaults --color-action-primary and --color-
-     border-focus to brand-50; the rest of the chat surface (widgets,
-     suggestions strip) reads brand-60, so without this scoped override
-     the input + send button render one shade lighter than the
-     surrounding accents and read as a different colour. */
-  --color-action-primary: var(--brand-60);
-  --color-action-primary-hover: var(--brand-70);
-  --color-action-primary-active: var(--brand-80);
-  --color-border-focus: var(--brand-60);
+  /* Bare positioning host for the bottom bloom — no visible chrome of its
+     own (no border-top, no fill). The rounded `.box` is the only composer
+     container now; this wrapper just insets the box and anchors the bloom
+     layer that has to sit behind it. z-index:0 puts the whole composer
+     (incl. the bloom's upward overflow) on a lower stacking layer than the
+     message stream (.body, z-index:1), so the bloom reads as a background. */
+  position: relative;
+  z-index: 0;
+  padding: var(--space-125) var(--space-150);
+}
 
+/* ─── The composer box ──────────────────────────────────────────────
+   A single rounded container: `+` on the left, a borderless auto-grow
+   field, and a trailing control cluster that swaps per state. Laid out
+   on a grid so it can restructure to a stacked layout once the field
+   wraps to a second line. */
+.box {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'plus field trailing';
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-075) var(--space-100);
+  background: var(--white);
+  border: var(--border-width-100) solid var(--grey-20);
+  border-radius: var(--radius-200);
+  box-shadow:
+    0 1px 2px rgba(8, 8, 8, 0.04),
+    0 6px 18px -10px rgba(8, 8, 8, 0.1);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Wrapped: field spans the top, controls drop to a row below. */
+.box.multiline {
+  grid-template-areas:
+    'field field field'
+    'plus  .     trailing';
+  align-items: end;
+  row-gap: var(--space-100);
+}
+
+/* Typing / focused → bright blue selected border. */
+.box:focus-within {
+  border-color: var(--brand-60);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-60) 14%, transparent);
+}
+
+/* Link with the starter-prompts strip (existing `accented` behaviour). */
+.box.accented {
+  border-color: var(--brand-60);
+}
+
+/* You-speaking → the same "selected" look, one notch brighter + a glow,
+   so speaking reads as a louder version of the typing-focus state. The
+   glow scales with `--level` (live mic amplitude, 0..1) so the border
+   reacts to your actual voice; at level 0 it's a calm bright outline. */
+.box.speakingUser {
+  border-color: var(--brand-50);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--brand-50) calc(18% + var(--level, 0) * 22%), transparent),
+    0 0 calc(12px + var(--level, 0) * 22px) -2px
+      color-mix(in srgb, var(--brand-50) calc(28% + var(--level, 0) * 34%), transparent);
+  transition: box-shadow 90ms ease;
+}
+
+.plus {
+  grid-area: plus;
+}
+.field {
+  grid-area: field;
+}
+.trailing {
+  grid-area: trailing;
   display: flex;
   align-items: center;
   gap: var(--space-100);
-  padding: var(--space-125) var(--space-150);
-  border-top: var(--border-width-100) solid var(--grey-10);
-  background: var(--white);
 }
 
-.textarea {
-  flex: 1;
-  height: var(--size-40);
-  min-height: var(--size-40);
-  max-height: var(--size-120, 120px);
-  padding: var(--space-125) var(--space-150);
-  line-height: 1.2;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+/* Keep all content above the gradient waveform layer. */
+.plus,
+.field,
+.trailing {
+  position: relative;
+  z-index: 1;
 }
 
-.textarea:focus,
-.textarea:focus-visible {
-  border-color: var(--brand-60) !important;
-  outline-color: var(--brand-60) !important;
+/* ─── Field ─────────────────────────────────────────────────────────── */
+.field {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: var(--font-size-400);
+  line-height: 1.4;
+  color: var(--grey-90);
+  padding: var(--space-075) 0;
+  max-height: 120px;
+}
+.field::placeholder {
+  color: var(--grey-50);
+}
+.field:disabled {
+  cursor: default;
 }
 
-.textarea.accented {
-  border-color: var(--brand-60) !important;
-  box-shadow: 0 0 0 var(--border-width-100) color-mix(in srgb, var(--brand-60) 16%, transparent);
-}
-
-/* Send CTA — fixed 40x40, icon centered in all axes. Primary variant
-   inherits --color-action-primary which we've pinned to brand-60 on
-   the input row above so it tracks the project accent. When disabled
-   (empty input or bot typing) we override Nexus's opacity-reduced
-   primary look with a clean neutral grey so the state reads clearly
-   as "not actionable" rather than "faded brand". */
-.sendButton {
+/* ─── Icon buttons (plus, dictate mic, mute mic) ───────────────────── */
+.plus,
+.iconBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
   width: var(--size-40);
   height: var(--size-40);
-  padding: 0;
   flex-shrink: 0;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-150);
+  color: var(--grey-90);
+  transition: background 140ms ease, color 140ms ease;
+}
+.plus:hover,
+.iconBtn:hover {
+  background: var(--grey-0);
+}
+.plus:disabled,
+.iconBtn:disabled {
+  color: var(--grey-30);
+  cursor: not-allowed;
 }
 
-/* The Lucide Send icon is a paper plane whose visual mass sits in the
-   lower-left of its 16x16 box — geometric centre reads as up-and-right
-   to the eye. A 1px down/left nudge restores optical centre. We also
-   force the SVG to display:block so the inline-baseline gap from the
-   wrapping <span> doesn't push it down. */
-.sendButton svg {
+/* Mute mic — live (outline) vs muted (red fill). */
+.micLive {
+  color: var(--grey-90);
+}
+.micMuted {
+  background: var(--red-50);
+  color: var(--white);
+}
+.micMuted:hover {
+  background: var(--red-60);
+}
+
+/* ─── Primary blue buttons (send, enter-voice) ─────────────────────── */
+.sendBtn,
+.voiceBtn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  width: var(--size-40);
+  height: var(--size-40);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-150);
+  background: var(--brand-60);
+  color: var(--white);
+  transition: background 140ms ease;
+}
+.sendBtn:hover,
+.voiceBtn:hover {
+  background: var(--brand-70);
+}
+.sendBtn:disabled {
+  background: var(--grey-10);
+  color: var(--grey-40);
+  cursor: not-allowed;
+}
+/* Lucide Send's mass sits lower-left — nudge to optical centre. */
+.sendBtn svg {
   display: block;
   transform: translate(-1px, 1px);
 }
 
-.sendButton:disabled {
-  background: var(--grey-10) !important;
-  border-color: var(--grey-10) !important;
-  color: var(--grey-40) !important;
-  opacity: var(--opacity-100) !important;
-  cursor: not-allowed;
+/* ─── End button (voice) ───────────────────────────────────────────── */
+.endBtn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  height: var(--size-40);
+  padding: 0 var(--space-200) 0 var(--space-150);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-100);
+  border-radius: var(--radius-150);
+  background: var(--brand-60);
+  color: var(--white);
+  font-family: var(--sans);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  transition: background 140ms ease;
+}
+.endBtn:hover {
+  background: var(--brand-70);
+}
+.endDots {
+  display: inline-flex;
+  gap: 3px;
+}
+.endDots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: mi-endDots 1.2s ease-in-out infinite;
+}
+.endDots i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.endDots i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes mi-endDots {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50%      { opacity: 1;   transform: translateY(-2px); }
+}
+
+/* ─── Ada-speaking: blurred reactive waveform "bloom" ─────────────────
+   A real waveform anchored to the bottom of the composer bar, heavily
+   blurred so it reads as a soft brand bloom rising up behind the box and
+   into the stream. Bar heights oscillate (per-bar duration/phase) so the
+   blurred shape morphs the way live mic amplitude would drive it. The
+   top is masked off so the bloom fades into the surface. */
+.bloom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 260px;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  /* Spread the bars edge-to-edge so the bloom fills the full composer
+     width — on the wide desktop card it no longer huddles in the centre. */
+  justify-content: space-between;
+  gap: 0;
+  filter: blur(17px);
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(to top, #000 30%, transparent 92%);
+  mask-image: linear-gradient(to top, #000 30%, transparent 92%);
+}
+.bloomBar {
+  width: 5px;
+  height: 200px;
+  border-radius: 3px;
+  background: linear-gradient(to top, var(--brand-60), var(--brand-40));
+  transform: scaleY(var(--lo, 0.18));
+  transform-origin: bottom;
+  animation: mi-bloom var(--dur, 0.9s) var(--dly, 0s) ease-in-out infinite alternate;
+}
+@keyframes mi-bloom {
+  from { transform: scaleY(var(--lo, 0.18)); }
+  to   { transform: scaleY(var(--peak, 0.6)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .endDots i,
+  .bloomBar {
+    animation: none;
+  }
+  .bloomBar {
+    transform: scaleY(var(--peak, 0.5));
+  }
 }

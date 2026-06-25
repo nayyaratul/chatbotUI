@@ -21,3 +21,22 @@
   color: var(--white);
   border-bottom-right-radius: var(--radius-100);
 }
+
+/* Streaming caret — a blinking bar while a voice transcript grows in. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--brand-60);
+  animation: tm-caret 1s step-end infinite;
+}
+
+@keyframes tm-caret {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}

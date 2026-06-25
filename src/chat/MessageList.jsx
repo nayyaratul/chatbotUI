@@ -12,9 +12,12 @@ function toYmd(ts) {
 export function MessageList({ messages, isBotTyping, typingContext, hideEmptyState = false }) {
   const endRef = useRef(null)
 
+  /* Depend on `messages` (not just length) so the view stays pinned to
+     the bottom as a streaming reply grows chunk by chunk — each chunk
+     replaces the array reference. */
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages.length, isBotTyping])
+  }, [messages, isBotTyping])
 
   if (messages.length === 0 && !isBotTyping) {
     if (hideEmptyState) return null

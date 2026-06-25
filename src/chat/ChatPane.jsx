@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChatHeader } from './ChatHeader.jsx'
 import { MessageList } from './MessageList.jsx'
 import { MessageInput } from './MessageInput.jsx'
@@ -8,11 +8,15 @@ import { ChatActionsProvider } from './ChatActionsContext.jsx'
 import { STARTER_PROMPTS } from './starterPrompts.js'
 import styles from './chatPane.module.scss'
 
-export function ChatPane({ bot }) {
+export function ChatPane({ bot, bargeSensitivity = 0.5, bloomIntensity = 0.8 }) {
   const [inputText, setInputText] = useState('')
+  /* Voice mode lives here so the composer (MessageInput) and the engine
+     activity (bot.isBotSpeaking / isBotTyping) can drive the same
+     feedback. { active, muted }. */
+  const [voice, setVoice] = useState({ active: false, muted: false })
   const textareaRef = useRef(null)
 
-  const showStarters = bot.messages.length === 0 && !bot.isBotTyping
+  const showStarters = bot.messages.length === 0 && !bot.isBotTyping && !voice.active
   const activeSuggestions = showStarters ? STARTER_PROMPTS : []
 
   const handleSuggestionSelect = (text) => {
@@ -28,6 +32,15 @@ export function ChatPane({ bot }) {
 
   const getTargetRect = useCallback(() => {
     return textareaRef.current?.getBoundingClientRect() ?? null
+  }, [])
+
+  /* Stop the assistant's voice the moment voice mode closes, and on
+     unmount — so it never keeps talking after you tap End. */
+  useEffect(() => {
+    if (!voice.active && typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  }, [voice.active])
+  useEffect(() => () => {
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
   return (
@@ -60,6 +73,13 @@ export function ChatPane({ bot }) {
           onSend={bot.sendUserMessage}
           disabled={bot.isBotTyping}
           accented={showStarters}
+          voice={voice}
+          onVoiceChange={setVoice}
+          botTyping={bot.isBotTyping}
+          botSpeaking={bot.isBotSpeaking}
+          onInterrupt={bot.stopSpeaking}
+          bargeSensitivity={bargeSensitivity}
+          bloomIntensity={bloomIntensity}
         />
         {/* Portal target for widget-owned modals (see JobDetailsModal) */}
         <div id="chat-modal-root" className={styles.modalRoot} />

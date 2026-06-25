@@ -23,6 +23,11 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* Sit above the composer's bloom layer so the voice glow reads as a
+     background behind the message bubbles, not painted over them. The
+     transparent background lets the glow show through the gaps. */
+  position: relative;
+  z-index: 1;
 }
 
 .placeholder {
