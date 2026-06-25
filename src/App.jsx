@@ -13,7 +13,7 @@ export function App() {
   const [studioCollapsed, setStudioCollapsed] = useState(false)
   const [brand, setBrand] = useState(BRAND_PRESETS[0])
   /* Voice barge-in sensitivity (0..1), tuned live from the Studio. */
-  const [bargeSensitivity, setBargeSensitivity] = useState(0.5)
+  const [bargeSensitivity, setBargeSensitivity] = useState(0.25)
   /* Bottom-bloom intensity (0..1 → opacity), tuned live from the Studio. */
   const [bloomIntensity, setBloomIntensity] = useState(0.8)
 

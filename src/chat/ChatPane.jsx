@@ -8,7 +8,7 @@ import { ChatActionsProvider } from './ChatActionsContext.jsx'
 import { STARTER_PROMPTS } from './starterPrompts.js'
 import styles from './chatPane.module.scss'
 
-export function ChatPane({ bot, bargeSensitivity = 0.5, bloomIntensity = 0.8 }) {
+export function ChatPane({ bot, bargeSensitivity = 0.25, bloomIntensity = 0.8 }) {
   const [inputText, setInputText] = useState('')
   /* Voice mode lives here so the composer (MessageInput) and the engine
      activity (bot.isBotSpeaking / isBotTyping) can drive the same

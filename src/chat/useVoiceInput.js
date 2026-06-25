@@ -35,7 +35,7 @@ const BARGE_MIN = 0.1 // absolute floor so silence blips never trigger
 const BARGE_FRAMES = 9 // ~150ms of continuous over-floor speech before interrupting
 
 function marginForSensitivity(s) {
-  const v = typeof s === 'number' ? Math.max(0, Math.min(1, s)) : 0.5
+  const v = typeof s === 'number' ? Math.max(0, Math.min(1, s)) : 0.25
   return BARGE_MARGIN_MAX - v * (BARGE_MARGIN_MAX - BARGE_MARGIN_MIN)
 }
 
@@ -44,7 +44,7 @@ export function useVoiceInput({
   listening,
   muted = false,
   assistantSpeaking = false,
-  bargeSensitivity = 0.5,
+  bargeSensitivity = 0.25,
   onUtterance,
   onInterrupt,
   lang = 'en-IN',

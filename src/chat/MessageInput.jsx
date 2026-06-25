@@ -51,7 +51,7 @@ export const MessageInput = forwardRef(function MessageInput(
     botTyping = false,
     botSpeaking = false,
     onInterrupt,
-    bargeSensitivity = 0.5,
+    bargeSensitivity = 0.25,
     bloomIntensity = 0.8,
   },
   forwardedRef,

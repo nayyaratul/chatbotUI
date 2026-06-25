@@ -3,7 +3,7 @@ import styles from './controls.module.scss'
 
 export function Controls({
   bot,
-  bargeSensitivity = 0.5,
+  bargeSensitivity = 0.25,
   onBargeSensitivityChange,
   bloomIntensity = 0.8,
   onBloomIntensityChange,
