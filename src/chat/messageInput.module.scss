@@ -137,9 +137,16 @@
   cursor: not-allowed;
 }
 
-/* Mute mic — live (outline) vs muted (red fill). */
+/* Voice-mode mic toggle — visually distinct from the text-mode dictation
+   mic (which stays a ghost icon). Live = mic on, bot can hear you, shown
+   as white on dark grey; muted = bot can't hear, shown as a red fill. */
 .micLive {
-  color: var(--grey-90);
+  background: var(--grey-80);
+  color: var(--white);
+}
+.micLive:hover {
+  background: var(--grey-90);
+  color: var(--white);
 }
 .micMuted {
   background: var(--red-50);
